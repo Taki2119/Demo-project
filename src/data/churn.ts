@@ -1,0 +1,22 @@
+// Phần THUẦN của trang dự án cảnh báo huỷ sớm.
+import type { Row } from './api';
+import { ratio } from './metrics';
+
+export const BAND_ORDER = ['cancel_scheduled', 'high', 'medium', 'low'] as const;
+
+/** Độ chính xác theo band: trong các ảnh chụp đã đủ 90 ngày sau, bao nhiêu % đã huỷ thật. */
+export function precisionByBand(rows: readonly Row[]): { band: string; n: number; churnRate: number | null }[] {
+  return BAND_ORDER.map((band) => {
+    const labeled = rows.filter((r) => r.risk_band === band && typeof r.churned_within_90d === 'boolean');
+    const churned = labeled.filter((r) => r.churned_within_90d === true).length;
+    return { band, n: labeled.length, churnRate: ratio(churned, labeled.length) };
+  });
+}
+
+/** Danh sách cần chăm sóc: bỏ band thấp, xếp theo band rồi điểm giảm dần. */
+export function watchOrder(rows: readonly Row[]): Row[] {
+  const rank = (r: Row) => (BAND_ORDER as readonly string[]).indexOf(String(r.risk_band));
+  return rows
+    .filter((r) => r.risk_band !== 'low')
+    .sort((a, b) => rank(a) - rank(b) || Number(b.risk_score) - Number(a.risk_score));
+}

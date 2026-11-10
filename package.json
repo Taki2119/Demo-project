@@ -1,0 +1,35 @@
+{
+  "name": "saas-analytics-demo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Bản demo cá nhân: dashboard SaaS trên dữ liệu tổng hợp (Supabase + Vercel + GitHub Pages).",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "test": "vitest run",
+    "db:test": "node --test supabase/tests/*.test.mjs",
+    "data:generate": "node scripts/data/generate-cli.mjs",
+    "data:load": "node --env-file-if-exists=.env scripts/data/load.mjs",
+    "api:test": "node --test server/test/*.test.mjs",
+    "api:dev": "node --env-file-if-exists=.env scripts/dev/api-dev.mjs"
+  },
+  "dependencies": {
+    "postgres": "^3.4.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
+    "@types/node": "^22.20.5",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5",
+    "vitest": "^3.2.7"
+  }
+}

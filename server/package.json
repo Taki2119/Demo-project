@@ -1,0 +1,12 @@
+{
+  "name": "saas-analytics-api",
+  "private": true,
+  "type": "module",
+  "description": "API đọc dữ liệu (Vercel Functions) — Root Directory của project Vercel là thư mục này.",
+  "engines": {
+    "node": "22.x"
+  },
+  "dependencies": {
+    "postgres": "^3.4.5"
+  }
+}

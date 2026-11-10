@@ -1,0 +1,84 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// CATALOG — MỘT nguồn cho side panel, Home và tiêu đề trang. Thêm một bảng = thêm một mục ở
+// đây (+ một component ở boards/registry.tsx); không sửa màn nào.
+//
+// Cây: Home · Gói dịch vụ (Tất cả gói + từng gói) × 4 bảng · Dự án (cảnh báo huỷ sớm).
+// ⚠ TÊN GÓI không khai ở đây: nó là DỮ LIỆU (mart.labels domain 'plan'), xem data/labels.ts.
+//   Ở đây chỉ có MÃ gói, khớp raw.plans.plan_id.
+// ─────────────────────────────────────────────────────────────────────────────
+import type { Lang } from '../ui/i18n';
+
+export interface LocalStr {
+  ja: string;
+  vi: string;
+}
+
+export const pick = (s: LocalStr, lang: Lang): string => s[lang];
+
+/** `all` = cộng mọi gói (đúng vì mỗi công ty ở đúng một gói mỗi tháng — docs/SCHEMA.md §4). */
+export const PLAN_KEYS = ['all', 'starter', 'growth', 'scale'] as const;
+export type PlanKey = (typeof PLAN_KEYS)[number];
+
+export const BOARD_KEYS = ['revenue', 'users', 'by-user', 'by-company'] as const;
+export type BoardKey = (typeof BOARD_KEYS)[number];
+
+/** Mã nguồn dữ liệu của API (khớp registry phía Vercel) — KHÔNG phải tên view SQL. */
+export type SourceKey =
+  | 'revenue-monthly'
+  | 'users-monthly'
+  | 'user-monthly'
+  | 'company-monthly'
+  | 'churn-watchlist'
+  | 'churn-history'
+  | 'interventions-monthly'
+  | 'labels'
+  | 'column-labels';
+
+export interface BoardDef {
+  key: BoardKey;
+  name: LocalStr;
+  desc: LocalStr;
+  source: SourceKey;
+}
+
+export const BOARDS: readonly BoardDef[] = [
+  {
+    key: 'revenue',
+    name: { ja: '売上', vi: 'Doanh thu' },
+    desc: { ja: 'MRRの推移と内訳（新規・拡大・縮小・解約）、請求と入金。', vi: 'MRR theo tháng và biến động (mới · mở rộng · thu hẹp · huỷ), hoá đơn và tiền thu.' },
+    source: 'revenue-monthly',
+  },
+  {
+    key: 'users',
+    name: { ja: 'ユーザー数', vi: 'Số lượng người dùng' },
+    desc: { ja: '有効ユーザー数・MAU・DAU/MAUの推移。', vi: 'Số người dùng, MAU, DAU/MAU theo tháng.' },
+    source: 'users-monthly',
+  },
+  {
+    key: 'by-user',
+    name: { ja: 'ユーザー別', vi: 'Theo người dùng' },
+    desc: { ja: 'ユーザーごとの利用日数・利用時間・最終利用日。', vi: 'Số ngày dùng, thời gian dùng, lần dùng gần nhất của từng người.' },
+    source: 'user-monthly',
+  },
+  {
+    key: 'by-company',
+    name: { ja: '企業別', vi: 'Theo công ty' },
+    desc: { ja: '企業ごとのMRR・シート・利用状況。', vi: 'MRR, số ghế, mức sử dụng của từng công ty.' },
+    source: 'company-monthly',
+  },
+];
+
+export const PROJECT_CHURN = {
+  name: { ja: '解約予兆の早期検知', vi: 'Cảnh báo huỷ sớm' },
+  desc: {
+    ja: '利用の減少・シート未活用・重要機能の離脱から解約リスクを週次で算出し、フォロー対象を絞り込む。',
+    vi: 'Tính điểm rủi ro huỷ mỗi tuần từ việc giảm sử dụng, ghế bỏ trống, bỏ tính năng chính — chọn ra công ty cần chăm sóc.',
+  },
+  sources: ['churn-watchlist', 'churn-history', 'interventions-monthly'] as const satisfies readonly SourceKey[],
+} as const;
+
+export function boardOf(key: BoardKey): BoardDef {
+  const b = BOARDS.find((x) => x.key === key);
+  if (!b) throw new Error(`board lạ: ${key}`);
+  return b;
+}

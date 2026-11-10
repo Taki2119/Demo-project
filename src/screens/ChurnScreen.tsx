@@ -1,0 +1,49 @@
+// Dự án "cảnh báo huỷ sớm": danh sách cần chăm sóc (ảnh chụp mới nhất) + độ chính xác của điểm
+// (band rủi ro có huỷ thật trong 90 ngày không) + chỗ cắm biểu đồ.
+import { useSource } from '../data/api';
+import { BAND_ORDER, precisionByBand, watchOrder } from '../data/churn';
+import { useLabel } from '../data/labels';
+import { numericRows } from '../data/rollup';
+import { pick, PROJECT_CHURN } from '../nav/catalog';
+import { count, pct } from '../ui/format';
+import { useLangStore } from '../ui/i18n';
+import { DataTable, StatTile, StateBox } from '../ui/parts';
+
+const WATCH_COLUMNS = ['company_name', 'plan_id', 'risk_band', 'risk_score', 'top_reason', 'mrr', 'activity_trend', 'seat_utilization', 'owner_name', 'last_intervention_outcome'];
+
+export function ChurnScreen() {
+  const lang = useLangStore((s) => s.lang);
+  const label = useLabel();
+  const watch = useSource('churn-watchlist');
+  const history = useSource('churn-history');
+  const rows = watch.data ? numericRows(watch.data.rows) : [];
+  const sorted = watchOrder(rows);
+  const precision = history.data ? precisionByBand(history.data.rows) : null;
+
+  return (
+    <section className="page">
+      <h1>{pick(PROJECT_CHURN.name, lang)}</h1>
+      <p className="lead">{pick(PROJECT_CHURN.desc, lang)}</p>
+      <StateBox phase={watch.phase} empty={watch.phase === 'ready' && rows.length === 0} />
+
+      {rows.length > 0 ? (
+        <div className="tiles">
+          {BAND_ORDER.map((b) => (
+            <StatTile key={b} label={label('risk_band', b)} value={count(rows.filter((r) => r.risk_band === b).length, lang)} />
+          ))}
+        </div>
+      ) : null}
+
+      {precision ? (
+        <div className="tiles">
+          {precision.map((p) => (
+            <StatTile key={p.band} label={`${label('risk_band', p.band)} → ${label('intervention_outcome', 'churned')}`} value={pct(p.churnRate, lang)} sub={`n=${count(p.n, lang)}`} />
+          ))}
+        </div>
+      ) : null}
+
+      <section className="viz" aria-hidden="true" />
+      {sorted.length > 0 ? <DataTable rows={sorted} columns={WATCH_COLUMNS} /> : null}
+    </section>
+  );
+}
