@@ -1,0 +1,167 @@
+# CLAUDE.md — bàn giao + ngữ cảnh lâu dài của SaaS Analytics Demo
+
+> File này Claude Code tự nạp đầu mỗi phiên. Nó chở QUYẾT ĐỊNH + TRẠNG THÁI + BẪY đã gặp, để
+> một phiên mới (kể cả phiên online đọc repo từ GitHub) làm tiếp mà không phải dò lại.
+> Chi tiết kỹ thuật nằm ở: [`docs/SCHEMA.md`](docs/SCHEMA.md) (dữ liệu, công thức, điểm rủi ro) ·
+> [`docs/API.md`](docs/API.md) (hợp đồng API) · [`server/README.md`](server/README.md) (deploy) ·
+> [`README.md`](README.md) (lệnh chạy). Đừng chép lại nội dung các file đó vào đây.
+> Người dùng giao tiếp bằng **tiếng Việt**. Cập nhật mục §5 TRẠNG THÁI mỗi khi xong một bước.
+
+## 1. Dự án là gì
+
+Dự án **cá nhân**: một web app dashboard cho một SaaS **giả lập** (bản giản lược của một nền
+tảng dashboard nội bộ mà người dùng từng làm ở công ty). Có:
+- trang Home (thẻ preview);
+- 4 gói (Tất cả · Starter · Growth · Scale) × 4 bảng (Doanh thu · Số lượng người dùng ·
+  Theo người dùng · Theo công ty);
+- MỘT trang dự án tăng doanh thu: **cảnh báo huỷ sớm** (khách giảm dùng, bỏ ghế, bỏ tính năng
+  chính, hẹn huỷ);
+- sắp tới: **AI hỏi đáp dữ liệu qua Claude CLI**.
+
+Kiến trúc: **Supabase (Postgres)** `raw → mart` · **Vercel** (`server/`, project riêng) ·
+**GitHub Pages** (web app Vite + React). Repo: `Taki2119/Demo-project`, nhánh `main`.
+
+## 2. Ràng buộc KHÔNG được phá
+
+1. **Không dữ liệu thật, không dữ liệu của tổ chức nào.** Mọi tên công ty / người / email do bộ
+   sinh tạo (`scripts/data/names.mjs` ghép mảnh, email chỉ ở `*.example.com`). Không có số mẫu
+   nào trong bundle web: chưa có API thì mọi trang nói "chưa cấu hình".
+2. **Không chép code / thiết kế / icon / animation từ repo của công ty cũ** cho tới khi người
+   dùng xác nhận đã có **sự đồng ý của công ty**. Chưa có xác nhận đó. Lớp giao diện hiện tại
+   (`src/ui/parts.tsx` + `src/index.css`) là bản TẠM do Claude tự viết. Khi được phép, bước
+   "thiết kế" chỉ thay 2 file đó (giữ props + tên class), không dựng lại trang. Không ghi tên
+   công ty cũ vào repo này.
+3. **Tiền tệ: yên Nhật**, `numeric(14,0)`, số nguyên.
+4. **Song ngữ ja / vi**, nút đổi ở side panel. Hai nguồn chữ, đừng trộn:
+   - chữ GIAO DIỆN → `src/ui/i18n.ts` (test khoá 2 bộ key bằng nhau);
+   - chữ DỮ LIỆU (tên cột, tên gói, ngành, band rủi ro…) → `mart.labels` + `mart.column_labels`
+     trong DB, đọc qua `src/data/labels.ts`. App và AI dùng CHUNG nguồn này.
+
+   DB giữ tên cột + mã bằng tiếng Anh.
+5. **Mart chỉ chở số CỘNG ĐƯỢC.** Tỉ lệ (ARPA, NRR, churn, DAU/MAU…) tính ở client
+   (`src/data/metrics.ts`). Mẫu số 0 ⇒ `null` (hiện "—"), không bao giờ `0`.
+6. **Bảo mật đường đọc:** trình duyệt không bao giờ nói thẳng với Supabase. Vercel đọc bằng role
+   **`analytics_reader`** (chỉ SELECT trên `mart`, READ ONLY, `statement_timeout 15s`). SQL cố
+   định theo `source` ở `server/lib/sources.js`; client không gửi SQL. API không đòi đăng nhập
+   (dữ liệu tổng hợp + chỉ đọc). Đã nói với người dùng; muốn thêm đăng nhập Google thì làm sau.
+7. **Không commit bí mật.** `.env` đã ignore. Mật khẩu DB / chuỗi kết nối chỉ ở `.env` (máy) và
+   env của Vercel. Đừng xin người dùng dán mật khẩu vào chat.
+8. **Mọi ngày ≤ `as_of`** (`raw.dataset_meta.as_of_date`, mặc định 2026-11-10). Dữ liệu tĩnh
+   nhưng nhất quán vì mart tính tới mốc này, không tới `current_date`.
+
+## 3. Bản đồ repo
+
+| Đường dẫn | Việc |
+|---|---|
+| `supabase/migrations/*_raw.sql` | 13 bảng raw (SCD2 `subscription_periods` là nguồn sự thật MRR) |
+| `supabase/migrations/*_mart.sql` | view + 3 materialized view, `mart.refresh()`, `mart.dq_checks`, điểm rủi ro v2 |
+| `supabase/migrations/*_access.sql` | role `analytics_reader`, RLS, thu quyền anon/authenticated |
+| `supabase/migrations/*_labels.sql` | từ điển ja/vi |
+| `supabase/tests/` | `schema.test.mjs` (kịch bản tính tay) · `generate.test.mjs` (bộ sinh → DB) |
+| `scripts/data/` | bộ sinh có seed (`generate.mjs` thuần) · `generate-cli.mjs` → `data/out/*.csv` · `load.mjs` (COPY vào Supabase) |
+| `scripts/dev/` | `demo-db.mjs` (PGlite + migration + dữ liệu) · `api-dev.mjs` (API cục bộ) |
+| `server/` | project Vercel: `api/board-data.js` · `api/health.js` · `lib/{sources,handler,db}.js` · `test/` |
+| `src/nav/` | `catalog.ts` (MỘT nguồn cho cây trang) · `route.ts` (hash router) |
+| `src/data/` | `api.ts` (đường đọc duy nhất + cache) · `labels.ts` · `metrics.ts` · `rollup.ts` · `churn.ts` |
+| `src/screens/` | Sidebar · Home · Board (chung cho 4×4) · Churn |
+| `.github/workflows/deploy.yml` | typecheck → test → db:test → api:test → build → deploy Pages (chỉ `main`) |
+
+## 4. Lệnh + con số đã đo (2026-11-11)
+
+```bash
+npm install
+npm run typecheck && npm test && npm run build   # web: 15 test
+npm run db:test     # 16 test, ~90s (PGlite)
+npm run api:test    # 7 test, ~10s, chạy bằng role analytics_reader
+npm run data:generate                            # 261 công ty · 5.103 user · ~835k dòng hoạt động · ~26 MB CSV
+npm run api:dev     # API cục bộ + DB demo trong bộ nhớ (~2 phút để dựng) → cổng 3001
+VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cùng origin)
+```
+
+- Lượt chạy end-to-end ở máy: Home hiện MRR **¥10.980.820**, khớp tóm tắt của bộ sinh.
+- Độ chính xác điểm rủi ro (huỷ trong 90 ngày), dữ liệu 24 tháng:
+
+| Band | Tỉ lệ huỷ |
+|---|---|
+| hẹn huỷ | 93,8% |
+| 高 | 45,7% |
+| 中 | 13,8% |
+| 低 | 3,2% |
+
+## 5. TRẠNG THÁI
+
+**Xong (đã push `main`):**
+- schema + bộ sinh dữ liệu;
+- khung web;
+- API Vercel (code + test);
+- workflow Pages.
+
+**Đang chờ người dùng làm (ngoài repo):** theo [`server/README.md`](server/README.md).
+1. Tạo project Supabase (region Tokyo), chạy 4 migration theo thứ tự, đặt mật khẩu cho
+   `analytics_reader`, rồi `npm run data:load` với `DATABASE_URL` (user `postgres`, Session
+   pooler 5432) trong `.env`.
+2. Tạo project Vercel (gói Hobby) với **Root Directory = `server`**. Env:
+   - `DATABASE_URL` = Transaction pooler 6543 với user **`analytics_reader.<ref>`**, không
+     phải `postgres`;
+   - `ALLOWED_ORIGINS=https://taki2119.github.io`.
+
+   Kiểm bằng `/api/health`.
+3. GitHub: Settings → Pages → Source = **GitHub Actions**; Variables → `VITE_API_URL` = domain
+   production của Vercel (`https://<tên>.vercel.app`, không `/` cuối).
+
+**Việc tiếp theo (theo thứ tự đã bàn):**
+1. Hỗ trợ người dùng qua các bước deploy trên. Đọc câu lỗi họ gửi; đừng xin mật khẩu.
+2. **AI hỏi đáp dữ liệu bằng Claude CLI.** Claude CLI chỉ chạy được trên máy có cài CLI, không
+   chạy trên Vercel. Hướng đã bàn:
+   - một **cầu nối nhỏ chạy ở máy** (Node, `127.0.0.1`), chỉ nhận Origin của trang, gọi
+     `claude -p --output-format json` không có tool;
+   - Claude trả JSON `{content, tool_calls}`, và **APP** mới là bên chạy tool;
+   - tool tra số = endpoint MỚI trên Vercel (vd. `api/query`): SQL do AI viết, nhưng chạy trong
+     giao dịch READ ONLY bằng `analytics_reader`, `EXPLAIN` trước, giới hạn số dòng/dung lượng;
+   - AI đọc `mart.column_labels` / `mart.labels` để hiểu cột và trả lời ja/vi;
+   - người xem không có CLI thì AI không dùng được. Có thể thêm engine dự phòng Claude API qua
+     Vercel (cần API key ở env Vercel), nhưng phải hỏi người dùng trước.
+3. **Biểu đồ** cho từng bảng: chỗ cắm là `<section className="viz">` trong BoardScreen / ChurnScreen.
+   Thư viện chưa chọn (bản gốc dùng Recharts 2.x); hỏi người dùng nếu cần.
+4. **Thiết kế:** chỉ khi người dùng xác nhận đã có sự đồng ý của công ty (§2.2).
+5. Vặt: ngăn kéo side panel trên mobile (hiện panel xếp chồng trên nội dung); tên gói hiện MÃ
+   khi API chưa trả nhãn (đúng thiết kế, nhưng có thể cân nhắc).
+
+## 6. BẪY đã gặp — đừng dẫm lại
+
+- **`.gitignore` với `data/` (không có `/`) nuốt luôn `src/data/` và `scripts/data/`.** Đã sửa
+  thành `/data/`. Thêm pattern ignore thì neo bằng `/` ở đầu.
+- **`mart.as_of()` phải là `SECURITY DEFINER`** (+ `search_path = ''`). Hàm gọi trong view chạy
+  bằng quyền NGƯỜI GỌI, nên thiếu cờ này thì `analytics_reader` lỗi ngay ở `mart.months`.
+  Tương tự: muốn `analytics_reader` thấy cột nào của `raw` thì phải chép vào view/MV của `mart`
+  (đã làm cho `full_name` / `company_name` ở `user_monthly`).
+- **Điểm rủi ro v1 gần như không bao giờ báo động.** Nó đo "số ngày không ai vào" và "user có
+  vào trong 28 ngày", mà công ty nhiều user hiếm khi có 7 ngày trắng. v2 đo XU HƯỚNG (28 ngày
+  so với 28 ngày trước) + WAU/ghế. Sửa ngưỡng thì xem lại bảng band mà `generate.test.mjs` in ra;
+  test chặn khi band rủi ro không huỷ nhiều hơn band thấp ít nhất 3 lần.
+- **`vitest@2` kéo `vite@5` riêng ⇒ lỗi kiểu với `vite@6`.** Đã dùng `vitest@3`. Vitest chỉ quét
+  `src/**`; `supabase/tests` và `server/test` chạy bằng `node --test`.
+- **postgres.js + Supavisor transaction pooler cần `prepare: false`.** `numeric`/`bigint` parse
+  về number, `date` giữ chuỗi (`server/lib/db.js`), để không lệch múi giờ.
+- **Sinh / sửa dữ liệu thì không dùng `Math.random()`.** Mọi thứ đi qua `makeRng(seed)` +
+  `fork(label)`; test khoá tái lập từng byte.
+- **Máy Windows của người dùng:**
+  - dừng `npm run dev` (task nền) KHÔNG dừng tiến trình con `node vite.js`, nên cổng vẫn bị giữ.
+    Tìm PID theo cổng rồi dừng đúng tiến trình đó;
+  - Credential Manager từng giữ tài khoản GitHub cũ `Taki-Thai`. Repo này đã đặt
+    `credential.https://github.com.username Taki2119` cục bộ;
+  - `gh` chưa đăng nhập (không xem được CI từ máy).
+- **Trình duyệt preview của app desktop chỉ tới được origin đang preview**, nên gọi `localhost:3001`
+  bị refused. Dùng proxy `/api` của Vite.
+- **Hobby plan Vercel:** chỉ dùng domain production (`<tên>.vercel.app`). URL của từng deployment
+  bị Vercel Authentication chặn. Region đặt `hnd1` trong `server/vercel.json`, phải cùng vùng
+  Supabase.
+
+## 7. Quy trình
+
+- Dự án cá nhân, chủ repo là người dùng. **Commit/push chỉ khi người dùng bảo.** Commit message
+  kết thúc bằng dòng `Co-Authored-By` theo hướng dẫn của phiên.
+- Trước khi báo "xong": chạy `npm run typecheck`, `npm test`, `npm run build`, và `db:test` /
+  `api:test` nếu đụng SQL hoặc server. Báo CON SỐ test, không chỉ chữ "pass".
+- Quét trước khi push: không có chuỗi tên công ty cũ, không có email/số điện thoại thật, không
+  có `.env`.
