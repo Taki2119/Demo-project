@@ -74,13 +74,14 @@ function load(source: SourceKey, params: Params): void {
   inflight.set(key, p);
 }
 
-/** Nạp một nguồn (có cache trong bộ nhớ). Chưa cấu hình API ⇒ phase 'off'. */
-export function useSource(source: SourceKey, params: Params = {}): Entry {
+/** Nạp một nguồn (có cache trong bộ nhớ). Chưa cấu hình API ⇒ phase 'off'.
+ *  `enabled = false` ⇒ chưa nạp, trả 'loading' (vd. chờ danh sách tháng để biết tham số `month`). */
+export function useSource(source: SourceKey, params: Params = {}, enabled = true): Entry {
   const key = cacheKey(source, params);
   const entry = useSourceStore((s) => s[key]);
   useEffect(() => {
-    if (apiConfigured) load(source, params);
-  }, [key]); // `params` đã nằm trong `key`
+    if (apiConfigured && enabled) load(source, params);
+  }, [key, enabled]); // `params` đã nằm trong `key`
   if (!apiConfigured) return { phase: 'off', data: null };
   return entry ?? { phase: 'loading', data: null };
 }

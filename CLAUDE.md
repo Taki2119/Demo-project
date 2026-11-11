@@ -156,7 +156,8 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
    (= `mart.as_of()`), KHÔNG lấy đồng hồ máy người xem. Nguồn đã có ngày này nên không cần dự phòng
    "hôm nay"; `updatedAt` thiếu ⇒ không ghi gì (`monthProgress` trả null).
    Ảnh + công cụ chụp ở NGOÀI repo: `Desktop/Claude Workspace/Demo-project-shots/`
-   (`tools/shoot.mjs`, `fontcheck.mjs`, `drawer-check.mjs`, `hover.mjs`, `table-check.mjs`).
+   (thư mục này KHÔNG theo repo: người dùng làm trên NHIỀU MÁY, pull repo về máy mới thì không có
+  thư mục ảnh; tool cũ `shoot.mjs`, `fontcheck.mjs`… nằm ở máy trước; máy hiện tại có `tools/period.mjs`).
    Cổng Recharts (`bundle-recharts`) đi index.html → chunk đầu → bao đóng IMPORT TĨNH + mọi
    modulepreload, nhận chunk Recharts theo NỘI DUNG (`RECHARTS_MARKERS`); đã thử lại ca manualChunks ⇒ đỏ.
 5. **Giai đoạn 5 — ĐÃ MERGE (PR #1, cùng giai đoạn 1–4):** glossary + ⓘ
@@ -173,8 +174,19 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
      bỏ khỏi bundle trước khi dùng dữ liệu thật;
    - tỉ lệ huỷ theo band ở `docs/SCHEMA.md:149-153` khác bảng §4 của file này — thống nhất lại;
    - ⓘ của thẻ biểu đồ MRR hiện cả dòng giải thích số phụ của ô số, mà biểu đồ không có số phụ đó.
-6. **Giai đoạn 6 — BỘ LỌC THÁNG (người dùng chốt 2026-11-11, CHƯA chạy):** lập kế hoạch trước, chờ
-   duyệt rồi mới code. Nhánh `feat/period-filter` tách từ `main` SAU KHI `git pull --ff-only`.
+6. **Giai đoạn 6 — BỘ LỌC THÁNG: người dùng ĐÃ DUYỆT, đã merge `feat/period-filter` vào `main`
+   (2026-11-11, merge ở máy vì `gh` chưa đăng nhập).** Còn mở: trang Cảnh báo huỷ — bộ lọc chỉ áp cho 2
+   biểu đồ lịch sử, có thể thêm ghi chú cạnh thanh lọc nếu người dùng muốn. Kế hoạch đã duyệt kèm 3 điểm: (a) THÊM ô luồng — MRR mới + Hoá đơn (Doanh thu), User
+   mới (Người dùng), có glossary `new_mrr`; (b) chuyển trang ⇒ bộ lọc về mặc định (không đi theo);
+   (c) KHÔNG có nút chọn nhanh 3/6/12 tháng. Đã làm:
+   - `src/data/period.ts` (thuần) · query trong `src/nav/route.ts` (KHÔNG thuộc `Route`, vì App dựng lại
+     trang theo `key={toHash(route)}`; đổi lọc = `replaceState`) · `src/ui/filters/*` · `src/styles/filters.css`;
+   - `src/ui/usePopover.ts`: hành vi popover chung + store "một panel mở" — `InfoTip` cũng dùng;
+   - `useSource(source, params, enabled)`: trang 1 tháng có `?month=` chờ danh sách tháng (từ
+     `revenue-monthly`) rồi mới nạp ⇒ đúng 1 request;
+   - số đo: 15 file / 94 test web · chunk đầu 196 → 209 kB · kiểm trình duyệt
+     `Demo-project-shots/tools/period.mjs` 57/57 (ảnh ở `Demo-project-shots/out/`).
+   Đặc tả gốc (giữ để soát):
    - Chỉ lọc theo THÁNG (dữ liệu mart chỉ tới tháng; lịch sử rủi ro theo tuần). KHÔNG lọc ngày, KHÔNG
      sửa `server/`, `supabase/`, `scripts/data`.
    - Dựng theo `docs/ui-kit/01-ARCHITECTURE.md` §6, chỉ phần cần: FilterBar + chọn khoảng tháng
@@ -243,6 +255,15 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
   (`server/lib/handler.js`). Chạy `vite preview` để chụp ảnh thì dùng `--port 5180` và build với
   `VITE_API_URL=http://localhost:5180`, vào thư mục NGOÀI `dist/`. curl không gửi Origin nên vẫn qua
   — đừng lấy curl làm bằng chứng trình duyệt gọi được.
+- **Cổng 5180 / 3001 có thể đang bị tiến trình khác giữ** (2026-11-11: 5180 = dev server của MỘT
+  PROJECT KHÁC của người dùng — đừng dừng nó; 3001 = `api-dev.mjs` còn chạy từ phiên trước, dùng lại
+  được). Tra PID + CommandLine trước khi dừng bất cứ gì; preview chụp ảnh thì dùng 5173 (API cũng nhận).
+- **Người dùng làm trên nhiều máy (pull repo về máy khác):** những gì NGOÀI repo không đi theo —
+  `Demo-project-shots/`, `.env`, `node_modules` (chạy `npm ci`). Thiếu thì dựng lại, đừng coi là "mất".
+  Tool chụp dựng lại bằng `puppeteer-core` + Chrome có sẵn ở máy (không tải trình duyệt).
+  Các bẫy "máy Windows" ở trên (Credential Manager, `gh`…) ghi cho máy cũ — kiểm lại ở máy mới.
+- **Sửa file bằng Python trên Windows ghi CRLF** (`open(..., 'w')`). Repo dùng LF: ghi bằng
+  `newline=''` hoặc chạy `sed -i 's/\r$//'` sau đó.
 - **Chụp ảnh 430px bằng `chrome --headless --screenshot --window-size=430,…` SAI trên Windows**:
   cửa sổ có bề rộng tối thiểu ~500px nên trang dựng ở ~500 rồi bị cắt ⇒ trông như cuộn ngang. Dùng
   puppeteer `setViewport` và in `innerWidth`/`scrollWidth`.

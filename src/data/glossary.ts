@@ -59,13 +59,13 @@ const RATE = s('%', '%');
 export const GLOSSARY = {
   // mart.sql:37-50 (MRR tại measure_date, cộng các subscription) · :136,152 (Σ theo gói)
   // raw.sql:85-95 (subscription_periods là nguồn sự thật; mrr đã trừ giảm giá; dùng thử = 0)
-  // Số phụ ở ô: deltaRate — metrics.ts:63-67.
+  // Số phụ ở ô: deltaRate — metrics.ts:63-67; kỳ so sánh: data/period.ts prevRange.
   mrr_end: {
     name: [{ col: 'mrr_end' }],
     what: s('締め日時点で有効な契約のMRR合計。', 'Tổng MRR của các thuê bao còn hiệu lực tại ngày chốt số của tháng.'),
     formula: s(
-      'Σ subscription_periods.mrr（measure_date に有効な行）。補足の増減率 =（当月 − 前月）÷ |前月|。',
-      'Σ subscription_periods.mrr (dòng còn hiệu lực tại measure_date). Số phụ ở ô = (tháng này − tháng trước) ÷ |tháng trước|.',
+      'Σ subscription_periods.mrr（measure_date に有効な行）。補足の増減率 =（期間末月 − 同じ長さの前期間の末月）÷ |前期間の末月|。',
+      'Σ subscription_periods.mrr (dòng còn hiệu lực tại measure_date). Số phụ ở ô = (tháng cuối kỳ đang xem − tháng cuối kỳ trước dài bằng nhau) ÷ |tháng cuối kỳ trước|.',
     ),
     unit: YEN,
     source: 'mart.revenue_monthly ← mart.company_mrr_monthly',
@@ -106,6 +106,23 @@ export const GLOSSARY = {
     scope: s(
       'グラフは新規・拡大・縮小・解約の4種のみ。再開とプラン変更は表にだけ表示。解約は前月のプランに計上。',
       'Biểu đồ chỉ vẽ 4 loại: mới, mở rộng, thu hẹp, huỷ. Quay lại và đổi gói chỉ có trong bảng. Huỷ được tính vào gói của tháng trước.',
+    ),
+    partialMonth: true,
+  },
+  // mart.sql:83 (movement 'new' = tháng trước MRR 0, tháng này > 0, CHƯA từng trả tiền) · :121 (Σ mrr_delta) · :156
+  // Ô số ở trang Doanh thu CỘNG các tháng của khoảng đang lọc (data/period.ts sumFlow).
+  new_mrr: {
+    name: [{ col: 'new_mrr' }],
+    what: s('初めて有料になった企業が加えた MRR。', 'MRR do công ty lần đầu trả tiền mang lại.'),
+    formula: s(
+      "Σ mrr_delta where movement = 'new'（前月 MRR 0 → 当月 > 0、過去に支払いなし）",
+      "Σ mrr_delta where movement = 'new' (MRR tháng trước 0 → tháng này > 0, chưa từng trả tiền)",
+    ),
+    unit: YEN,
+    source: 'mart.revenue_monthly ← mart.mrr_movements',
+    scope: s(
+      '一度解約して戻った企業は「再開」で、ここには入らない。期間で絞ると選んだ月の合計。',
+      'Công ty huỷ rồi quay lại tính là "quay lại", không vào đây. Khi lọc theo kỳ, ô số là tổng các tháng đã chọn.',
     ),
     partialMonth: true,
   },
