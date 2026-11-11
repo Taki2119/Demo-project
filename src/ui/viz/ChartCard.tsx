@@ -1,10 +1,13 @@
 // Khung thẻ biểu đồ (kit 01 §2): <figure class="ui-card ui-viz">, tiêu đề <h2>, chú giải, vùng vẽ.
 import type { CSSProperties, ReactNode } from 'react';
+import type { GlossaryKey } from '../../data/glossary';
+import { InfoTip } from '../InfoTip';
 import { CHART_ANIM_MS } from './motion';
 import { Legend, type LegendItem } from './Legend';
 
 export function ChartCard({
   title,
+  info,
   unit,
   note,
   legend = [],
@@ -13,6 +16,8 @@ export function ChartCard({
   children,
 }: {
   title: string;
+  /** khoá glossary ⇒ nút ⓘ cạnh tiêu đề (thẻ vẽ 2 chỉ số ⇒ 2 khoá) */
+  info?: GlossaryKey | readonly GlossaryKey[];
   /** đơn vị của trục (vd. '万円'), in ở đầu thẻ */
   unit?: string;
   /** dòng chú thích dưới vùng vẽ */
@@ -26,7 +31,10 @@ export function ChartCard({
   return (
     <figure className={`ui-card ui-viz${wide ? ' ui-card--wide' : ''}`}>
       <figcaption className="ui-card-head">
-        <h2>{title}</h2>
+        <h2>
+          {title}
+          {info ? <InfoTip keys={info} /> : null}
+        </h2>
         {unit ? <span className="ui-card-unit">{unit}</span> : null}
       </figcaption>
       <Legend items={legend} />

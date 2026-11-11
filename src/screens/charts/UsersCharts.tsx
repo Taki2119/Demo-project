@@ -33,13 +33,13 @@ export default function UsersCharts({ rows }: { rows: readonly Row[] }) {
 
   return (
     <div className="ui-charts">
-      <ChartCard title={`${col('seat_users_end')} · ${col('mau')}`} legend={lineItems(levels)} wide>
+      <ChartCard title={`${col('seat_users_end')} · ${col('mau')}`} info={['seat_users_end', 'mau']} legend={lineItems(levels)} wide>
         <MultiLines data={data} xKey="month" series={levels} fmt={counts} />
       </ChartCard>
-      <ChartCard title={`${col('new_users')} · ${col('deactivated_users')}`} legend={stackItems(flows)}>
+      <ChartCard title={`${col('new_users')} · ${col('deactivated_users')}`} info={['new_users', 'deactivated_users']} legend={stackItems(flows)}>
         <StackedBarLineChart data={data} xKey="month" stacks={flows} fmt={counts} />
       </ChartCard>
-      <ChartCard title={label('metric', 'stickiness')}>
+      <ChartCard title={label('metric', 'stickiness')} info="stickiness">
         <SoloLine data={stickinessByMonth(rows)} xKey="month" yKey="stickiness" label={label('metric', 'stickiness')} goodWhen="up" fmt={rate} />
       </ChartCard>
     </div>

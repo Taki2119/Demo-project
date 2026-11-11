@@ -38,7 +38,7 @@ export default function ByUserCharts({ rows, asOf }: { rows: readonly Row[]; asO
   const bars: BarSpec[] = [{ key: 'users', label: t('userCount'), color: 'var(--series-1)' }];
   return (
     <div className="ui-charts">
-      <ChartCard title={month ? `${col('active_days')} · ${month}` : col('active_days')} note={[col('is_seat'), partial != null ? t('partialMonthNote') : null].filter(Boolean).join(' · ')}>
+      <ChartCard info="active_days" title={month ? `${col('active_days')} · ${month}` : col('active_days')} note={[col('is_seat'), partial != null ? t('partialMonthNote') : null].filter(Boolean).join(' · ')}>
         <StackedBarLineChart data={data} xKey="bucket" stacks={bars} fmt={fmt} />
       </ChartCard>
     </div>

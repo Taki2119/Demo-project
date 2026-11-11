@@ -38,6 +38,8 @@ export interface BoardDef {
   key: BoardKey;
   name: LocalStr;
   desc: LocalStr;
+  /** Câu hỏi trang này trả lời (trang Giới thiệu). */
+  question: LocalStr;
   source: SourceKey;
 }
 
@@ -46,24 +48,28 @@ export const BOARDS: readonly BoardDef[] = [
     key: 'revenue',
     name: { ja: '売上', vi: 'Doanh thu' },
     desc: { ja: 'MRRの推移と内訳（新規・拡大・縮小・解約）、請求と入金。', vi: 'MRR theo tháng và biến động (mới · mở rộng · thu hẹp · huỷ), hoá đơn và tiền thu.' },
+    question: { ja: '毎月の MRR はどう動き、その増減は新規・拡大・縮小・解約のどれから来たか？請求した分は回収できているか？', vi: 'MRR mỗi tháng đi thế nào, tăng giảm đến từ khách mới, mở rộng, thu hẹp hay huỷ? Tiền xuất hoá đơn đã thu về được chưa?' },
     source: 'revenue-monthly',
   },
   {
     key: 'users',
     name: { ja: 'ユーザー数', vi: 'Số lượng người dùng' },
     desc: { ja: '有効ユーザー数・MAU・DAU/MAUの推移。', vi: 'Số người dùng, MAU, DAU/MAU theo tháng.' },
+    question: { ja: 'シートを持つ人のうち、どれだけが実際に使っているか？増えた人・止まった人は？', vi: 'Trong số người giữ ghế, bao nhiêu người thật sự dùng? Bao nhiêu người mới, bao nhiêu người bị tắt?' },
     source: 'users-monthly',
   },
   {
     key: 'by-user',
     name: { ja: 'ユーザー別', vi: 'Theo người dùng' },
     desc: { ja: 'ユーザーごとの利用日数・利用時間・最終利用日。', vi: 'Số ngày dùng, thời gian dùng, lần dùng gần nhất của từng người.' },
+    question: { ja: '誰がどれくらい使っているか？ほとんど使っていない人は誰か？', vi: 'Ai dùng nhiều, ai dùng ít? Ai gần như không dùng?' },
     source: 'user-monthly',
   },
   {
     key: 'by-company',
     name: { ja: '企業別', vi: 'Theo công ty' },
     desc: { ja: '企業ごとのMRR・シート・利用状況。', vi: 'MRR, số ghế, mức sử dụng của từng công ty.' },
+    question: { ja: 'どの企業の MRR が大きく、シートに対して利用は追いついているか？', vi: 'Công ty nào có MRR lớn, và mức dùng có tương xứng với số ghế không?' },
     source: 'company-monthly',
   },
 ];
@@ -73,6 +79,10 @@ export const PROJECT_CHURN = {
   desc: {
     ja: '利用の減少・シート未活用・重要機能の離脱から解約リスクを週次で算出し、フォロー対象を絞り込む。',
     vi: 'Tính điểm rủi ro huỷ mỗi tuần từ việc giảm sử dụng, ghế bỏ trống, bỏ tính năng chính — chọn ra công ty cần chăm sóc.',
+  },
+  question: {
+    ja: '今週、どの有料企業が解約に向かっていそうで、理由は何か？過去のスコアはどれだけ当たったか？',
+    vi: 'Tuần này công ty trả tiền nào có dấu hiệu sắp huỷ, vì sao? Điểm rủi ro trước đây đoán đúng tới đâu?',
   },
   sources: ['churn-watchlist', 'churn-history', 'interventions-monthly'] as const satisfies readonly SourceKey[],
 } as const;

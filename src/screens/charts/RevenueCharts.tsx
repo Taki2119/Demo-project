@@ -47,13 +47,13 @@ export default function RevenueCharts({ rows }: { rows: readonly Row[] }) {
 
   return (
     <div className="ui-charts">
-      <ChartCard title={col('mrr_end')} unit={mrrFmt.unit} wide>
+      <ChartCard title={col('mrr_end')} info="mrr_end" unit={mrrFmt.unit} wide>
         <SoloLine data={data} xKey="month" yKey="mrr_end" label={col('mrr_end')} goodWhen="up" fmt={mrrFmt} />
       </ChartCard>
-      <ChartCard title={col('mrr_delta')} unit={movesFmt.unit} legend={stackItems(moves)}>
+      <ChartCard title={col('mrr_delta')} info="mrr_delta" unit={movesFmt.unit} legend={stackItems(moves)}>
         <StackedBarLineChart data={data} xKey="month" stacks={moves} fmt={movesFmt} />
       </ChartCard>
-      <ChartCard title={`${col('invoiced_amount')} · ${col('paid_amount')}`} unit={billFmt.unit} legend={stackItems(billed, paid)}>
+      <ChartCard title={`${col('invoiced_amount')} · ${col('paid_amount')}`} info={['invoiced_amount', 'paid_amount']} unit={billFmt.unit} legend={stackItems(billed, paid)}>
         <StackedBarLineChart data={data} xKey="month" stacks={billed} line={paid} fmt={billFmt} maxBarSize={22} />
       </ChartCard>
     </div>

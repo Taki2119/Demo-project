@@ -112,6 +112,7 @@ export function Sidebar() {
 
         <div className="side-section">{t('project')}</div>
         <Link to={{ kind: 'churn' }}>{pick(PROJECT_CHURN.name, lang)}</Link>
+        <Link to={{ kind: 'about' }}>{t('about')}</Link>
 
         <div className="side-foot">
           <LangToggle />

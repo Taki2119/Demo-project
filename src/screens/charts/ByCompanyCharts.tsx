@@ -39,6 +39,7 @@ export default function ByCompanyCharts({ rows }: { rows: readonly Row[] }) {
     <div className="ui-charts">
       <ChartCard
         title={`${col('seat_users_end')} × ${col('mau')}`}
+        info={['seat_users_end', 'mau']}
         legend={groups}
         note={`${t('axisX')}: ${col('seat_users_end')} · ${t('axisY')}: ${col('mau')}`}
       >
@@ -51,7 +52,7 @@ export default function ByCompanyCharts({ rows }: { rows: readonly Row[] }) {
           formatY={(v) => count(v, lang)}
         />
       </ChartCard>
-      <ChartCard title={`${col('mrr')} · ${t('top10')}`} dom>
+      <ChartCard title={`${col('mrr')} · ${t('top10')}`} info="mrr" dom>
         <HBars rows={top} labelW={11} />
       </ChartCard>
     </div>

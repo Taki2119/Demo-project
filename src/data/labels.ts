@@ -59,3 +59,17 @@ export function useColumnUnit(): (column: string) => string | null {
   for (const r of data?.rows ?? []) if (typeof r.column_name === 'string' && typeof r.unit === 'string') units.set(r.column_name, r.unit);
   return (column) => units.get(column) ?? null;
 }
+
+/** Tên chỉ số của glossary: các nhãn được trỏ tới, nối " · ". Thiếu BẤT KỲ nhãn nào (chưa tải /
+ *  chưa cấu hình API) ⇒ null — nơi gọi hiện chữ thay thế, KHÔNG hiện mã cột. */
+export function useNameRefs(): (refs: readonly ({ col: string } | { label: readonly [string, string] })[]) => string | null {
+  const lang = useLangStore((s) => s.lang);
+  const cols = useSource('column-labels').data;
+  const labels = useSource('labels').data;
+  const colIdx = cols ? indexColumns(cols.rows) : new Map<string, LabelText>();
+  const labIdx = labels ? indexLabels(labels.rows) : new Map<string, LabelText>();
+  return (refs) => {
+    const parts = refs.map((r) => ('col' in r ? colIdx.get(r.col) : labIdx.get(keyOf(r.label[0], r.label[1])))?.[lang]);
+    return parts.every((p): p is string => typeof p === 'string') ? parts.join(' · ') : null;
+  };
+}

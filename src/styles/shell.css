@@ -115,3 +115,31 @@
 @media (prefers-reduced-motion: reduce) {
   .side, .side[data-open='true'], .side-scrim, .side-scrim[data-open='true'] { transition: none; }
 }
+
+/* ── Trang Giới thiệu ── */
+.about-block { margin: 0 0 var(--blk-in); padding: 1rem 1.15rem; border-radius: 16px; }
+.about-block h2 { margin: 0 0 8px; font-size: 1rem; }
+.about-block h3 { margin: 14px 0 4px; font-size: .9rem; }
+.about-block p, .about-block li, .about-block dd { font-size: .86rem; line-height: 1.6; }
+.about-block p { margin: 0; }
+.about-block ul { margin: 0; padding-left: 1.2em; }
+.about-pages { margin: 0; display: grid; gap: 8px; }
+.about-pages dt { font-weight: 600; font-size: .86rem; }
+.about-pages dd { margin: 0; color: var(--ink-2); }
+.about-read { list-style: none; padding: 0 !important; display: grid; gap: 6px; }
+.about-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: 0; }
+.about-dot + .about-dot { margin-right: 8px; }
+.gloss-wrap { overflow-x: auto; }
+.gloss { width: 100%; border-collapse: collapse; font-size: .8rem; line-height: 1.5; }
+.gloss th, .gloss td { text-align: left; vertical-align: top; padding: 8px 10px 8px 0; border-bottom: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); }
+.gloss thead th { color: var(--ink-3); font-weight: 600; white-space: nowrap; }
+.gloss tbody th { font-weight: 600; min-width: 8rem; }
+.gloss code { font-size: .74rem; overflow-wrap: anywhere; }
+/* ≤640px: mỗi chỉ số thành một khối dọc (không cuộn ngang); nhãn cột lấy từ data-h. */
+@media (max-width: 640px) {
+  .gloss thead { display: none; }
+  .gloss, .gloss tbody, .gloss tr, .gloss th, .gloss td { display: block; width: auto; }
+  .gloss tr { padding: 10px 0; border-bottom: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); }
+  .gloss th, .gloss td { border: 0; padding: 2px 0; }
+  .gloss td::before { content: attr(data-h); display: block; color: var(--ink-3); font-size: .72rem; }
+}

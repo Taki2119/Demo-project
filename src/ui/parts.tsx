@@ -3,8 +3,10 @@
 import { useState, type ReactNode } from 'react';
 import type { Phase, Row } from '../data/api';
 import { useColumnLabel, useColumnUnit, useLabel } from '../data/labels';
-import { count, monthLabel, NO_VALUE, pct, yen } from './format';
+import type { GlossaryKey } from '../data/glossary';
+import { count, dayLabel, monthLabel, NO_VALUE, pct, yen } from './format';
 import { LANGS, useLangStore, useT } from './i18n';
+import { InfoTip } from './InfoTip';
 import { SortHead } from './SortHead';
 import { TablePager } from './TablePager';
 import { clampPage, pageKeepingRow, pageSlice, PAGE_SIZES, type PageSize } from './tablePage';
@@ -35,6 +37,20 @@ export function StateBox({ phase, empty }: { phase: Phase; empty?: boolean }) {
 
 export function Chip({ children }: { children: ReactNode }) {
   return <span className="chip">{children}</span>;
+}
+
+/** Đầu mỗi trang: nhãn "Dữ liệu mẫu" (luôn có, nằm trong luồng — không position: fixed) + chip
+ *  "có số tới ngày …". `asOf` lấy từ updatedAt của nguồn (freshness.ts), KHÔNG từ đồng hồ máy;
+ *  null ⇒ không hiện chip ngày. Trang không có dữ liệu (Giới thiệu) bỏ `asOf`. */
+export function PageMeta({ asOf }: { asOf?: string | null }) {
+  const t = useT();
+  const lang = useLangStore((s) => s.lang);
+  return (
+    <div className="page-meta">
+      <span className="chip chip-sample">{t('sampleData')}</span>
+      {asOf ? <span className="chip chip-asof">{t('dataUntil').replace('{d}', dayLabel(asOf, lang))}</span> : null}
+    </div>
+  );
 }
 
 // Cột chứa MÃ của một domain nhãn ⇒ ô hiện nhãn ja/vi thay cho mã.
@@ -121,10 +137,14 @@ export function DataTable({ rows, columns }: { rows: readonly Row[]; columns: re
   );
 }
 
-export function StatTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+/** `info` = khoá glossary ⇒ nút ⓘ cạnh nhãn (glossary.test.ts bắt mọi StatTile phải có). */
+export function StatTile({ label, value, sub, info }: { label: string; value: string; sub?: string; info?: GlossaryKey }) {
   return (
     <div className="tile">
-      <div className="tile-label">{label}</div>
+      <div className="tile-label">
+        {label}
+        {info ? <InfoTip keys={info} /> : null}
+      </div>
       <div className="tile-value">{value}</div>
       {sub ? <div className="tile-sub">{sub}</div> : null}
     </div>

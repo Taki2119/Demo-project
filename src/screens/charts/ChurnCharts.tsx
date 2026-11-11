@@ -45,16 +45,16 @@ export default function ChurnCharts({ watch, history }: { watch: readonly Row[];
 
   return (
     <div className="ui-charts">
-      <ChartCard title={col('risk_band')} legend={stackItems(bands)} note={t('atRiskOnly')} wide>
+      <ChartCard title={col('risk_band')} info="risk_band" legend={stackItems(bands)} note={t('atRiskOnly')} wide>
         <StackedBarLineChart data={bandData} xKey="snapshot_date" stacks={bands} fmt={weekly} />
       </ChartCard>
       {outcomeData.length > 0 ? (
-        <ChartCard title={col('interventions')} legend={stackItems(outcomes)}>
+        <ChartCard title={col('interventions')} info="interventions" legend={stackItems(outcomes)}>
           <StackedBarLineChart data={outcomeData} xKey="month" stacks={outcomes} fmt={monthly} />
         </ChartCard>
       ) : null}
       {reasons.length > 0 ? (
-        <ChartCard title={col('top_reason')} note={t('atRiskOnly')} dom>
+        <ChartCard title={col('top_reason')} info="top_reason" note={t('atRiskOnly')} dom>
           <HBars rows={reasons} labelW={11} />
         </ChartCard>
       ) : null}

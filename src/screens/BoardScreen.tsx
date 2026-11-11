@@ -10,7 +10,7 @@ import { count, monthLabel, pct, yen } from '../ui/format';
 import { useLangStore, useT } from '../ui/i18n';
 import { boardChunk } from '../ui/chunk';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
-import { DataTable, StatTile, StateBox } from '../ui/parts';
+import { DataTable, PageMeta, StatTile, StateBox } from '../ui/parts';
 
 const TABLE_COLUMNS: Record<BoardKey, readonly string[]> = {
   revenue: ['month', 'mrr_end', 'paying_companies', 'new_mrr', 'expansion_mrr', 'contraction_mrr', 'churned_mrr', 'invoiced_amount', 'paid_amount'],
@@ -53,6 +53,7 @@ export function BoardScreen({ plan, board }: { plan: PlanKey; board: BoardKey })
 
   return (
     <section className="page">
+      <PageMeta asOf={data?.updatedAt ?? null} />
       <p className="crumb">{plan === 'all' ? t('allPlans') : label('plan', plan)}</p>
       <h1>{pick(def.name, lang)}</h1>
       <p className="lead">{pick(def.desc, lang)}</p>
@@ -60,17 +61,17 @@ export function BoardScreen({ plan, board }: { plan: PlanKey; board: BoardKey })
 
       {last && board === 'revenue' ? (
         <div className="tiles">
-          <StatTile label={col('mrr_end')} value={yen(num(last.mrr_end), lang)} sub={`${monthLabel(String(last.month), lang)} · ${pct(deltaRate(num(last.mrr_end), num(prev?.mrr_end)), lang)}`} />
-          <StatTile label={col('paying_companies')} value={count(num(last.paying_companies), lang)} />
-          <StatTile label={label('metric', 'arpa')} value={yen(arpa(num(last.mrr_end) ?? 0, num(last.paying_companies) ?? 0), lang)} />
+          <StatTile info="mrr_end" label={col('mrr_end')} value={yen(num(last.mrr_end), lang)} sub={`${monthLabel(String(last.month), lang)} · ${pct(deltaRate(num(last.mrr_end), num(prev?.mrr_end)), lang)}`} />
+          <StatTile info="paying_companies" label={col('paying_companies')} value={count(num(last.paying_companies), lang)} />
+          <StatTile info="arpa" label={label('metric', 'arpa')} value={yen(arpa(num(last.mrr_end) ?? 0, num(last.paying_companies) ?? 0), lang)} />
         </div>
       ) : null}
       {last && board === 'users' ? (
         <div className="tiles">
-          <StatTile label={col('seat_users_end')} value={count(num(last.seat_users_end), lang)} sub={monthLabel(String(last.month), lang)} />
-          <StatTile label={col('mau')} value={count(num(last.mau), lang)} />
-          <StatTile label={label('metric', 'stickiness')} value={pct(stickiness(num(last.active_user_days) ?? 0, num(last.days_in_period) ?? 0, num(last.mau) ?? 0), lang)} />
-          <StatTile label={label('metric', 'seat_usage_rate')} value={pct(seatUsage(num(last.mau) ?? 0, num(last.seat_users_end) ?? 0), lang)} />
+          <StatTile info="seat_users_end" label={col('seat_users_end')} value={count(num(last.seat_users_end), lang)} sub={monthLabel(String(last.month), lang)} />
+          <StatTile info="mau" label={col('mau')} value={count(num(last.mau), lang)} />
+          <StatTile info="stickiness" label={label('metric', 'stickiness')} value={pct(stickiness(num(last.active_user_days) ?? 0, num(last.days_in_period) ?? 0, num(last.mau) ?? 0), lang)} />
+          <StatTile info="seat_usage_rate" label={label('metric', 'seat_usage_rate')} value={pct(seatUsage(num(last.mau) ?? 0, num(last.seat_users_end) ?? 0), lang)} />
         </div>
       ) : null}
 

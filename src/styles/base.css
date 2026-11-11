@@ -24,8 +24,8 @@ a:focus-visible, button:focus-visible { border-radius: 6px; }
 
 /* ── Kính: backdrop-filter khai ở ĐÚNG MỘT chỗ (cssSource.test.ts khoá). ──
    Bề mặt dùng kính: .side (side panel) · .side-bar (thanh trên ≤640px) · .card .tile .table-wrap
-   .ui-card (thẻ dữ liệu) · .state (NoData). Rule vặn núm đứng SAU rule này (cùng specificity ⇒ rule sau thắng). */
-.ui-glass, .side, .side-bar, .card, .tile, .table-wrap, .ui-card, .state {
+   .ui-card (thẻ dữ liệu) · .state (NoData) · .ui-pop (popover ⓘ, portal ra body). Rule vặn núm đứng SAU rule này (cùng specificity ⇒ rule sau thắng). */
+.ui-glass, .side, .side-bar, .card, .tile, .table-wrap, .ui-card, .state, .ui-pop {
   --glass-blur: 16px;
   --glass-sat: 180%;
   background: var(--glass-fill);
@@ -40,6 +40,8 @@ a:focus-visible, button:focus-visible { border-radius: 6px; }
 .side, .state { --glass-blur: 28px; --glass-sat: 150%; }
 /* Header. */
 .side-bar { --glass-blur: 12px; --glass-sat: 170%; }
+/* Popover (kit 02 §3 bảng kính: menu / popover / dialog = 26px · 180% · --glass-fill-panel). */
+.ui-pop { --glass-blur: 26px; --glass-sat: 180%; background: var(--glass-fill-panel); }
 
 /* ── Thanh cuộn: một kiểu cho toàn app. Nhánh chuẩn PHẢI nằm trong @supports not. ── */
 @supports not selector(::-webkit-scrollbar) {

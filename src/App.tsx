@@ -1,3 +1,4 @@
+import { AboutScreen } from './screens/AboutScreen';
 import { BoardScreen } from './screens/BoardScreen';
 import { ChurnScreen } from './screens/ChurnScreen';
 import { HomeScreen } from './screens/HomeScreen';
@@ -14,6 +15,8 @@ export default function App() {
           <BoardScreen plan={route.plan} board={route.board} />
         ) : route.kind === 'churn' ? (
           <ChurnScreen />
+        ) : route.kind === 'about' ? (
+          <AboutScreen />
         ) : (
           <HomeScreen />
         )}

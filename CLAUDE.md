@@ -31,7 +31,8 @@ Kiến trúc: **Supabase (Postgres)** `raw → mart` · **Vercel** (`server/`, p
    từ `README.md` (bản đồ file) và `00-HUONG-DAN-VSCODE.md`. Lớp giao diện hiện tại
    (`src/ui/parts.tsx` + `src/index.css`) là bản TẠM do Claude tự viết. Bước "thiết kế" thay
    2 file đó (giữ props + tên class) và thêm module mới dưới `src/ui/`. Ngoại lệ (người dùng cho
-   phép 2026-11-11): được sửa `src/screens/Sidebar.tsx` CHỈ để làm ngăn kéo ≤640px, giữ props. KHÔNG dựng lại trang,
+   phép 2026-11-11): được sửa `src/screens/Sidebar.tsx` CHỈ để (a) làm ngăn kéo ≤640px và (b) thêm ĐÚNG
+   1 link "Giới thiệu" (`#/about`) ở cuối danh sách (cho phép 2026-11-11, giai đoạn 5); giữ props. KHÔNG dựng lại trang,
    KHÔNG chạy P2 (dựng khung) của kit vì khung đã có. Vẫn giữ:
    - **không ghi tên công ty cũ vào repo này** — kể cả đường dẫn máy tới repo nguồn (đường dẫn
      đó chứa tên). Đường dẫn chỉ nằm ở `.claude/settings.local.json` hoặc `/add-dir`, không commit;
@@ -69,15 +70,15 @@ Kiến trúc: **Supabase (Postgres)** `raw → mart` · **Vercel** (`server/`, p
 | `scripts/ci/` | cổng soi `dist/`: `bundle-checks.mjs` (luật, hàm thuần) · `check-bundle.mjs` (đọc `dist/` + env) · test |
 | `server/` | project Vercel: `api/board-data.js` · `api/health.js` · `lib/{sources,handler,db}.js` · `test/` |
 | `src/nav/` | `catalog.ts` (MỘT nguồn cho cây trang) · `route.ts` (hash router) |
-| `src/data/` | `api.ts` (đường đọc duy nhất + cache) · `labels.ts` · `metrics.ts` · `rollup.ts` · `churn.ts` |
-| `src/screens/` | Sidebar · Home · Board (chung cho 4×4) · Churn |
+| `src/data/` | `api.ts` (đường đọc duy nhất + cache) · `labels.ts` · `metrics.ts` · `rollup.ts` · `churn.ts` · `glossary.ts` (giải thích chỉ số; tên TRỎ tới nhãn DB) · `freshness.ts` |
+| `src/screens/` | Sidebar · Home · Board (chung cho 4×4) · Churn · About (`#/about`) |
 | `.github/workflows/deploy.yml` | MỘT job `checks` cho cả PR lẫn `main`: typecheck → test → db:test → api:test → check:test → build → check:bundle → deploy Pages (chỉ `main`) |
 
 ## 4. Lệnh + con số đã đo (2026-11-11)
 
 ```bash
 npm install
-npm run typecheck && npm test && npm run build   # web: 11 file / 64 test
+npm run typecheck && npm test && npm run build   # web: 14 file / 74 test
 npm run check:test  # 10 test (luật cổng, bundle giả)
 npm run check:bundle  # sau build: recharts · css · privacy · env (PRIVACY_DENY thiếu: máy ⇒ cảnh báo, CI=true ⇒ FAIL)
 npm run db:test     # 16 test, ~90s (PGlite)
@@ -158,7 +159,16 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
    (`tools/shoot.mjs`, `fontcheck.mjs`, `drawer-check.mjs`, `hover.mjs`, `table-check.mjs`).
    Cổng Recharts (`bundle-recharts`) đi index.html → chunk đầu → bao đóng IMPORT TĨNH + mọi
    modulepreload, nhận chunk Recharts theo NỘI DUNG (`RECHARTS_MARKERS`); đã thử lại ca manualChunks ⇒ đỏ.
-5. Vặt:
+5. **Giai đoạn 5 (nhánh `feat/about-glossary`, tách từ `feat/ui-kit`) — chờ duyệt:** glossary + ⓘ
+   (`src/ui/InfoTip.tsx`, popover portal ra body, kính dùng chung rule duy nhất) · trang Giới thiệu ·
+   chip "có số tới ngày …" (từ `updatedAt`; trang nhiều nguồn ⇒ ngày CŨ NHẤT, `oldestDate`) · nhãn
+   "Dữ liệu mẫu" trong luồng. `glossary.test.ts` khoá: đủ ja/vi, nhãn trỏ tới có thật trong
+   migration nhãn, mọi `StatTile`/`ChartCard` ở `src/screens/**` có `info=`.
+6. **TODO riêng — `loaded_at` (KHÔNG làm ở `feat/about-glossary`):** chip mới chỉ ghi "có số tới ngày"
+   vì DB không lưu GIỜ nạp. Muốn có "cập nhật lúc …": `scripts/data/load.mjs` ghi `loaded_at` vào
+   `raw.dataset_meta` → `mart` đưa ra (hàm SECURITY DEFINER như `as_of`) → `server/` trả kèm
+   `updatedAt`; người dùng nạp lại Supabase + deploy lại Vercel.
+7. Vặt:
    - nền ambient lớp nét SVG (`ribbon.svg`), đèn theo con trỏ (`reveal.ts`), phóng ra lần lượt
      (`staggerIn.ts`) — cần sửa `App.tsx`, chưa làm (người dùng hoãn 2026-11-11);
    - tên gói hiện MÃ khi API chưa trả nhãn (đúng thiết kế, nhưng có thể cân nhắc).

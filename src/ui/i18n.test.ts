@@ -13,8 +13,8 @@ describe('song ngữ', () => {
     for (const lang of ['ja', 'vi'] as const) expect(DICT[lang].appName).not.toMatch(/[À-ɏḀ-ỿ]/);
   });
 
-  it('mọi tên + mô tả trong catalog có đủ ja và vi', () => {
-    for (const s of [...BOARDS.flatMap((b) => [b.name, b.desc]), PROJECT_CHURN.name, PROJECT_CHURN.desc]) {
+  it('mọi tên + mô tả + câu hỏi trong catalog có đủ ja và vi', () => {
+    for (const s of [...BOARDS.flatMap((b) => [b.name, b.desc, b.question]), PROJECT_CHURN.name, PROJECT_CHURN.desc, PROJECT_CHURN.question]) {
       expect(s.ja.trim()).not.toBe('');
       expect(s.vi.trim()).not.toBe('');
     }
