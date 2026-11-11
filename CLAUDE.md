@@ -149,7 +149,7 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
      đọc danh sách cấm từ `PRIVACY_DENY`: thiếu khi `CI=true` ⇒ FAIL, ở máy ⇒ cảnh báo.
 
    Giai đoạn: (1) cài Recharts → (2) CSS + parts.tsx + prePaint → (3) viz + chart từng trang →
-   (4) cổng CI. **(1), (2), (2b), (3) đã duyệt; (3b) tooltip trị tuyệt đối + tháng chưa trọn và (4) cổng CI — chờ duyệt.**
+   (4) cổng CI. **Đã merge cả 4 giai đoạn vào `main` (PR #1, `6f9b864`, 2026-11-11).**
    Việc của người dùng sau (4): GitHub → Settings → Secrets → Actions → **`PRIVACY_DENY`** (tên cấm,
    phẩy / xuống dòng). Thiếu secret này thì job `checks` ĐỎ ở `check:bundle`.
    Tháng chưa trọn (trang Theo người dùng): ngày X = `updatedAt` mà API trả kèm mỗi nguồn
@@ -159,16 +159,46 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
    (`tools/shoot.mjs`, `fontcheck.mjs`, `drawer-check.mjs`, `hover.mjs`, `table-check.mjs`).
    Cổng Recharts (`bundle-recharts`) đi index.html → chunk đầu → bao đóng IMPORT TĨNH + mọi
    modulepreload, nhận chunk Recharts theo NỘI DUNG (`RECHARTS_MARKERS`); đã thử lại ca manualChunks ⇒ đỏ.
-5. **Giai đoạn 5 (nhánh `feat/about-glossary`, tách từ `feat/ui-kit`) — chờ duyệt:** glossary + ⓘ
+5. **Giai đoạn 5 — ĐÃ MERGE (PR #1, cùng giai đoạn 1–4):** glossary + ⓘ
    (`src/ui/InfoTip.tsx`, popover portal ra body, kính dùng chung rule duy nhất) · trang Giới thiệu ·
    chip "có số tới ngày …" (từ `updatedAt`; trang nhiều nguồn ⇒ ngày CŨ NHẤT, `oldestDate`) · nhãn
    "Dữ liệu mẫu" trong luồng. `glossary.test.ts` khoá: đủ ja/vi, nhãn trỏ tới có thật trong
    migration nhãn, mọi `StatTile`/`ChartCard` ở `src/screens/**` có `info=`.
-6. **TODO riêng — `loaded_at` (KHÔNG làm ở `feat/about-glossary`):** chip mới chỉ ghi "có số tới ngày"
+   Điểm review chưa xử lý (không chặn, làm khi tiện):
+   - chunk đầu 170 → 196 kB vì chữ glossary. Muốn giảm thì nạp CHỮ glossary lúc mở ⓘ (StatTile chỉ
+     cần khoá), đừng tách trang Giới thiệu (chỉ bớt 4–5 kB);
+   - `raw.dataset_meta.timezone = Asia/Ho_Chi_Minh` (`generate.mjs:108`) với SaaS thu yên: không làm
+     sai số (dữ liệu chỉ có ngày). Đổi `Asia/Tokyo` = sinh + nạp lại Supabase;
+   - tên view `mart.*` nằm trong bundle công khai (trường `source` của glossary): ổn với dữ liệu mẫu,
+     bỏ khỏi bundle trước khi dùng dữ liệu thật;
+   - tỉ lệ huỷ theo band ở `docs/SCHEMA.md:149-153` khác bảng §4 của file này — thống nhất lại;
+   - ⓘ của thẻ biểu đồ MRR hiện cả dòng giải thích số phụ của ô số, mà biểu đồ không có số phụ đó.
+6. **Giai đoạn 6 — BỘ LỌC THÁNG (người dùng chốt 2026-11-11, CHƯA chạy):** lập kế hoạch trước, chờ
+   duyệt rồi mới code. Nhánh `feat/period-filter` tách từ `main` SAU KHI `git pull --ff-only`.
+   - Chỉ lọc theo THÁNG (dữ liệu mart chỉ tới tháng; lịch sử rủi ro theo tuần). KHÔNG lọc ngày, KHÔNG
+     sửa `server/`, `supabase/`, `scripts/data`.
+   - Dựng theo `docs/ui-kit/01-ARCHITECTURE.md` §6, chỉ phần cần: FilterBar + chọn khoảng tháng
+     (từ – đến) + chọn 1 tháng. Không dựng các pattern khác, không quý/năm.
+   - Doanh thu, Người dùng: khoảng tháng, lọc ở trình duyệt (API đã trả mọi tháng). Mặc định 12 tháng
+     kết thúc ở tháng mới nhất CÓ TRONG DỮ LIỆU. Ô số: luồng (MRR mới, hoá đơn, user mới…) cộng cả
+     khoảng; tồn kho (MRR cuối tháng, công ty trả tiền, user cuối tháng) lấy tháng cuối khoảng; MAU,
+     DAU/MAU lấy tháng cuối. So với khoảng trước dài bằng nhau; thiếu ⇒ "—". Biểu đồ + bảng theo khoảng.
+   - Theo người dùng, Theo công ty: chọn 1 tháng, truyền tham số `month` SẴN CÓ của API
+     (`server/lib/sources.js`). Danh sách tháng lấy từ dữ liệu, không từ đồng hồ máy.
+   - Cảnh báo huỷ: khoảng tháng chỉ áp cho 2 biểu đồ lịch sử (tuần lọc theo tháng chứa nó); danh sách
+     theo dõi không đổi.
+   - Nhãn gọi đúng khoảng đang xem; khoảng chứa tháng chưa trọn thì giữ cách ghi "tính đến ngày X".
+   - Bộ lọc lưu trong URL hash (vd. `#/…?from=2026-01&to=2026-11`): F5 + link chia sẻ giữ nguyên; giá
+     trị sai / ngoài phạm vi dữ liệu ⇒ về mặc định, không lỗi.
+   - 1 panel mở mỗi lúc; panel portal ra body; Esc đóng + focus về nút; nút đặt lại chỉ hiện khi khác
+     mặc định.
+   - Test hàm thuần: cộng luồng / cuối kỳ tồn kho, khoảng trước ở mép dữ liệu, parse/serialize URL kèm
+     giá trị rác, tháng mặc định từ dữ liệu. Ảnh 1440/430 × sáng/tối với panel mở; 430 không cuộn ngang.
+7. **TODO riêng — `loaded_at` (KHÔNG làm ở `feat/about-glossary`):** chip mới chỉ ghi "có số tới ngày"
    vì DB không lưu GIỜ nạp. Muốn có "cập nhật lúc …": `scripts/data/load.mjs` ghi `loaded_at` vào
    `raw.dataset_meta` → `mart` đưa ra (hàm SECURITY DEFINER như `as_of`) → `server/` trả kèm
    `updatedAt`; người dùng nạp lại Supabase + deploy lại Vercel.
-7. Vặt:
+8. Vặt:
    - nền ambient lớp nét SVG (`ribbon.svg`), đèn theo con trỏ (`reveal.ts`), phóng ra lần lượt
      (`staggerIn.ts`) — cần sửa `App.tsx`, chưa làm (người dùng hoãn 2026-11-11);
    - tên gói hiện MÃ khi API chưa trả nhãn (đúng thiết kế, nhưng có thể cân nhắc).
