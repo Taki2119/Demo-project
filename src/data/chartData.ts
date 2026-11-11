@@ -1,5 +1,5 @@
-// Nắn dữ liệu cho biểu đồ — hàm THUẦN. Luật: thiếu / không phải số / mẫu số 0 ⇒ null
-// (biểu đồ đứt nét, tooltip "—"), KHÔNG BAO GIỜ thay bằng 0. Đếm thật bằng 0 thì vẫn là 0.
+// Shaping data for charts — PURE functions. Rule: missing / non-number / denominator 0 ⇒ null
+// (chart line breaks, tooltip "—"), NEVER replaced with 0. A real count of 0 is still 0.
 import type { Row } from './api';
 import { stickiness } from './metrics';
 
@@ -7,7 +7,7 @@ export type Point = Record<string, string | number | null>;
 
 export const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
-/** Giữ khoá x (chuỗi) + các cột số; cột nào không phải số ⇒ null. */
+/** Keep the x key (string) + the numeric columns; any column that isn't a number ⇒ null. */
 export function pickColumns(rows: readonly Row[], xKey: string, keys: readonly string[]): Point[] {
   return rows.map((r) => {
     const p: Point = { [xKey]: String(r[xKey] ?? '') };
@@ -16,7 +16,7 @@ export function pickColumns(rows: readonly Row[], xKey: string, keys: readonly s
   });
 }
 
-/** Giá trị tuyệt đối lớn nhất của các cột (đích để chọn thang tiền). null nếu không có số nào. */
+/** Largest absolute value across the columns (the target for picking the money scale). null if there are no numbers. */
 export function maxAbs(points: readonly Point[], keys: readonly string[]): number | null {
   let m: number | null = null;
   for (const p of points) for (const k of keys) {
@@ -26,8 +26,8 @@ export function maxAbs(points: readonly Point[], keys: readonly string[]): numbe
   return m;
 }
 
-/** Tổng chồng mỗi phía của cột phân cực ({up, down}) — để chọn thang trục. Ô thiếu bị BỎ QUA;
- *  phía không có ô nào ⇒ null. */
+/** Stacked total per side of diverging bars ({up, down}) — to pick the axis scale. Missing cells are SKIPPED;
+ *  a side with no cells ⇒ null. */
 export function stackTotals(points: readonly Point[], stacks: readonly { key: string; sign?: 1 | -1 }[]): Point[] {
   const side = (p: Point, s: 1 | -1) => {
     const vs = stacks.filter((x) => (x.sign ?? 1) === s).map((x) => num(p[x.key])).filter((v): v is number => v != null);
@@ -36,7 +36,7 @@ export function stackTotals(points: readonly Point[], stacks: readonly { key: st
   return points.map((p) => ({ up: side(p, 1), down: side(p, -1) }));
 }
 
-/** Đổi dấu một cột (luồng RA vẽ dưới mốc 0). null giữ null. */
+/** Flip the sign of a column (OUT flow drawn below the 0 line). null stays null. */
 export function negate(points: readonly Point[], key: string, as: string): Point[] {
   return points.map((p) => {
     const v = num(p[key]);
@@ -44,8 +44,8 @@ export function negate(points: readonly Point[], key: string, as: string): Point
   });
 }
 
-/** Đếm theo khoảng: `edges` = cận dưới của từng nhóm (tăng dần), nhóm cuối mở. null bị bỏ qua.
- *  Nhóm rỗng có đếm = 0 THẬT (không phải dữ liệu thiếu). */
+/** Count by range: `edges` = lower bound of each bucket (ascending), the last bucket is open. null is skipped.
+ *  An empty bucket has a REAL count of 0 (not missing data). */
 export function histogram(values: readonly (number | null)[], edges: readonly number[]): number[] {
   const out = edges.map(() => 0);
   for (const v of values) {
@@ -57,7 +57,7 @@ export function histogram(values: readonly (number | null)[], edges: readonly nu
   return out;
 }
 
-/** Đếm số dòng theo mã của cột `key` (vd. top_reason), giảm dần. Mã thiếu bị bỏ qua. */
+/** Count rows by the code in column `key` (e.g. top_reason), descending. Missing codes are skipped. */
 export function countBy(rows: readonly Row[], key: string): { code: string; n: number }[] {
   const m = new Map<string, number>();
   for (const r of rows) {
@@ -67,8 +67,8 @@ export function countBy(rows: readonly Row[], key: string): { code: string; n: n
   return [...m].map(([code, n]) => ({ code, n })).sort((a, b) => b.n - a.n || a.code.localeCompare(b.code));
 }
 
-/** Bảng chéo: mỗi giá trị `xKey` một dòng, mỗi mã trong `codes` một cột = số dòng có mã đó.
- *  Mốc x có trong dữ liệu mà không có mã nào ⇒ 0 thật. */
+/** Cross-tab: one row per `xKey` value, one column per code in `codes` = number of rows with that code.
+ *  An x point present in the data with none of the codes ⇒ real 0. */
 export function crossCount(rows: readonly Row[], xKey: string, codeKey: string, codes: readonly string[]): Point[] {
   const m = new Map<string, Point>();
   for (const r of rows) {
@@ -85,7 +85,7 @@ export function crossCount(rows: readonly Row[], xKey: string, codeKey: string, 
   return [...m.values()].sort((a, b) => String(a[xKey]).localeCompare(String(b[xKey])));
 }
 
-/** Cộng các cột số theo `xKey` (vd. tháng × kênh ⇒ tháng). Mốc x mà một cột không có số nào ⇒ null. */
+/** Sum numeric columns by `xKey` (e.g. month × channel ⇒ month). An x point where a column has no number ⇒ null. */
 export function sumByKey(rows: readonly Row[], xKey: string, keys: readonly string[]): Point[] {
   const m = new Map<string, Point>();
   for (const r of rows) {
@@ -101,9 +101,9 @@ export function sumByKey(rows: readonly Row[], xKey: string, keys: readonly stri
   return [...m.values()].sort((a, b) => String(a[xKey]).localeCompare(String(b[xKey])));
 }
 
-/** Lấp các tháng TRỐNG giữa tháng đầu và tháng cuối cho nguồn ĐẾM SỰ KIỆN (chỉ có dòng khi có sự
- *  kiện): tháng không có dòng = 0 sự kiện THẬT, không phải thiếu dữ liệu. Không lấp trước tháng
- *  đầu / sau tháng cuối. Khoá x dạng 'YYYY-MM-01'; không đi qua Date. */
+/** Fill EMPTY months between the first and last month for EVENT-COUNT sources (rows only exist when there's an
+ *  event): a month without rows = REAL 0 events, not missing data. No filling before the first
+ *  month / after the last month. x key in 'YYYY-MM-01' form; doesn't go through Date. */
 export function fillMonths(points: readonly Point[], xKey: string, keys: readonly string[]): Point[] {
   if (points.length === 0) return [];
   const byMonth = new Map(points.map((p) => [String(p[xKey]).slice(0, 7), p]));
@@ -119,7 +119,7 @@ export function fillMonths(points: readonly Point[], xKey: string, keys: readonl
   return out;
 }
 
-/** DAU/MAU theo tháng (docs/SCHEMA.md §4.2). Thiếu cột hoặc mẫu số 0 ⇒ null. */
+/** DAU/MAU by month (docs/SCHEMA.md §4.2). Missing column or denominator 0 ⇒ null. */
 export function stickinessByMonth(rows: readonly Row[]): Point[] {
   return rows.map((r) => {
     const aud = num(r.active_user_days);
@@ -129,11 +129,11 @@ export function stickinessByMonth(rows: readonly Row[]): Point[] {
   });
 }
 
-/** Tháng `month` ('YYYY-MM-01') đã trọn chưa, đo tới ngày dữ liệu `asOf` ('YYYY-MM-DD').
- *  · asOf ở tháng sau, hoặc đúng ngày cuối tháng ⇒ { complete: true }
- *  · asOf trong tháng, trước ngày cuối ⇒ { complete: false, day } (day = ngày của asOf)
- *  · asOf thiếu / sai dạng / trước tháng ⇒ null (không biết — đừng ghi gì).
- *  Không đi qua Date (tránh lệch múi giờ); năm nhuận theo lịch Gregory. */
+/** Whether month `month` ('YYYY-MM-01') is complete, measured up to the data date `asOf` ('YYYY-MM-DD').
+ *  · asOf in a later month, or exactly the last day of the month ⇒ { complete: true }
+ *  · asOf within the month, before the last day ⇒ { complete: false, day } (day = asOf's day)
+ *  · asOf missing / malformed / before the month ⇒ null (unknown — don't show anything).
+ *  Doesn't go through Date (avoids timezone shifts); leap years per the Gregorian calendar. */
 export function monthProgress(month: string, asOf: string | null): { complete: true } | { complete: false; day: number } | null {
   const m = /^(\d{4})-(\d{2})/.exec(month);
   const a = asOf ? /^(\d{4})-(\d{2})-(\d{2})/.exec(asOf) : null;

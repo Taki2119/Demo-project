@@ -1,7 +1,7 @@
-/* Nút + nhóm chọn (kit 02 §5). Mọi nút là nút PHẲNG, thân đục — kính chỉ dành cho thẻ/panel.
-   Hover/nhấn ở hover.css. */
+/* Buttons + segmented controls (kit 02 §5). Every button is FLAT with an opaque surface — glass is only for cards/panels.
+   Hover/press live in hover.css. */
 
-/* Nhóm chọn (đổi ngôn ngữ, cỡ trang): rãnh đục + nấc đang chọn tô --accent-fill. */
+/* Segmented control (language switch, page size): opaque track + the selected segment filled with --accent-fill. */
 .lang, .seg {
   display: inline-flex;
   padding: 3px;
@@ -23,7 +23,7 @@
 .lang button:hover, .seg button:hover { background: var(--toggle-track); color: var(--ink); }
 .lang button[aria-pressed='true'], .seg button[aria-pressed='true'] { background: var(--accent-fill); color: var(--on-accent); }
 
-/* Nút phẳng (phân trang). */
+/* Flat button (pagination). */
 .btn {
   position: relative;
   z-index: 0;
@@ -37,7 +37,7 @@
   font-size: .82rem;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
-  /* 2 lớp bóng ở trạng thái nghỉ (lớp 2 trong suốt) để hover nội suy đúng số lớp. */
+  /* 2 shadow layers at rest (layer 2 transparent) so hover interpolates over the same number of layers. */
   box-shadow: 0 0 0 1px var(--btn-ring), 0 0 0 0 transparent;
 }
 .btn[aria-current='page'] { background: var(--accent-fill); color: var(--on-accent); }
@@ -54,7 +54,7 @@
   font-weight: 600;
 }
 
-/* ── Nút ⓘ (InfoTip) — nút phẳng, không kính (kit 02: kính chỉ cho thẻ / panel / popover). ── */
+/* ── ⓘ button (InfoTip) — flat button, no glass (kit 02: glass only for cards / panels / popovers). ── */
 .ui-info {
   display: inline-grid;
   place-items: center;
@@ -71,10 +71,10 @@
   position: relative;
 }
 .ui-info:hover, .ui-info[aria-expanded='true'] { color: var(--accent-text); }
-/* Vùng bấm ≥ 24px dưới con trỏ thô (kit 02 §4). */
+/* Hit area ≥ 24px under a coarse pointer (kit 02 §4). */
 @media (pointer: coarse) { .ui-info::after { content: ''; position: absolute; inset: -6px; } }
 
-/* ── Popover ⓘ: portal ra body, position: fixed (vị trí do popoverPlace.ts tính). ── */
+/* ── ⓘ popover: portaled to body, position: fixed (position computed by popoverPlace.ts). ── */
 .ui-pop {
   position: fixed;
   z-index: 50;
@@ -101,7 +101,7 @@
 @keyframes ui-pop-in { from { opacity: 0; transform: scale(.96) translateY(-6px); } }
 @media (prefers-reduced-motion: reduce) { .ui-pop { animation: none; } }
 
-/* ── Đầu trang: nhãn "Dữ liệu mẫu" + chip ngày dữ liệu. Nằm TRONG LUỒNG, tự xuống dòng ở 430px. ── */
+/* ── Page header: "Dữ liệu mẫu" (Sample data) label + data-date chip. IN THE FLOW, wraps on its own at 430px. ── */
 .page-meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
 .chip-sample { background: var(--accent-fill); box-shadow: none; color: var(--on-accent); }
 .chip-asof { color: var(--ink-2); font-weight: 500; font-variant-numeric: tabular-nums; }

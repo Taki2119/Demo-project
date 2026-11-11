@@ -1,4 +1,4 @@
-// Câu hỏi mẫu — nhóm DOANH THU. Nguồn duy nhất: revenue-monthly (bảng tháng × gói).
+// Sample questions — REVENUE group. Only source: revenue-monthly (month × plan table).
 import { arpa, collectionRate, grossMrrChurn, logoChurn, nrr, ratio } from '../../data/metrics';
 import type { Row } from '../../data/api';
 import {
@@ -13,7 +13,7 @@ const PLANS = ['starter', 'growth', 'scale'] as const;
 const basisRev = (ctx: Ctx, ja: string, vi: string) =>
   tx(ctx.lang, `売上ボード：${ja}${ctx.slots.plan ? '' : '全プラン合計。'}`, `Bảng Doanh thu: ${vi}${ctx.slots.plan ? '' : ' Cộng mọi gói.'}`);
 
-/** Dòng tháng mới nhất của từng gói (cho các câu so sánh giữa các gói). */
+/** Latest-month row of each plan (for questions comparing plans). */
 function latestByPlan(ctx: Ctx): { plan: string; row: Row }[] | null {
   const rows = rowsOf(ctx, REV);
   if (!rows || rows.length === 0) return null;

@@ -1,17 +1,17 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   TOKEN — bộ màu Ember (mặc định của kit: :root + [data-theme='dark']).
-   Nguồn số: docs/ui-kit/02-DESIGN-SYSTEM.md §2. Số nào kit KHÔNG ghi thì đánh dấu
-   "(tự chọn)" — đó là lựa chọn tạm, không phải luật của kit.
+   TOKENS — Ember palette (the kit's default: :root + [data-theme='dark']).
+   Source of numbers: docs/ui-kit/02-DESIGN-SYSTEM.md §2. Any number the kit does NOT specify is marked
+   "(our choice)" — a provisional choice, not a kit rule.
 
-   Thang chữ (kit §2): H1 1.62rem · H2 thẻ 1.02rem · phụ đề .82rem · số KPI 1.9rem ·
-   tooltip .84rem · bảng .86rem.
-   Bán kính (kit §2): nút 999px · thẻ 16 · panel 20 · menu 16 · dialog 14 · ô nhập 8.
+   Type scale (kit §2): H1 1.62rem · card H2 1.02rem · subtitle .82rem · KPI number 1.9rem ·
+   tooltip .84rem · table .86rem.
+   Radii (kit §2): button 999px · card 16 · panel 20 · menu 16 · dialog 14 · input 8.
 
-   Luật 3 của kit: khối sáng và khối tối khai CÙNG một tập token — cssSource.test.ts khoá.
-   `data-theme` do script prePaint trong index.html ghi (luôn là giá trị đã giải: light | dark).
+   Kit rule 3: the light and dark blocks declare the SAME token set — locked by cssSource.test.ts.
+   `data-theme` is written by the prePaint script in index.html (always a resolved value: light | dark).
    ───────────────────────────────────────────────────────────────────────── */
 
-/* Token chung — không đổi theo theme. */
+/* Shared tokens — theme-independent. */
 :root {
   --font-text: 'Space Grotesk', 'Zen Kaku Gothic New', 'Noto Sans JP', system-ui, sans-serif;
   --font-display: 'Outfit', 'Zen Kaku Gothic New', system-ui, sans-serif;
@@ -25,12 +25,12 @@
   --btn-danger: #dc2626;
   --btn-danger-hover: #c81e1e;
 
-  /* Nền ambient (kit §7 nêu --bloom-1/2/3 nhưng không ghi giá trị) — (tự chọn). */
+  /* Ambient background (kit §7 names --bloom-1/2/3 but gives no values) — (our choice). */
   --bloom-1: color-mix(in srgb, var(--accent) 20%, transparent);
   --bloom-2: color-mix(in srgb, var(--net-line) 12%, transparent);
   --bloom-3: color-mix(in srgb, var(--ink-3) 14%, transparent);
 
-  /* Nhịp menu (kit §2). Ngăn kéo dùng lại nhịp này — kit không ghi nhịp riêng cho ngăn kéo. */
+  /* Menu timing (kit §2). The drawer reuses this timing — the kit specifies none for drawers. */
   --menu-open-dur: .32s;
   --menu-open-ease: cubic-bezier(.25, .46, .45, .94);
   --menu-close-dur: .2s;
@@ -42,7 +42,7 @@
   --blk-out: 24px;
 }
 
-/* Ember sáng. */
+/* Ember light. */
 :root,
 :root[data-theme='light'] {
   color-scheme: light;
@@ -66,38 +66,38 @@
 
   --glass-fill: rgba(255, 255, 255, .32);
   --glass-fill-panel: rgba(253, 252, 250, .55);
-  /* Kit ghi "α .42" — màu gốc lấy theo --surface như --glass-fill-panel (suy ra). */
+  /* Kit says "α .42" — base color follows --surface like --glass-fill-panel (inferred). */
   --glass-fill-viz: rgba(253, 252, 250, .42);
-  /* Kit ghi edge .78 · spec .95 · spec-lo .22 — màu gốc trắng (suy ra từ --glass-fill). */
+  /* Kit says edge .78 · spec .95 · spec-lo .22 — white base color (inferred from --glass-fill). */
   --glass-edge: rgba(255, 255, 255, .78);
   --glass-spec: rgba(255, 255, 255, .95);
   --glass-spec-lo: rgba(255, 255, 255, .22);
   --glass-shadow: 0 10px 34px -12px rgba(28, 25, 23, .30);
 
-  /* Kit dùng --focus nhưng không ghi giá trị — (tự chọn) = --accent (lớp tương tác). */
+  /* Kit uses --focus but gives no value — (our choice) = --accent (interaction layer). */
   --focus: var(--accent);
-  /* Hover nút, theme sáng: "bóng đổ xuống, không quầng" — số (tự chọn). */
+  /* Button hover, light theme: "drop shadow, no glow" — numbers (our choice). */
   --btn-hover-shadow: 0 6px 14px -6px rgba(28, 25, 23, .35);
 
-  /* ── Mark dữ liệu (kit 03 §5). markContrast.test.ts đọc hex ở đây. ── */
+  /* ── Data marks (kit 03 §5). markContrast.test.ts reads the hex values here. ── */
   --series-1: #a49c26;
   --series-2: #8a6e4d;
   --series-3: #892d0a;
   --series-4: #741337;
   --series-5: #a15598;
   --series-6: #472678;
-  /* Thứ bậc (tự chọn — kit không ghi số): ord-1 đậm nhất. */
+  /* Ordinal (our choice — kit gives no numbers): ord-1 darkest. */
   --ord-1: #3d2f22;
   --ord-2: #5c4733;
   --ord-3: #7a6046;
   --ord-4: #9a7b5a;
   --ord-5: #b4956f;
-  /* Cột phân cực (tự chọn — kit nêu tên --ok-fill/--crit-fill, không ghi số; -2 là lớp thứ hai). */
+  /* Polar bars (our choice — kit names --ok-fill/--crit-fill but gives no numbers; -2 is the second layer). */
   --ok-fill: #15803d;
   --ok-fill-2: #5a9e6f;
   --crit-fill: #b91c1c;
   --crit-fill-2: #d9675a;
-  /* Đường đơn + chấm nóng của nó, thanh ngang một màu (tự chọn). */
+  /* Solo line + its hot dot, single-color horizontal bars (our choice). */
   --line-solo: #9a4a17;
   --line-solo-hot: #5c2a0b;
   --bar-fill: #8a6e4d;
@@ -105,7 +105,7 @@
   --pill-flat: #3f3733;
   --on-pill-flat: #faf7f3;
   --grid: #e6e1d8;
-  /* Lớp phủ gradient của cột: sáng = tối ở chân (0 → .2). */
+  /* Bar gradient overlay: light = darker at the base (0 → .2). */
   --mark-shade: #000;
   --mark-shade-top: 0;
   --mark-shade-bot: .2;
@@ -113,7 +113,7 @@
   --mark-shade-grad-x: linear-gradient(90deg, rgb(0 0 0 / .2), rgb(0 0 0 / 0));
 }
 
-/* Ember tối. */
+/* Ember dark. */
 :root[data-theme='dark'] {
   color-scheme: dark;
   --ground: #252220;
@@ -140,11 +140,11 @@
   --glass-edge: rgba(255, 255, 255, .20);
   --glass-spec: rgba(255, 255, 255, .34);
   --glass-spec-lo: rgba(255, 255, 255, .07);
-  /* Kit chỉ ghi màu rgba(0,0,0,.6); hình học giữ như theme sáng (suy ra). */
+  /* Kit only gives the color rgba(0,0,0,.6); geometry kept as in the light theme (inferred). */
   --glass-shadow: 0 10px 34px -12px rgba(0, 0, 0, .6);
 
   --focus: var(--accent);
-  /* Hover nút, theme tối: "nhấc 1px + quầng 18px --accent-fill" — độ đậm 45% (tự chọn). */
+  /* Button hover, dark theme: "lift 1px + 18px --accent-fill glow" — 45% strength (our choice). */
   --btn-hover-shadow: 0 0 18px color-mix(in srgb, var(--accent-fill) 45%, transparent);
 
   --series-1: #fcf264;
@@ -153,7 +153,7 @@
   --series-4: #c1466c;
   --series-5: #f08de4;
   --series-6: #845dc8;
-  /* Theme tối: ord-1 SÁNG nhất (nổi nhất trên nền tối). */
+  /* Dark theme: ord-1 LIGHTEST (stands out most on a dark background). */
   --ord-1: #f3dcc0;
   --ord-2: #dcbc97;
   --ord-3: #c49d72;
@@ -170,7 +170,7 @@
   --pill-flat: #e8ded4;
   --on-pill-flat: #2b2521;
   --grid: #3a332f;
-  /* Tối = sáng ở đỉnh (.2 → 0). */
+  /* Dark = lighter at the top (.2 → 0). */
   --mark-shade: #fff;
   --mark-shade-top: .2;
   --mark-shade-bot: 0;

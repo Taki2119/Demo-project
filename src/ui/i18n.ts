@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Song ngữ ja / vi — CHỮ GIAO DIỆN (nút, bộ lọc, thông báo).
-// Chữ DỮ LIỆU (tên cột, tên gói, ngành, lý do huỷ…) KHÔNG ở đây: nó lấy từ mart.labels /
-// mart.column_labels qua data/labels.ts — một nguồn cho cả app lẫn AI.
-// ⚠ DICT.ja và DICT.vi là hợp đồng 2 chiều: i18n.test.ts khoá cùng bộ key.
+// Bilingual ja / vi — UI TEXT (buttons, filters, messages).
+// DATA text (column names, plan names, industries, churn reasons…) is NOT here: it comes from mart.labels /
+// mart.column_labels via data/labels.ts — one source for both the app and the AI.
+// ⚠ DICT.ja and DICT.vi are a two-way contract: i18n.test.ts locks them to the same key set.
 // ─────────────────────────────────────────────────────────────────────────────
 import { create } from 'zustand';
 
@@ -206,7 +206,7 @@ function initialLang(): Lang {
     const saved = globalThis.localStorage?.getItem(STORAGE_KEY);
     if (saved === 'ja' || saved === 'vi') return saved;
   } catch {
-    // trình duyệt chặn storage (chế độ riêng tư…) — dùng mặc định
+    // browser blocks storage (private mode…) — use the default
   }
   const nav = typeof navigator === 'undefined' ? '' : navigator.language;
   return nav.startsWith('vi') ? 'vi' : 'ja';
@@ -218,7 +218,7 @@ export const useLangStore = create<{ lang: Lang; setLang: (l: Lang) => void }>((
     try {
       globalThis.localStorage?.setItem(STORAGE_KEY, lang);
     } catch {
-      // không lưu được thì thôi — chỉ mất "nhớ lựa chọn" ở lần mở sau
+      // can't save, never mind — we only lose "remember the choice" on the next visit
     }
     if (typeof document !== 'undefined') document.documentElement.lang = lang;
     set({ lang });

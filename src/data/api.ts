@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Đường ĐỌC dữ liệu DUY NHẤT của app: POST {VITE_API_URL}/api/board-data { source, ...tham số }
-// → { source, updatedAt, rows }. Endpoint đó (Vercel) đọc mart.* bằng role analytics_reader.
-// Trình duyệt KHÔNG bao giờ nói thẳng với Supabase.
+// The app's ONLY data READ path: POST {VITE_API_URL}/api/board-data { source, ...params }
+// → { source, updatedAt, rows }. That endpoint (Vercel) reads mart.* as the analytics_reader role.
+// The browser NEVER talks to Supabase directly.
 //
-// ⚠ Chưa đặt VITE_API_URL ⇒ `apiConfigured = false` ⇒ mọi bảng hiện trạng thái "chưa cấu hình",
-//   KHÔNG có số mẫu nào nằm trong bundle.
+// ⚠ VITE_API_URL not set ⇒ `apiConfigured = false` ⇒ every board shows the "not configured" state,
+//   NO sample numbers live in the bundle.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect } from 'react';
 import { create } from 'zustand';
@@ -23,7 +23,7 @@ export interface SourceData {
 
 export type Params = Record<string, string | number>;
 
-/** Khoá cache: nguồn + tham số đã sắp xếp (cùng nội dung ⇒ cùng khoá). */
+/** Cache key: source + sorted params (same content ⇒ same key). */
 export function cacheKey(source: SourceKey, params: Params = {}): string {
   const p = Object.keys(params)
     .sort()
@@ -32,7 +32,7 @@ export function cacheKey(source: SourceKey, params: Params = {}): string {
   return p ? `${source}?${p}` : source;
 }
 
-/** Kiểm HÌNH của phản hồi — API trả sai hình thì báo lỗi, đừng vẽ rác. */
+/** Check the SHAPE of the response — if the API returns the wrong shape, report an error, don't draw garbage. */
 export function parseResponse(json: unknown): SourceData {
   if (typeof json !== 'object' || json === null) throw new Error('bad_shape');
   const o = json as { rows?: unknown; updatedAt?: unknown };
@@ -74,8 +74,8 @@ function load(source: SourceKey, params: Params): void {
   inflight.set(key, p);
 }
 
-/** Nạp một nguồn NGOÀI React (Hỏi AI: mỗi câu trả lời cần số nguồn khác nhau). Dùng CHUNG cache +
- *  store với `useSource` ⇒ trang khác đã nạp thì trả ngay, không gọi lại. Lỗi ⇒ reject. */
+/** Load a source OUTSIDE React (Ask AI: each answer needs a different number of sources). Shares the cache +
+ *  store with `useSource` ⇒ if another page already loaded it, return immediately, no refetch. Error ⇒ reject. */
 export function loadSource(source: SourceKey, params: Params = {}): Promise<SourceData> {
   if (!apiConfigured) return Promise.reject(new Error('api_off'));
   const key = cacheKey(source, params);
@@ -90,14 +90,14 @@ export function loadSource(source: SourceKey, params: Params = {}): Promise<Sour
   return (inflight.get(key) ?? Promise.resolve()).then(ready);
 }
 
-/** Nạp một nguồn (có cache trong bộ nhớ). Chưa cấu hình API ⇒ phase 'off'.
- *  `enabled = false` ⇒ chưa nạp, trả 'loading' (vd. chờ danh sách tháng để biết tham số `month`). */
+/** Load a source (in-memory cache). API not configured ⇒ phase 'off'.
+ *  `enabled = false` ⇒ not loaded yet, returns 'loading' (e.g. waiting for the month list to know the `month` param). */
 export function useSource(source: SourceKey, params: Params = {}, enabled = true): Entry {
   const key = cacheKey(source, params);
   const entry = useSourceStore((s) => s[key]);
   useEffect(() => {
     if (apiConfigured && enabled) load(source, params);
-  }, [key, enabled]); // `params` đã nằm trong `key`
+  }, [key, enabled]); // `params` is already in `key`
   if (!apiConfigured) return { phase: 'off', data: null };
   return entry ?? { phase: 'loading', data: null };
 }

@@ -1,4 +1,4 @@
-// Bọc NGOÀI <Suspense>, chỉ quanh phần biểu đồ: chunk hỏng thì tiêu đề, ô số, bảng vẫn còn.
+// Wraps OUTSIDE <Suspense>, only around the chart part: if a chunk fails, the title, stat tiles and table remain.
 import { Component, type ReactNode } from 'react';
 
 export class ErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {

@@ -1,7 +1,7 @@
-// npm run check:bundle — chạy SAU `npm run build`, soi dist/ (bản ship thật, không phải nguồn).
-//   recharts · css · privacy · env   (luật ở bundle-checks.mjs)
-// Env: PRIVACY_DENY (secret; thiếu khi CI=true ⇒ FAIL), VITE_API_URL (giống lúc build), CI.
-// Thư mục khác dist/: node scripts/ci/check-bundle.mjs <thư mục>
+// npm run check:bundle — runs AFTER `npm run build`, inspects dist/ (the real shipped build, not the source).
+//   recharts · css · privacy · env   (rules in bundle-checks.mjs)
+// Env: PRIVACY_DENY (secret; missing when CI=true ⇒ FAIL), VITE_API_URL (same as at build time), CI.
+// A directory other than dist/: node scripts/ci/check-bundle.mjs <directory>
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { checkCss, checkEnv, checkPrivacy, checkRecharts, parseDeny } from './bundle-checks.mjs';

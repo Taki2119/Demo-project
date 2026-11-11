@@ -1,6 +1,6 @@
-/* Bộ lọc tháng (kit 01 §6). Nút lọc = nút PHẲNG thân đục (kit 02: kính chỉ cho thẻ/panel/popover).
-   Panel dùng lại .ui-pop (kính popover khai ở base.css — KHÔNG khai backdrop-filter ở đây);
-   ô tháng trong panel là thân đục (không lồng kính). */
+/* Month filter (kit 01 §6). Filter button = FLAT button with an opaque surface (kit 02: glass only for cards/panels/popovers).
+   The panel reuses .ui-pop (popover glass declared in base.css — do NOT declare backdrop-filter here);
+   month cells in the panel are opaque surfaces (no nested glass). */
 
 .ui-filterbar {
   display: flex;
@@ -35,7 +35,7 @@
 
 .ui-filter-reset { display: inline-flex; align-items: center; gap: .35rem; height: 2.25rem; color: var(--ink-2); }
 
-/* Panel: vặn rộng sau .ui-pop (cùng specificity, file này nạp sau controls.css). */
+/* Panel: width tuned after .ui-pop (same specificity, this file loads after controls.css). */
 .ui-fpanel { width: min(18rem, calc(100vw - 16px)); padding: 12px; }
 .ui-fpanel-hint { margin: 0 0 6px; color: var(--ink-2); font-size: .78rem; }
 
@@ -58,5 +58,5 @@
 .ui-mcell[data-in='true'] { background: color-mix(in srgb, var(--accent-fill) 16%, var(--surface)); }
 .ui-mcell[aria-pressed='true'] { background: var(--accent-fill); color: var(--on-accent); }
 .ui-mcell:disabled { background: transparent; box-shadow: none; color: var(--ink-3); cursor: default; }
-/* Vùng bấm ≥ 24px đã đủ (2rem); con trỏ thô thì cao hơn chút. */
+/* Hit area ≥ 24px is already met (2rem); a bit taller for coarse pointers. */
 @media (pointer: coarse) { .ui-mcell { height: 2.5rem; } }

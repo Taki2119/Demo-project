@@ -1,11 +1,11 @@
-/* Hỏi AI (bản demo) — nút nổi góc trên bên phải + cửa sổ chat, có ở mọi màn.
-   Kit KHÔNG có mẫu chat ⇒ ghép từ mảnh có sẵn: nút phẳng (.btn) · cửa sổ là panel kính theo bảng
-   kính của kit cho menu/popover/dialog (26px · 180% · --glass-fill-panel) · mọi khối BÊN TRONG cửa
-   sổ là thân đục (kit 02 §3: không lồng kính). Màu chỉ lấy từ token.
-   (tự chọn, kit không ghi): vị trí/kích thước cửa sổ; bong bóng bo 14px với góc "đuôi" 4px; bong
-   bóng người hỏi tô --accent-fill + chữ --on-accent (cặp màu của nút đang chọn). */
+/* Ask AI (demo version) — floating button in the top-right corner + chat window, on every screen.
+   The kit has NO chat pattern ⇒ assembled from existing pieces: flat button (.btn) · the window is a glass
+   panel per the kit's glass table for menu/popover/dialog (26px · 180% · --glass-fill-panel) · every block
+   INSIDE the window is an opaque surface (kit 02 §3: no nested glass). Colors come from tokens only.
+   (our choice, not in the kit): window position/size; bubbles rounded 14px with a 4px "tail" corner; the
+   asker's bubble uses --accent-fill + --on-accent text (the color pair of a selected button). */
 
-/* ── Nút mở ── */
+/* ── Open button ── */
 .ask-fab {
   position: fixed;
   top: 1rem;
@@ -20,11 +20,11 @@
   color: var(--on-accent);
   font-weight: 600;
 }
-/* hover.css hạ z-index của .btn khi hover (2) ⇒ nút nổi phải giữ lớp của mình. */
+/* hover.css lowers .btn's z-index on hover (2) ⇒ the floating button must keep its own layer. */
 .btn.ask-fab:not(:disabled):hover, .btn.ask-fab:not(:disabled):active { z-index: 30; }
 .ask-fab[aria-expanded='true'] { background: var(--surface); color: var(--accent-text); }
 
-/* ── Cửa sổ ── */
+/* ── Window ── */
 .ask-dock {
   --glass-blur: 26px;
   --glass-sat: 180%;
@@ -42,9 +42,9 @@
   animation: ask-dock-in .2s cubic-bezier(.2,.9,.3,1) backwards;
 }
 .ask-dock[hidden] { display: none; }
-/* overflow: hidden vẫn là khung CUỘN ĐƯỢC bằng code (scrollIntoView, focus) ⇒ cửa sổ có thể trượt
-   lên, khung chat bị đẩy khỏi cạnh dưới. `clip` thì không cuộn được ⇒ chỉ .ask-dock-body cuộn.
-   Đặt trong @supports, không viết 2 khai báo overflow liền nhau (minifier gộp mất). */
+/* overflow: hidden is still a box SCROLLABLE from code (scrollIntoView, focus) ⇒ the window can slide
+   up and the chat composer gets pushed off the bottom edge. `clip` can't scroll ⇒ only .ask-dock-body scrolls.
+   Put in @supports; don't write 2 overflow declarations back to back (the minifier merges them away). */
 @supports (overflow: clip) {
   .ask-dock { overflow: clip; }
 }
@@ -64,7 +64,7 @@
 
 .ask-dock-body { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: .9rem 1rem; }
 
-/* Lúc chưa hỏi gì: ghi chú demo + 3 câu gợi ý. */
+/* Before anything is asked: demo note + 3 suggested questions. */
 .ask-welcome h3 { margin: 14px 0 8px; font-size: .78rem; color: var(--ink-3); font-weight: 600; }
 .ask-note {
   margin: 0;
@@ -77,11 +77,11 @@
   line-height: 1.55;
 }
 
-/* Câu hỏi bấm được: nút phẳng, chữ được xuống dòng. */
+/* Clickable questions: flat buttons, text may wrap. */
 .ask-qs { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .ask-q { height: auto; min-height: 2rem; padding: .35rem .8rem; text-align: left; white-space: normal; line-height: 1.4; font-size: .8rem; }
 
-/* ── Hội thoại ── */
+/* ── Conversation ── */
 .ask-log { display: flex; flex-direction: column; gap: .8rem; }
 .ask-msg { min-width: 0; scroll-margin-top: .5rem; }
 .ask-who { display: block; margin: 0 0 4px; font-size: .7rem; font-weight: 600; color: var(--ink-3); }
@@ -95,10 +95,10 @@
   color: var(--on-accent);
 }
 .ask-user p { margin: 0; font-size: .88rem; line-height: 1.5; overflow-wrap: anywhere; }
-/* Nhãn "Bạn" chỉ cho trình đọc màn hình (bong bóng bên phải đã nói ai hỏi). */
+/* The "Bạn" (You) label is for screen readers only (a right-side bubble already says who asked). */
 .ask-user .ask-who { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* Bong bóng trợ lý: thân ĐỤC (nằm trong cửa sổ kính). */
+/* Assistant bubble: OPAQUE surface (sits inside the glass window). */
 .ask-bot {
   padding: .8rem .9rem;
   border-radius: 4px 14px 14px 14px;
@@ -108,8 +108,8 @@
 }
 @keyframes ask-in { from { opacity: 0; transform: translateY(6px); } }
 
-/* Ô số / bảng / NoData bên trong: tắt kính bằng núm biến (backdrop-filter chỉ được khai ở base.css
-   — cssSource.test) + nền trong suốt trên thân đục của bong bóng. */
+/* Stat tiles / tables / NoData inside: turn glass off via the variable knobs (backdrop-filter may only be
+   declared in base.css — cssSource.test) + transparent background on the bubble's opaque surface. */
 .ask-bot .tile, .ask-bot .table-wrap, .ask-bot .state {
   --glass-blur: 0px;
   --glass-sat: 100%;
@@ -144,7 +144,7 @@
 .ask-more { margin-top: .8rem; padding-top: .7rem; border-top: 1px solid var(--line-soft); }
 .ask-more h3 { margin: 0 0 6px; font-size: .74rem; color: var(--ink-3); font-weight: 600; }
 
-/* Đang phân tích: 3 chấm nhịp nhàng. */
+/* Analyzing: 3 pulsing dots. */
 .ask-thinking { display: flex; align-items: center; gap: .6rem; margin: 0; font-size: .84rem; color: var(--ink-2); }
 .ask-dots { display: inline-flex; gap: 4px; }
 .ask-dots i { width: 6px; height: 6px; border-radius: 999px; background: var(--accent-fill); animation: ask-dot 1s ease-in-out infinite; }
@@ -152,7 +152,7 @@
 .ask-dots i:nth-child(3) { animation-delay: .3s; }
 @keyframes ask-dot { 0%, 80%, 100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
 
-/* ── Khung gõ + gợi ý theo chữ đang gõ (mọc LÊN trên ô nhập) ── */
+/* ── Composer + suggestions for the typed text (grow UPWARD above the input) ── */
 .ask-composer { flex: none; display: flex; flex-direction: column; gap: 6px; padding: .6rem .7rem .7rem; border-top: 1px solid var(--line-soft); }
 .ask-auto {
   list-style: none;
@@ -186,7 +186,7 @@
 .ask-send { height: 2.4rem; padding: 0 1.1rem; background: var(--accent-fill); color: var(--on-accent); font-weight: 600; }
 .ask-send:disabled { background: var(--surface); color: var(--ink-3); }
 
-/* ── ≤640px: nút nằm trên thanh trên cùng; cửa sổ phủ toàn màn (hộp thoại). ── */
+/* ── ≤640px: the button sits on the top bar; the window covers the full screen (dialog). ── */
 @media (max-width: 640px) {
   .ask-fab { top: .5rem; right: var(--screen-pad); height: 2rem; padding: 0 .8rem; }
   .ask-dock { inset: 0; width: auto; height: auto; border-radius: 0; border-width: 0; }

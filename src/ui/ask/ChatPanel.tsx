@@ -1,10 +1,10 @@
-// Cửa sổ chat "Hỏi AI" (bản demo — KHÔNG gọi AI thật), nạp động từ ChatDock.
-//   · Portal ra body (kit 02 §3: panel nổi phải portal — tổ tiên có filter/backdrop-filter làm hỏng
-//     kính và position: fixed).
-//   · Desktop: cửa sổ nổi KHÔNG chặn trang (xem bảng trong lúc hỏi). ≤640px: phủ toàn màn ⇒ coi
-//     như hộp thoại: .main + side panel `inert`, Esc / nút đóng trả focus về nút mở.
-//   · KHÔNG bày danh sách câu hỏi mẫu. Gợi ý: 3 câu khi ô còn trống · 3 câu theo chữ đang gõ
-//     (combobox: ↑↓ chọn, Enter hỏi, Tab điền vào ô, Esc đóng gợi ý) · 3 câu liên quan sau mỗi trả lời.
+// "Ask AI" chat window (demo version — does NOT call a real AI), lazy-loaded from ChatDock.
+//   · Portaled to body (kit 02 §3: floating panels must portal — an ancestor with filter/backdrop-filter breaks
+//     the glass and position: fixed).
+//   · Desktop: the floating window does NOT block the page (browse boards while asking). ≤640px: covers the full
+//     screen ⇒ treated as a dialog: .main + side panel `inert`, Esc / close button returns focus to the open button.
+//   · Does NOT lay out the sample question list. Suggestions: 3 while the input is empty · 3 based on typed text
+//     (combobox: ↑↓ select, Enter asks, Tab fills the input, Esc closes suggestions) · 3 related after each answer.
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useChat } from '../../ask/chat';
@@ -17,7 +17,7 @@ import { useLangStore, useT } from '../i18n';
 import { useMediaQuery } from '../useMediaQuery';
 import { BotMessage, QuestionButtons } from './AnswerView';
 
-/** Tên gói ja/vi từ nhãn DB ⇒ nhận ra "グロース" / "gói Tăng trưởng" trong câu gõ. */
+/** ja/vi plan names from DB labels ⇒ recognizes "グロース" / "gói Tăng trưởng" in typed queries. */
 function usePlanNames(): PlanNames {
   const { data } = useSource('labels');
   const out: PlanNames = {};
@@ -50,12 +50,12 @@ export default function ChatPanel({ open, onClose }: { open: boolean; onClose: (
   const auto = useMemo(() => autocomplete(text, lang, names), [text, lang, names]);
   const showAuto = auto.length > 0 && !dismissed;
 
-  // Mở ⇒ focus ô chat.
+  // Open ⇒ focus the chat input.
   useEffect(() => {
     if (open) inputRef.current?.focus({ preventScroll: true });
   }, [open]);
 
-  // ≤640px cửa sổ phủ toàn màn ⇒ nội dung phía sau không nhận focus / không cuộn.
+  // ≤640px the window covers the full screen ⇒ content behind it gets no focus / no scrolling.
   useEffect(() => {
     if (!(open && mobile)) return;
     const behind = [...document.querySelectorAll<HTMLElement>('.main, .side, .side-bar')];
@@ -67,12 +67,12 @@ export default function ChatPanel({ open, onClose }: { open: boolean; onClose: (
     };
   }, [open, mobile]);
 
-  // Lượt hỏi mới ⇒ câu hỏi vừa gửi lên đầu vùng cuộn, câu trả lời mọc ngay dưới.
+  // New turn ⇒ the just-sent question goes to the top of the scroll area, the answer grows right below it.
   const userCount = messages.filter((m) => m.role === 'user').length;
   useEffect(() => {
-    // ⚠ KHÔNG dùng scrollIntoView: nó cuộn MỌI tổ tiên cuộn được, kể cả .ask-dock (overflow ẩn
-    // vẫn cuộn được bằng code) ⇒ cả cửa sổ trượt lên, khung chat bị đẩy lên giữa, nửa dưới trống.
-    // Chỉ cuộn đúng vùng hội thoại.
+    // ⚠ Do NOT use scrollIntoView: it scrolls EVERY scrollable ancestor, including .ask-dock (overflow hidden
+    // is still scrollable from code) ⇒ the whole window slides up, the chat is pushed to the middle, bottom half empty.
+    // Scroll only the conversation area.
     const body = bodyRef.current;
     const el = lastUserRef.current;
     if (userCount === 0 || !body || !el) return;
@@ -104,7 +104,7 @@ export default function ChatPanel({ open, onClose }: { open: boolean; onClose: (
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
       const d = e.key === 'ArrowDown' ? 1 : -1;
-      // Vòng qua -1 (chưa chọn — Enter gửi chữ đang gõ) … n−1.
+      // Cycle through -1 (nothing selected — Enter sends the typed text) … n−1.
       const slots = auto.length + 1;
       setActive((a) => ((a + 1 + d + slots) % slots) - 1);
     } else if (e.key === 'Tab' && !e.shiftKey) {
@@ -184,7 +184,7 @@ export default function ChatPanel({ open, onClose }: { open: boolean; onClose: (
                 id={`${listId}-${i}`}
                 role="option"
                 aria-selected={i === active}
-                // mousedown giữ focus ở ô chat (click không làm mất combobox)
+                // mousedown keeps focus in the chat input (clicking doesn't dismiss the combobox)
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => pickQ(a.id)}
               >

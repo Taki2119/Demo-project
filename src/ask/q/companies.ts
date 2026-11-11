@@ -1,4 +1,4 @@
-// Câu hỏi mẫu — nhóm CÔNG TY. Nguồn: company-monthly (tháng mới nhất, mỗi dòng một công ty).
+// Sample questions — COMPANIES group. Source: company-monthly (latest month, one row per company).
 import type { Row } from '../../data/api';
 import { ratio, seatUsage } from '../../data/metrics';
 import {
@@ -61,7 +61,7 @@ const topCompanies: Question = {
   },
 };
 
-/** Câu "MRR theo <thuộc tính công ty>" — ngành / khu vực / quy mô dùng chung khuôn. */
+/** "MRR by <company attribute>" questions — industry / region / size share one template. */
 function byAttr(id: string, attr: 'industry' | 'region' | 'size_band', ask: Question['ask'], keywords: string[], related: string[], name: { ja: string; vi: string }): Question {
   return {
     id,

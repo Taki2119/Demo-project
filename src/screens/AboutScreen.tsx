@@ -1,6 +1,6 @@
-// Trang Giới thiệu (#/about): demo là gì · dữ liệu mẫu · mỗi trang trả lời câu hỏi gì · cách đọc
-// biểu đồ · bảng chỉ số · kiến trúc. Bảng chỉ số render TỪ glossary (không viết lại lần hai);
-// tên trang + câu hỏi lấy từ catalog; tên chỉ số lấy từ nhãn DB.
+// About page (#/about): what the demo is · sample data · what question each page answers · how to read
+// charts · metrics table · architecture. The metrics table renders FROM the glossary (not written a second time);
+// page names + questions come from the catalog; metric names come from DB labels.
 import { COMMON_SCOPE, GLOSSARY, GLOSSARY_KEYS, textOf, type Text } from '../data/glossary';
 import { useNameRefs } from '../data/labels';
 import { BOARDS, PAGE_ASK, pick, PROJECT_CHURN } from '../nav/catalog';
@@ -8,7 +8,7 @@ import { NO_VALUE } from '../ui/format';
 import { useLangStore, useT } from '../ui/i18n';
 import { PageMeta } from '../ui/parts';
 
-// Tên công nghệ không dịch.
+// Technology names are not translated.
 const STACK = [
   ['Supabase (Postgres)', 'stackDb'],
   ['Vercel (Node API)', 'stackApi'],

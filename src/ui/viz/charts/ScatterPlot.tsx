@@ -1,4 +1,4 @@
-// Quan hệ 2 biến, ≤ 3 nhóm (kit 03 §2): chấm R 4.5, vùng bắt chuột HIT 12.
+// Relationship of 2 variables, ≤ 3 groups (kit 03 §2): dot R 4.5, mouse hit area HIT 12.
 import { CartesianGrid, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from 'recharts';
 import { AXIS, GRID, gutterFor, HOVER_GLOW, Y_WIDTH } from '../axis';
 import type { LegendItem } from '../Legend';
@@ -75,14 +75,14 @@ export function ScatterPlot({
   formatY,
 }: {
   data: readonly ScatterDatum[];
-  /** nhóm (key = giá trị `series`), tối đa 3 */
+  /** groups (key = value of `series`), at most 3 */
   groups: readonly LegendItem[];
   xLabel: string;
   yLabel: string;
   formatX: (v: number) => string;
   formatY: (v: number) => string;
 }) {
-  if (groups.length > SCATTER_MAX_GROUPS) throw new Error(`ScatterPlot: ${groups.length} nhóm > ${SCATTER_MAX_GROUPS}`);
+  if (groups.length > SCATTER_MAX_GROUPS) throw new Error(`ScatterPlot: ${groups.length} groups > ${SCATTER_MAX_GROUPS}`);
   const anim = useChartAnim();
   return (
     <ResponsiveContainer width="100%" height="100%">

@@ -1,6 +1,6 @@
-// Cột xếp lớp (+ 1 đường tuỳ chọn, CÙNG đơn vị) — kit 03 §2. Phần tử đầu của `stacks` ở đáy.
-// Gộp luôn vai trò BarLineChart (1 lát + đường) và cột phân cực (stackOffset 'sign': lát âm đi
-// xuống dưới mốc 0). Một trục Y duy nhất.
+// Stacked bars (+ 1 optional line, SAME unit) — kit 03 §2. The first element of `stacks` is at the bottom.
+// Also covers BarLineChart (1 slice + line) and diverging bars (stackOffset 'sign': negative slices go
+// below the 0 line). A single Y axis.
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AXIS, AXIS_PAD, AXIS_TICK_GAP, GRID, gutterFor, HOVER_GLOW, Y_WIDTH } from '../axis';
 import type { LegendItem } from '../Legend';
@@ -14,9 +14,9 @@ export interface BarSpec {
   key: string;
   label: string;
   color: string;
-  /** -1 = lát nằm DƯỚI mốc 0 (cột phân cực). Mặc định trên. */
+  /** -1 = slice sits BELOW the 0 line (diverging bars). Default above. */
   sign?: 1 | -1;
-  /** tooltip hiện số tuyệt đối (lát chỉ đổi dấu để vẽ dưới mốc 0). */
+  /** tooltip shows the absolute value (the slice's sign is flipped only to draw below 0). */
   tipAbs?: boolean;
 }
 export interface LineSpec {
@@ -25,7 +25,7 @@ export interface LineSpec {
   color: string;
 }
 
-/** Chú giải theo thứ tự đọc từ TRÊN xuống: lát dương đảo ngược, rồi lát âm, rồi đường. */
+/** Legend in reading order from the TOP down: positive slices reversed, then negative slices, then the line. */
 export function stackItems(stacks: readonly BarSpec[], line?: LineSpec): LegendItem[] {
   const up = stacks.filter((s) => s.sign !== -1).reverse();
   const down = stacks.filter((s) => s.sign === -1);
@@ -52,7 +52,7 @@ export function StackedBarLineChart({
 }) {
   const anim = useChartAnim();
   const keys = stacks.map((s) => s.key);
-  // Nhãn Y dài nhất tính trên tổng chồng (dương / âm) + đường.
+  // Longest Y label computed on the stacked totals (positive / negative) + the line.
   const extent: (number | null)[] = data.flatMap((d) => {
     let up = 0;
     let down = 0;

@@ -1,6 +1,6 @@
-// Chọn KHOẢNG tháng (từ – đến). Kit 01 §6 PeriodFilter, chỉ khối THÁNG.
-// Bấm lần 1 = một đầu, lần 2 = đầu kia (bấm ngược chiều thì tự đảo) ⇒ áp dụng + đóng + focus về nút.
-// Giữa hai lần bấm, rê chuột / Tab qua ô thì tô trước khoảng sẽ chọn.
+// Pick a month RANGE (from – to). Kit 01 §6 PeriodFilter, MONTH block only.
+// 1st click = one end, 2nd click = the other end (clicking backwards swaps them) ⇒ apply + close + focus back to the button.
+// Between the two clicks, hovering / Tabbing over a cell previews the range to be picked.
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { MonthRange, Ym } from '../../data/period';
@@ -19,7 +19,7 @@ export function MonthRangeFilter({
   onChange: (r: MonthRange) => void;
   months: readonly Ym[];
   label: string;
-  /** Chữ hiện trên nút (nơi gọi định dạng theo ngôn ngữ). */
+  /** Text shown on the button (the caller formats it per language). */
   text: string;
 }) {
   const t = useT();

@@ -1,9 +1,9 @@
-// Ngày dữ liệu của một TRANG — lấy từ `updatedAt` mà API trả kèm mỗi nguồn (= mart.as_of()),
-// KHÔNG lấy đồng hồ máy người xem. Trang đọc nhiều nguồn ⇒ ngày CŨ NHẤT (số trên trang chỉ
-// chắc tới ngày đó).
+// Data date of a PAGE — taken from the `updatedAt` the API returns with each source (= mart.as_of()),
+// NOT from the viewer's machine clock. A page reading several sources ⇒ the OLDEST date (the numbers on the page are only
+// certain up to that date).
 
-/** Ngày cũ nhất ('YYYY-MM-DD'). Danh sách rỗng, hoặc có nguồn không biết ngày (null / sai dạng)
- *  ⇒ null: không khẳng định được gì. So chuỗi ISO, không đi qua Date. */
+/** Oldest date ('YYYY-MM-DD'). Empty list, or a source with unknown date (null / malformed)
+ *  ⇒ null: nothing can be asserted. Compares ISO strings, doesn't go through Date. */
 export function oldestDate(dates: readonly (string | null | undefined)[]): string | null {
   if (dates.length === 0) return null;
   let min: string | null = null;

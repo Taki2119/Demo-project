@@ -1,10 +1,10 @@
-// Phần THUẦN của trang dự án cảnh báo huỷ sớm.
+// PURE part of the early-churn-warning project page.
 import type { Row } from './api';
 import { ratio } from './metrics';
 
 export const BAND_ORDER = ['cancel_scheduled', 'high', 'medium', 'low'] as const;
 
-/** Độ chính xác theo band: trong các ảnh chụp đã đủ 90 ngày sau, bao nhiêu % đã huỷ thật. */
+/** Precision by band: among snapshots that already have 90 days after them, what % actually churned. */
 export function precisionByBand(rows: readonly Row[]): { band: string; n: number; churnRate: number | null }[] {
   return BAND_ORDER.map((band) => {
     const labeled = rows.filter((r) => r.risk_band === band && typeof r.churned_within_90d === 'boolean');
@@ -13,7 +13,7 @@ export function precisionByBand(rows: readonly Row[]): { band: string; n: number
   });
 }
 
-/** Danh sách cần chăm sóc: bỏ band thấp, xếp theo band rồi điểm giảm dần. */
+/** Watch list: drop the low band, sort by band then score descending. */
 export function watchOrder(rows: readonly Row[]): Row[] {
   const rank = (r: Row) => (BAND_ORDER as readonly string[]).indexOf(String(r.risk_band));
   return rows

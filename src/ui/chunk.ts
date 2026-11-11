@@ -1,8 +1,8 @@
-// Nạp động chunk biểu đồ (kit 01 §1): deploy mới xoá chunk cũ ⇒ tab đang mở gọi import() lỗi.
-//   · lỗi ⇒ reload trang ĐÚNG 1 lần (cờ trong sessionStorage);
-//   · không reload khi offline hoặc không có storage (tránh vòng lặp vô hạn) ⇒ ném lỗi cho ErrorBoundary;
-//   · đã quyết reload ⇒ trả promise không bao giờ xong để <Suspense> giữ vòng chờ.
-// Môi trường truyền qua `env` (bẫy #13: hàm thuần không đọc thẳng biến toàn cục).
+// Lazy-loading the chart chunk (kit 01 §1): a new deploy deletes old chunks ⇒ an open tab's import() fails.
+//   · error ⇒ reload the page EXACTLY once (flag in sessionStorage);
+//   · no reload when offline or without storage (avoids an infinite loop) ⇒ throw to the ErrorBoundary;
+//   · once reload is decided ⇒ return a never-settling promise so <Suspense> keeps the spinner.
+// The environment is passed via `env` (kit 04 pitfall #13: pure functions don't read globals directly).
 
 export interface ChunkEnv {
   storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null;

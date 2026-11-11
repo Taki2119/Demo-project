@@ -1,5 +1,5 @@
-// Câu hỏi mẫu — nhóm CẢNH BÁO HUỶ. Nguồn: churn-watchlist (ảnh chụp mới nhất) · interventions-monthly ·
-// churn-history (52 tuần, đo độ chính xác điểm rủi ro).
+// Sample questions — CHURN ALERT group. Sources: churn-watchlist (latest snapshot) · interventions-monthly ·
+// churn-history (52 weeks, measures risk-score accuracy).
 import type { Row } from '../../data/api';
 import { BAND_ORDER, precisionByBand } from '../../data/churn';
 import { ratio } from '../../data/metrics';
@@ -289,11 +289,11 @@ const riskByOwner: Question = {
   },
 };
 
-// ── chăm sóc (interventions) ────────────────────────────────────────────────
+// ── interventions ───────────────────────────────────────────────────────────
 const IV = 'interventions-monthly' as const;
 const needIv = () => [{ source: IV, params: {} }];
 
-/** Tỉ lệ giữ được = giữ được ÷ (giữ được + đã huỷ + không phản hồi). "Đang xử lý" chưa có kết quả ⇒ bỏ. */
+/** Save rate = saved ÷ (saved + churned + no response). "Pending" has no outcome yet ⇒ excluded. */
 const decided = (x: { saved: number; churned: number; no_response: number }) => x.saved + x.churned + x.no_response;
 const saveRate = (x: { saved: number; churned: number; no_response: number }) => ratio(x.saved, decided(x));
 

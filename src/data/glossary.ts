@@ -1,45 +1,45 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// GLOSSARY — MỘT nguồn giải thích chỉ số cho nút ⓘ VÀ bảng chỉ số ở trang Giới thiệu.
+// GLOSSARY — ONE source of metric explanations for the ⓘ button AND the metrics table on the About page.
 //
-// Luật:
-//   · TÊN chỉ số KHÔNG ghi ở đây: `name` chỉ TRỎ tới nhãn trong DB (mart.column_labels /
-//     mart.labels, CLAUDE.md §2.4). glossary.test.ts đỏ nếu nhãn được trỏ tới không có trong
-//     migration nhãn.
-//   · Chỉ ghi điều mà SQL / code HIỆN làm. Mỗi mục có comment trỏ tới file:dòng nguồn để soát.
-//     Không chắc ⇒ để TODO (hiện "chưa xác nhận"), không bịa.
-//   · Mỗi trường chữ có đủ ja + vi (test khoá).
+// Rules:
+//   · Metric NAMES are NOT written here: `name` only POINTS to labels in the DB (mart.column_labels /
+//     mart.labels, CLAUDE.md §2.4). glossary.test.ts goes red if a referenced label isn't in the
+//     labels migration.
+//   · Only state what the SQL / code CURRENTLY does. Each entry has a comment pointing to the source file:line for review.
+//     Not sure ⇒ leave a TODO (shows "chưa xác nhận" / unconfirmed), don't make things up.
+//   · Every text field has both ja + vi (locked by test).
 // ─────────────────────────────────────────────────────────────────────────────
 import type { LocalStr } from '../nav/catalog';
 
-/** Trỏ tới nhãn trong DB: tên cột (mart.column_labels) hoặc (domain, code) của mart.labels. */
+/** Points to labels in the DB: a column name (mart.column_labels) or (domain, code) of mart.labels. */
 export type NameRef = { col: string } | { label: readonly [domain: string, code: string] };
 
-/** Chưa xác nhận được từ code / SQL — người dùng điền sau. */
+/** Not yet confirmed from code / SQL — the user fills it in later. */
 export const TODO = 'TODO' as const;
 export type Text = LocalStr | typeof TODO;
 
 export interface GlossaryEntry {
-  /** Tên hiện ra = các nhãn được trỏ tới, nối bằng " · ". */
+  /** Displayed name = the referenced labels, joined with " · ". */
   name: readonly NameRef[];
-  /** Định nghĩa một câu. */
+  /** One-sentence definition. */
   what: Text;
   formula: Text;
   unit: Text;
-  /** View mart mà số đi ra (tên SQL, không dịch). */
+  /** The mart view the number comes from (SQL name, not translated). */
   source: string;
-  /** Phạm vi riêng của chỉ số (không kể các câu chung ở COMMON_SCOPE). */
+  /** The metric's own scope (excluding the shared sentences in COMMON_SCOPE). */
   scope: Text;
-  /** Tháng đang chạy là số tạm ⇒ thêm câu COMMON_SCOPE.partialMonth. */
+  /** The running month is provisional ⇒ add the COMMON_SCOPE.partialMonth sentence. */
   partialMonth: boolean;
 }
 
 const s = (ja: string, vi: string): LocalStr => ({ ja, vi });
 
-/** Câu phạm vi CHUNG cho mọi chỉ số (hiện ở mọi popover + một lần ở trang Giới thiệu). */
+/** SHARED scope sentences for every metric (shown in every popover + once on the About page). */
 export const COMMON_SCOPE = {
-  // Không có cột / cờ nào đánh dấu tài khoản test hay nội bộ: raw.sql:51-69 (companies, users).
+  // No column / flag marks test or internal accounts: raw.sql:51-69 (companies, users).
   testInternal: s('データはテスト・社内アカウントを区別していません。', 'Dữ liệu không phân biệt tài khoản test/nội bộ.'),
-  // Cột thời gian đều là `date` (raw.sql:58,67-68,135,160); múi giờ chỉ là một dòng meta: generate.mjs:108.
+  // Time columns are all `date` (raw.sql:58,67-68,135,160); the timezone is just a meta row: generate.mjs:108.
   timezone: s(
     '時刻はなく日付単位です。raw.dataset_meta のタイムゾーン欄は Asia/Ho_Chi_Minh。',
     'Mốc thời gian là NGÀY (không có giờ). raw.dataset_meta ghi múi giờ Asia/Ho_Chi_Minh.',
@@ -57,9 +57,9 @@ const PEOPLE = s('人', 'người');
 const RATE = s('%', '%');
 
 export const GLOSSARY = {
-  // mart.sql:37-50 (MRR tại measure_date, cộng các subscription) · :136,152 (Σ theo gói)
-  // raw.sql:85-95 (subscription_periods là nguồn sự thật; mrr đã trừ giảm giá; dùng thử = 0)
-  // Số phụ ở ô: deltaRate — metrics.ts:63-67; kỳ so sánh: data/period.ts prevRange.
+  // mart.sql:37-50 (MRR at measure_date, summing subscriptions) · :136,152 (Σ by plan)
+  // raw.sql:85-95 (subscription_periods is the source of truth; mrr is net of discounts; trial = 0)
+  // Secondary figure on the tile: deltaRate — metrics.ts:63-67; comparison period: data/period.ts prevRange.
   mrr_end: {
     name: [{ col: 'mrr_end' }],
     what: s('締め日時点で有効な契約のMRR合計。', 'Tổng MRR của các thuê bao còn hiệu lực tại ngày chốt số của tháng.'),
@@ -92,8 +92,8 @@ export const GLOSSARY = {
     scope: s('mart の列からブラウザで計算。分母が 0 のときは「—」。', 'Tính ở trình duyệt từ các cột của mart. Mẫu số = 0 thì hiện "—".'),
     partialMonth: true,
   },
-  // mart.sql:82-89 (phân loại) · :101-115 (đổi gói = 2 dòng) · :121-127 · SCHEMA.md:84-103
-  // Biểu đồ vẽ new · expansion (trên) · contraction · churned (dưới): RevenueCharts.tsx
+  // mart.sql:82-89 (classification) · :101-115 (plan change = 2 rows) · :121-127 · SCHEMA.md:84-103
+  // The chart draws new · expansion (above) · contraction · churned (below): RevenueCharts.tsx
   mrr_delta: {
     name: [{ col: 'mrr_delta' }],
     what: s('前月からの MRR の増減を種類別に分けたもの。', 'Thay đổi MRR so với tháng trước, tách theo loại biến động.'),
@@ -109,8 +109,8 @@ export const GLOSSARY = {
     ),
     partialMonth: true,
   },
-  // mart.sql:83 (movement 'new' = tháng trước MRR 0, tháng này > 0, CHƯA từng trả tiền) · :121 (Σ mrr_delta) · :156
-  // Ô số ở trang Doanh thu CỘNG các tháng của khoảng đang lọc (data/period.ts sumFlow).
+  // mart.sql:83 (movement 'new' = previous month MRR 0, this month > 0, NEVER paid before) · :121 (Σ mrr_delta) · :156
+  // The stat tile on the Revenue page SUMS the months of the filtered range (data/period.ts sumFlow).
   new_mrr: {
     name: [{ col: 'new_mrr' }],
     what: s('初めて有料になった企業が加えた MRR。', 'MRR do công ty lần đầu trả tiền mang lại.'),
@@ -126,7 +126,7 @@ export const GLOSSARY = {
     ),
     partialMonth: true,
   },
-  // mart.sql:143-146 (theo period_month; status <> 'void') · generate.mjs:392-415 (amount = MRR lúc phát hành)
+  // mart.sql:143-146 (by period_month; status <> 'void') · generate.mjs:392-415 (amount = MRR at issue time)
   invoiced_amount: {
     name: [{ col: 'invoiced_amount' }],
     what: s('対象月（period_month）の請求額合計。', 'Tổng tiền xuất hoá đơn của kỳ (period_month).'),
@@ -139,7 +139,7 @@ export const GLOSSARY = {
     ),
     partialMonth: true,
   },
-  // mart.sql:146 (status = 'paid', vẫn gom theo period_month) · generate.mjs:400-411
+  // mart.sql:146 (status = 'paid', still grouped by period_month) · generate.mjs:400-411
   paid_amount: {
     name: [{ col: 'paid_amount' }],
     what: s('対象月の請求のうち、入金済みの金額。', 'Phần đã thu của các hoá đơn thuộc kỳ đó.'),
@@ -152,7 +152,7 @@ export const GLOSSARY = {
     ),
     partialMonth: true,
   },
-  // mart.sql:190,196 (is_seat tại measure_date) · :220,228 (chỉ công ty có gói)
+  // mart.sql:190,196 (is_seat at measure_date) · :220,228 (only companies with a plan)
   seat_users_end: {
     name: [{ col: 'seat_users_end' }],
     what: s('締め日時点でシートを持つユーザー数。', 'Số người dùng đang giữ ghế tại ngày chốt số.'),
@@ -165,7 +165,7 @@ export const GLOSSARY = {
     scope: s('その月にプランのある企業のユーザーのみ。', 'Chỉ user của công ty có gói trong tháng đó.'),
     partialMonth: true,
   },
-  // mart.sql:216,223 (active_days > 0) · :181,203 · raw.sql:132-139 (dòng hoạt động: sessions ≥ 1)
+  // mart.sql:216,223 (active_days > 0) · :181,203 · raw.sql:132-139 (activity row: sessions ≥ 1)
   mau: {
     name: [{ col: 'mau' }],
     what: s('月内に1日以上利用したユーザー数。', 'Số người dùng có ít nhất 1 ngày hoạt động trong tháng.'),
@@ -214,7 +214,7 @@ export const GLOSSARY = {
     scope: s('その月にプランのある企業のユーザーのみ。', 'Chỉ user của công ty có gói trong tháng đó.'),
     partialMonth: true,
   },
-  // raw.sql:68 (deactivated_at = ngày ĐẦU TIÊN không còn là ghế) · mart.sql:192-193,222
+  // raw.sql:68 (deactivated_at = FIRST day no longer a seat) · mart.sql:192-193,222
   deactivated_users: {
     name: [{ col: 'deactivated_users' }],
     what: s('その月に停止されたユーザー数。', 'Số người dùng bị tắt trong tháng.'),
@@ -227,8 +227,8 @@ export const GLOSSARY = {
     ),
     partialMonth: true,
   },
-  // mart.sql:179-186 (đếm ngày có dòng hoạt động) · :203 · biểu đồ: ByUserCharts.tsx (chỉ is_seat; nhóm 0 · 1–4 · 5–9 · 10–19 · 20+)
-  // Tháng hiển thị = tháng mới nhất: server/lib/sources.js:25-37
+  // mart.sql:179-186 (counts days with activity rows) · :203 · chart: ByUserCharts.tsx (is_seat only; buckets 0 · 1–4 · 5–9 · 10–19 · 20+)
+  // Displayed month = the latest month: server/lib/sources.js:25-37
   active_days: {
     name: [{ col: 'active_days' }],
     what: s('ユーザーがその月に利用した日数。', 'Số ngày trong tháng mà người dùng có hoạt động.'),
@@ -241,7 +241,7 @@ export const GLOSSARY = {
     ),
     partialMonth: true,
   },
-  // mart.sql:41,79 (MRR công ty tại measure_date) · company_monthly :265-267 · top 10: ByCompanyCharts.tsx
+  // mart.sql:41,79 (company MRR at measure_date) · company_monthly :265-267 · top 10: ByCompanyCharts.tsx
   mrr: {
     name: [{ col: 'mrr' }],
     what: s('企業ごとの、締め日時点の MRR。', 'MRR của từng công ty tại ngày chốt số.'),
@@ -251,8 +251,8 @@ export const GLOSSARY = {
     scope: s('最新月を表示。複数契約の企業のプラン = 最上位のプラン。', 'Hiện tháng mới nhất. Công ty có nhiều thuê bao: gói = gói hạng cao nhất.'),
     partialMonth: true,
   },
-  // mart.sql:280-399 (điểm v2, band) · :292-293 (ảnh chụp Chủ nhật ≤ as_of) · :403-419 (watchlist = ảnh mới nhất)
-  // SCHEMA.md:134-162 · ô đếm: ChurnScreen.tsx · biểu đồ bỏ band "low": ChurnCharts.tsx
+  // mart.sql:280-399 (score v2, band) · :292-293 (Sunday snapshot ≤ as_of) · :403-419 (watchlist = latest snapshot)
+  // SCHEMA.md:134-162 · count tile: ChurnScreen.tsx · chart drops the "low" band: ChurnCharts.tsx
   risk_band: {
     name: [{ col: 'risk_band' }],
     what: s(
@@ -271,7 +271,7 @@ export const GLOSSARY = {
     ),
     partialMonth: false,
   },
-  // mart.sql:394-398 (nhãn: canceled_at trong (ngày chụp, ngày chụp + 90]; null khi chưa đủ 90 ngày) · churn.ts:7-13
+  // mart.sql:394-398 (label: canceled_at in (snapshot date, snapshot date + 90]; null until 90 days have passed) · churn.ts:7-13
   churned_within_90d: {
     name: [{ col: 'churned_within_90d' }],
     what: s(
@@ -290,7 +290,7 @@ export const GLOSSARY = {
     ),
     partialMonth: false,
   },
-  // mart.sql:421-430 (theo tháng created_at; đếm theo outcome) · tháng trống = 0: ChurnCharts.tsx (fillMonths)
+  // mart.sql:421-430 (by created_at month; counted by outcome) · empty month = 0: ChurnCharts.tsx (fillMonths)
   interventions: {
     name: [{ col: 'interventions' }],
     what: s('フォロー対応の件数を作成月・結果別に数えたもの。', 'Số lượt chăm sóc theo tháng tạo, chia theo kết quả.'),
@@ -303,7 +303,7 @@ export const GLOSSARY = {
     ),
     partialMonth: true,
   },
-  // mart.sql:388-393 (thành phần nặng điểm nhất; hoà thì usage → key features → seats → billing)
+  // mart.sql:388-393 (the component weighing most in the score; ties ⇒ usage → key features → seats → billing)
   top_reason: {
     name: [{ col: 'top_reason' }],
     what: s('リスク点数の中で最も大きい要素。', 'Thành phần chiếm nhiều điểm rủi ro nhất.'),

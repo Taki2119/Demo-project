@@ -1,4 +1,4 @@
-// Biểu đồ trang Số lượng người dùng (nạp động). Nhận dòng THÁNG đã gộp theo gói.
+// Charts for the User count page (lazy-loaded). Receives MONTH rows already rolled up by plan.
 import type { Row } from '../../data/api';
 import { negate, pickColumns, stickinessByMonth } from '../../data/chartData';
 import { useColumnLabel, useLabel } from '../../data/labels';
@@ -25,7 +25,7 @@ export default function UsersCharts({ rows }: { rows: readonly Row[] }) {
     { key: 'seat_users_end', label: col('seat_users_end'), color: c1 as string },
     { key: 'mau', label: col('mau'), color: c2 as string },
   ];
-  // Cột phân cực: người dùng mới (trên) · người dùng bị tắt (dưới, đổi dấu CHỈ để vẽ; tooltip hiện số tuyệt đối).
+  // Diverging bars: new users (above) · deactivated users (below, sign flipped ONLY for drawing; tooltip shows the absolute value).
   const flows: BarSpec[] = [
     { key: 'new_users', label: col('new_users'), color: 'var(--ok-fill)' },
     { key: 'deactivated_out', label: col('deactivated_users'), color: 'var(--crit-fill)', sign: -1, tipAbs: true },

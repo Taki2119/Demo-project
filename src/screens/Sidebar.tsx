@@ -23,9 +23,9 @@ function Link({ to, children }: { to: Route; children: string }) {
   );
 }
 
-// ≤640px: side panel thành NGĂN KÉO (kit 02 §4) — thanh trên cùng có nút mở, lớp phủ z 39,
-// ngăn kéo z 40. Mở ⇒ .main `inert` + khoá cuộn. Esc / bấm lớp phủ / đổi trang ⇒ đóng, rồi trả
-// focus về nút mở. >640px: không có gì thay đổi so với side panel thường.
+// ≤640px: the side panel becomes a DRAWER (kit 02 §4) — the top bar has an open button, overlay z 39,
+// drawer z 40. Open ⇒ .main `inert` + scroll lock. Esc / click the overlay / page change ⇒ close, then return
+// focus to the open button. >640px: nothing changes compared with the regular side panel.
 const MOBILE = '(max-width: 640px)';
 
 function MenuIcon() {
@@ -51,14 +51,14 @@ export function Sidebar() {
   const wasShown = useRef(false);
 
   const hash = toHash(route);
-  useEffect(() => setOpen(false), [hash]); // đổi trang ⇒ đóng
+  useEffect(() => setOpen(false), [hash]); // page change ⇒ close
   useEffect(() => {
-    if (!mobile) setOpen(false); // rời khung mobile ⇒ đóng (không để .main bị khoá)
+    if (!mobile) setOpen(false); // leaving the mobile viewport ⇒ close (don't leave .main locked)
   }, [mobile]);
 
   useEffect(() => {
     if (!shown) {
-      if (wasShown.current) toggleRef.current?.focus(); // đóng xong ⇒ trả focus về nút mở
+      if (wasShown.current) toggleRef.current?.focus(); // after closing ⇒ return focus to the open button
       wasShown.current = false;
       return;
     }

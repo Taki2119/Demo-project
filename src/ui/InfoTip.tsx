@@ -1,9 +1,9 @@
-// Nút ⓘ cạnh tên chỉ số / tiêu đề thẻ ⇒ popover giải thích, đọc TỪ src/data/glossary.ts
-// (kit 02 §6 InfoTip + popoverFocus). Luật:
-//   · popover PORTAL ra body (kit 02 §3 bẫy 1–2: không lồng kính, không bị containing block);
-//   · mở ⇒ focus vào popover; Esc ⇒ đóng + focus về nút ⓘ; bấm ra ngoài (pointerdown) ⇒ đóng;
-//   · vị trí position: fixed, kẹp trong khung, đặt lại khi cuộn / đổi cỡ;
-//   · chung luật "một panel mở mỗi lúc" với bộ lọc — tất cả ở usePopover.ts.
+// ⓘ button next to a metric name / card title ⇒ explanatory popover, read FROM src/data/glossary.ts
+// (kit 02 §6 InfoTip + popoverFocus). Rules:
+//   · popover is PORTALed to body (kit 02 §3 glass pitfalls 1–2: no nested glass, no containing block);
+//   · open ⇒ focus into the popover; Esc ⇒ close + focus back to the ⓘ button; click outside (pointerdown) ⇒ close;
+//   · position: fixed, clamped to the viewport, repositioned on scroll / resize;
+//   · shares the "one panel open at a time" rule with the filters — all in usePopover.ts.
 import { createPortal } from 'react-dom';
 import { COMMON_SCOPE, GLOSSARY, textOf, type GlossaryKey, type Text } from '../data/glossary';
 import { useNameRefs } from '../data/labels';
@@ -27,7 +27,7 @@ export function InfoTip({ keys }: { keys: GlossaryKey | readonly GlossaryKey[] }
   const lang = useLangStore((s) => s.lang);
   const nameOf = useNameRefs();
   const list = asList(keys);
-  // Mở/đóng, focus, Esc, bấm ra ngoài, vị trí, "một panel mở mỗi lúc": usePopover.ts.
+  // Open/close, focus, Esc, click outside, position, "one panel open at a time": usePopover.ts.
   const { id, open, toggle, btn, pop, style } = usePopover();
   const names = list.map((k) => nameOf(GLOSSARY[k].name));
   const label = names.every((n) => n != null) ? `${t('info')}: ${names.join(' · ')}` : t('info');

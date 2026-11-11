@@ -1,7 +1,7 @@
-# Build + deploy GitHub Pages khi push vào main. PR thì chỉ chạy cổng kiểm (không deploy).
-# Cần bật một lần: Settings → Pages → Source = "GitHub Actions".
-# URL API: Settings → Secrets and variables → Actions → Variables → VITE_API_URL
-# (không phải secret — nó nằm trong bundle; để trống thì app chạy ở trạng thái "chưa cấu hình").
+# Build + deploy GitHub Pages on push to main. PRs only run the check gates (no deploy).
+# Must be enabled once: Settings → Pages → Source = "GitHub Actions".
+# API URL: Settings → Secrets and variables → Actions → Variables → VITE_API_URL
+# (not a secret — it ends up in the bundle; leave empty and the app runs in the "not configured" state).
 name: deploy
 
 on:
@@ -18,9 +18,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # MỘT job cổng cho cả PR lẫn main ⇒ bộ cổng + thứ tự giống hệt nhau theo cấu tạo (kit 04: PR và
-  # deploy phải cùng bộ cổng, cùng thứ tự). Thêm cổng thì thêm Ở ĐÂY, đừng tách job / file riêng.
-  # Secret PRIVACY_DENY (danh sách tên cấm, phẩy hoặc xuống dòng): thiếu ⇒ check:bundle FAIL.
+  # ONE gate job for both PRs and main ⇒ the gate set + order are identical by construction (kit 04: PR and
+  # deploy must have the same gate set, same order). Add gates HERE, don't split into a separate job / file.
+  # Secret PRIVACY_DENY (list of denied names, comma- or newline-separated): missing ⇒ check:bundle FAILs.
   checks:
     runs-on: ubuntu-latest
     steps:

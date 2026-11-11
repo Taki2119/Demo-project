@@ -22,8 +22,8 @@ export default function App() {
           <HomeScreen />
         )}
       </main>
-      {/* Hỏi AI (bản demo): nút góc trên bên phải, có ở MỌI màn. Nằm NGOÀI .main (main dựng lại theo
-          route) ⇒ cửa sổ + hội thoại giữ nguyên khi chuyển trang. */}
+      {/* Ask AI (demo version): button in the top-right corner, on EVERY screen. Sits OUTSIDE .main (main is rebuilt per
+          route) ⇒ the window + conversation persist across page changes. */}
       <ChatDock />
     </div>
   );

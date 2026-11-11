@@ -1,5 +1,5 @@
-// Dự án "cảnh báo huỷ sớm": danh sách cần chăm sóc (ảnh chụp mới nhất) + độ chính xác của điểm
-// (band rủi ro có huỷ thật trong 90 ngày không) + biểu đồ (nạp động).
+// "Early churn warning" project: watch list (latest snapshot) + score precision
+// (did the risk band actually churn within 90 days) + charts (lazy-loaded).
 import { lazy, Suspense } from 'react';
 import { useSource } from '../data/api';
 import { oldestDate } from '../data/freshness';
@@ -15,7 +15,7 @@ import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { FilterBar, MonthRangeFilter, usePeriodText, useRangeFilter } from '../ui/filters';
 import { DataTable, PageMeta, StatTile, StateBox } from '../ui/parts';
 
-// Biểu đồ nạp ĐỘNG (Recharts không được vào chunk đầu).
+// Charts are lazy-loaded (Recharts must not get into the initial chunk).
 const ChurnCharts = lazy(boardChunk('churn', () => import('./charts/ChurnCharts')));
 
 const WATCH_COLUMNS = ['company_name', 'plan_id', 'risk_band', 'risk_score', 'top_reason', 'mrr', 'activity_trend', 'seat_utilization', 'owner_name', 'last_intervention_outcome'];
@@ -27,13 +27,13 @@ export function ChurnScreen() {
   const watch = useSource('churn-watchlist');
   const history = useSource('churn-history');
   const interventions = useSource('interventions-monthly');
-  // Trang đọc 3 nguồn ⇒ ngày CŨ NHẤT; nguồn nào chưa về ⇒ chưa hiện chip.
+  // The page reads 3 sources ⇒ the OLDEST date; a source not yet arrived ⇒ chip not shown yet.
   const asOf = oldestDate([watch.data?.updatedAt, history.data?.updatedAt, interventions.data?.updatedAt]);
   const rows = watch.data ? numericRows(watch.data.rows) : [];
   const sorted = watchOrder(rows);
   const precision = history.data ? precisionByBand(history.data.rows) : null;
-  // Khoảng tháng CHỈ áp cho 2 biểu đồ lịch sử (ảnh chụp tuần ⇒ lọc theo tháng chứa nó; kết quả
-  // chăm sóc theo tháng). Danh sách theo dõi + độ chính xác theo band KHÔNG đổi theo bộ lọc.
+  // The month range applies ONLY to the 2 history charts (weekly snapshot ⇒ filtered by the month containing it; outreach
+  // results by month). The watch list + precision by band do NOT change with the filter.
   const months = history.data ? monthsOf(history.data.rows, 'snapshot_date') : null;
   const f = useRangeFilter(months);
   const text = usePeriodText(asOf);

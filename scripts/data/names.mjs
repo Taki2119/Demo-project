@@ -1,6 +1,6 @@
-// Kho chữ để GHÉP tên hư cấu. Mọi tên công ty / tên người trong bộ dữ liệu là tổ hợp ngẫu nhiên
-// của các mảnh dưới đây — không lấy từ danh sách công ty hay người thật nào.
-// Email luôn ở miền dành riêng cho ví dụ (RFC 2606: *.example.com) nên không thể trỏ tới ai thật.
+// Word pool for COMPOSING fictional names. Every company / person name in the dataset is a random
+// combination of the fragments below — not taken from any list of real companies or people.
+// Emails are always in the domain reserved for examples (RFC 2606: *.example.com) so they cannot point to anyone real.
 
 export const SURNAMES = [
   ['佐藤', 'sato'], ['鈴木', 'suzuki'], ['高橋', 'takahashi'], ['田中', 'tanaka'], ['伊藤', 'ito'],
@@ -24,7 +24,7 @@ export const GIVEN_NAMES = [
   ['理沙', 'risa'], ['花', 'hana'], ['凛', 'rin'], ['楓', 'kaede'], ['明日香', 'asuka'],
 ];
 
-// Mảnh đầu của tên công ty (từ ghép tự đặt, không phải tên riêng có sẵn).
+// First fragment of company names (made-up compound words, not existing proper names).
 export const COMPANY_STEMS = [
   'アオバ', 'ミナト', 'ハルカゼ', 'ソラノ', 'ツバサ', 'カナデ', 'ヒカリノ', 'コトハ', 'シズク', 'ナギサ',
   'ユイマール', 'トモエ', 'サクヤ', 'イブキ', 'ミライエ', 'アカツキ', 'リンドウ', 'カスミ', 'ホタル', 'ツムギ',
@@ -55,7 +55,7 @@ export function companyName(rng, industry) {
   ]);
 }
 
-/** Một người hư cấu: { fullName, local } — `local` là phần trước @ của email. */
+/** A fictional person: { fullName, local } — `local` is the part of the email before the @. */
 export function personName(rng) {
   const [sj, sr] = rng.pick(SURNAMES);
   const [gj, gr] = rng.pick(GIVEN_NAMES);

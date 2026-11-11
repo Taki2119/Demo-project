@@ -1,106 +1,106 @@
-# 01 · Kiến trúc: từ dữ liệu tới màn hình
+# 01 · Architecture: from data to screen
 
-Đường dẫn trong file này tính từ `src/` của repo nguồn (nơi chép code sang).
+Paths in this file are relative to the source repo's `src/` (where the code is copied from).
 
-## 1. Luồng end-to-end
+## 1. End-to-end flow
 
 ```
-Nguồn (file CSV/csv.gz | API qua proxy)
-  → fetch text            data/driveSource.ts   (gunzip theo magic byte 1f 8b)
-  → parseX(text)          data/<tên>.ts         (PARSER THUẦN, test ở env node)
-  → useDriveData()        data/driveData.ts     (cache zustand trong bộ nhớ, phase)
+Source (CSV/csv.gz file | API via proxy)
+  → fetch text            data/driveSource.ts   (gunzip by magic bytes 1f 8b)
+  → parseX(text)          data/<name>.ts        (PURE PARSER, tested in the node env)
+  → useDriveData()        data/driveData.ts     (in-memory zustand cache, phase)
   → gate / NoData         ui/DriveConnect.tsx · ui/NoData.tsx
-  → <XCharts data/>       nửa TRÌNH BÀY, nhận data qua prop
-  → ui/viz/charts/* · StatTile · bảng
+  → <XCharts data/>       the PRESENTATION half, receives data via prop
+  → ui/viz/charts/* · StatTile · table
 ```
 
-**Nguyên tắc cốt lõi: parser không biết nguồn.** Kho file (URL tĩnh, Google Drive…) trả CSV. Proxy dữ liệu (`data/boardData.ts`)
-trả `{csv, updatedAt}`, tức đúng CSV đó. Vì vậy đổi nguồn không phải sửa dòng nào trong parser.
+**Core principle: the parser does not know the source.** The file store (static URL, Google Drive…) returns CSV. The data proxy (`data/boardData.ts`)
+returns `{csv, updatedAt}`, i.e. that same CSV. So switching sources needs no change to any line of the parser.
 
-### 1a. Parser thuần (`data/<tên>.ts`)
+### 1a. Pure parser (`data/<name>.ts`)
 
-- Khai kiểu dữ liệu (`XRow`, `XData`) và hằng `EMPTY_X`.
+- Declare the data types (`XRow`, `XData`) and the constant `EMPTY_X`.
 - `parseX(text)`:
-  - **ném lỗi** khi thiếu cột ở header, khi số ô sai, hoặc khi khoá thời gian không khớp `YYYY-MM`;
-  - **đối chiếu cột dẫn xuất**, ví dụ `net == insert − remove`; lệch thì ném lỗi;
-  - sort theo chuỗi `YYYY-MM`, **không** qua `new Date`.
-- Hàm tổng hợp phải thuần và có test:
-  - `flowSum` dùng cho đại lượng **luồng** (cộng dồn);
-  - `totalIndexFor` dùng cho đại lượng **tồn kho** (lấy giá trị cuối kỳ);
-  - `prevSpan` trả khoảng liền trước dài bằng khoảng đang xét, thiếu dữ liệu thì trả `null`;
-  - `deltaPct` / `deltaBetween` lan truyền `null`.
-- Loader `loadX(fetchText)` nhận hàm đọc qua tham số, nên test không cần mạng.
-- CSV có dấu phẩy trong ô thì dùng `data/csv.ts › parseCsvRows`.
+  - **throws** when a header column is missing, when the cell count is wrong, or when the time key does not match `YYYY-MM`;
+  - **cross-checks derived columns**, e.g. `net == insert − remove`; on mismatch it throws;
+  - sorts by the `YYYY-MM` string, **not** via `new Date`.
+- Aggregation functions must be pure and tested:
+  - `flowSum` for **flow** quantities (summed);
+  - `totalIndexFor` for **stock** quantities (end-of-period value);
+  - `prevSpan` returns the immediately preceding span of the same length as the current one; with missing data it returns `null`;
+  - `deltaPct` / `deltaBetween` propagate `null`.
+- The loader `loadX(fetchText)` takes the read function as a parameter, so tests need no network.
+- For CSV with commas inside cells, use `data/csv.ts › parseCsvRows`.
 
-### 1b. Hook nạp chung (`data/driveData.ts`)
+### 1b. Shared loading hook (`data/driveData.ts`)
 
 - `useDriveData({fileId, tag, empty, parse, locate?, bq?})`.
-- `fileId` là **khoá cache**.
-- Cache nằm trong zustand ở cấp module, **chỉ trong bộ nhớ, không persist**. Khi đăng xuất phải gọi `clearDriveData()`.
-- `parse` / `locate` đi qua `useRef`. Nếu để chúng trong deps của effect thì mỗi lần render sẽ fetch lại.
-- Effect có cờ `alive` để chặn kết quả trả về muộn.
-- Phase có 4 giá trị: `need-token | loading | failed | ready`. **Đã có cache thì luôn là `ready`**, xét trước cả `failed`.
-- `failReason` có 3 giá trị: `missing` (404 / NOT_FOUND), `forbidden` (403), `other`.
+- `fileId` is the **cache key**.
+- The cache lives in a module-level zustand store, **in memory only, not persisted**. On sign-out, call `clearDriveData()`.
+- `parse` / `locate` go through `useRef`. If they were in the effect's deps, every render would refetch.
+- The effect has an `alive` flag to drop late results.
+- Phase has 4 values: `need-token | loading | failed | ready`. **With a cache present it is always `ready`**, checked even before `failed`.
+- `failReason` has 3 values: `missing` (404 / NOT_FOUND), `forbidden` (403), `other`.
 
-### 1c. Khuôn chuẩn của một board
+### 1c. Standard board template
 
 ```tsx
 export function XBoard() {
-  if (!GOOGLE_CLIENT_ID) return <NoData />;      // tránh gọi hook khi không có OAuth provider
+  if (!GOOGLE_CLIENT_ID) return <NoData />;      // avoid calling the hook when there is no OAuth provider
   return <Connected />;
 }
 function Connected() {
   const d = useDriveData({ fileId, tag, empty: EMPTY_X, parse: parseX, locate });
-  const gate = driveGate(d); if (gate) return gate;      // need-token / loading ⇒ vòng chờ
+  const gate = driveGate(d); if (gate) return gate;      // need-token / loading ⇒ spinner
   if (d.phase === 'failed')
     return <NoData message={d.failReason === 'missing' ? `${t('noDriveFile')} ${FILE}` : t('dataFailed')} />;
   return d.data.months.length === 0 ? <NoData /> : <XCharts data={d.data} />;
 }
-export function XCharts({ data, now }: { data: XData; now?: Date }) { /* thuần trình bày */ }
+export function XCharts({ data, now }: { data: XData; now?: Date }) { /* pure presentation */ }
 ```
 
-Tách `XCharts` ra như trên thì test và chụp ảnh được mà không cần đăng nhập.
-Ở repo mới không có OAuth thì bỏ dòng `GOOGLE_CLIENT_ID` và `driveGate`, thay bằng `fetch` JSON/CSV tĩnh.
-Khuôn còn lại giữ nguyên.
+Splitting out `XCharts` like this makes it testable and screenshot-able without signing in.
+In a new repo without OAuth, drop the `GOOGLE_CLIENT_ID` line and `driveGate`, and replace them with a static JSON/CSV `fetch`.
+The rest of the template stays the same.
 
-### 1d. Lưới reload chunk (`boards/chunkReload.ts`)
+### 1d. Chunk reload safety net (`boards/chunkReload.ts`)
 
-Mỗi lần deploy, GitHub Pages **xoá chunk cũ**. Tab đã mở từ trước gọi `import()` sẽ nhận 404 và React gỡ cả cây,
-để lại màn đen. Hàm `boardChunk(key, load)` xử lý như sau:
+On every deploy, GitHub Pages **deletes the old chunks**. A tab opened earlier that calls `import()` gets a 404 and React unmounts the whole tree,
+leaving a black screen. The function `boardChunk(key, load)` handles it like this:
 
-- `import()` lỗi thì reload trang **đúng 1 lần**. Cờ đánh dấu lưu trong `sessionStorage`.
-- Không reload khi offline, và không reload khi không có storage (nếu không sẽ thành vòng lặp vô hạn).
-- Khi đã quyết reload, hàm trả về một promise không bao giờ resolve, để `<Suspense>` giữ vòng chờ.
-- `ErrorBoundary` bọc **ngoài** `Suspense`, chỉ quanh phần board. Board hỏng thì tiêu đề và điều hướng vẫn còn.
+- If `import()` fails, reload the page **exactly once**. The marker flag is stored in `sessionStorage`.
+- Do not reload when offline, and do not reload when there is no storage (otherwise it becomes an infinite loop).
+- Once it has decided to reload, the function returns a promise that never resolves, so `<Suspense>` keeps the spinner.
+- `ErrorBoundary` wraps **outside** `Suspense`, only around the board part. If a board breaks, the title and navigation remain.
 
-## 2. Giải phẫu một board
+## 2. Anatomy of a board
 
-Màn `DashboardScreen` dựng phần vỏ. Board **không** tự dựng vỏ:
+The `DashboardScreen` screen builds the shell. A board does **not** build its own shell:
 
 ```
 <div class="ui-board">                         ← gap = --blk-out 24px
-  <PageTitle crumbs title desc actions after/> ← H1 DUY NHẤT, lấy tên từ catalog
+  <PageTitle crumbs title desc actions after/> ← the ONLY H1, name taken from the catalog
   <ErrorBoundary><Suspense><Board ref_/></Suspense></ErrorBoundary>
 ```
 
-Board không vẽ H1. Tiêu đề thẻ là `<h2>`. Cổng `boardShell.test.ts` cấm file board tự khai `"ui-board"`.
+A board does not draw an H1. Card titles are `<h2>`. The `boardShell.test.ts` gate forbids board files from declaring `"ui-board"` themselves.
 
-**Thứ tự khối bên trong board:**
+**Order of blocks inside a board:**
 
-1. `<section class="ui-blk">` gồm `FilterBar` và **ngay dưới nó** là khối mà bộ lọc đó điều khiển.
-   Không gom mọi bộ lọc lên đầu trang. Khe trong một khối là `--blk-in` 12px.
-2. `<div class="ui-kpis">` chứa các `StatTile`. Lưới dùng `repeat(auto-fit, minmax(12.75rem, 1fr))`.
-   Chọn số thẻ sao cho không có thẻ nằm lẻ ở hàng cuối.
-3. `<div class="ui-charts">` chứa các `<figure class="ui-card ui-glass ui-viz [ui-card--wide]">`:
+1. `<section class="ui-blk">` containing a `FilterBar` and, **directly below it**, the block that filter controls.
+   Do not gather all filters at the top of the page. The gap inside a block is `--blk-in` 12px.
+2. `<div class="ui-kpis">` holding the `StatTile`s. The grid uses `repeat(auto-fit, minmax(12.75rem, 1fr))`.
+   Pick a tile count so no tile is left alone on the last row.
+3. `<div class="ui-charts">` holding `<figure class="ui-card ui-glass ui-viz [ui-card--wide]">`:
    ```html
-   <h2 class="ui-card-title">Tên <InfoTip metric="key"/></h2>
-   <p class="ui-card-sub">phụ đề</p>
+   <h2 class="ui-card-title">Name <InfoTip metric="key"/></h2>
+   <p class="ui-card-sub">subtitle</p>
    <div class="ui-chart"><ResponsiveContainer>…</ResponsiveContainer></div>
    ```
-   Lưới khai **2 cột tường minh**, không dùng `auto-fit`. Số thẻ không-wide phải **chẵn**.
-4. Bảng gồm `.ui-tablewrap > table.ui-table`, `SortHead` và `TablePager`. Xem `03-CHARTS-TABLES.md` §6.
+   The grid declares **2 explicit columns**, not `auto-fit`. The number of non-wide cards must be **even**.
+4. Tables consist of `.ui-tablewrap > table.ui-table`, `SortHead` and `TablePager`. See `03-CHARTS-TABLES.md` §6.
 
-## 3. Registry và catalog
+## 3. Registry and catalog
 
 ```tsx
 // boards/registry.tsx
@@ -110,10 +110,10 @@ export const BOARDS: Record<BoardKey, ComponentType<BoardProps>> = {
 };
 ```
 
-`lazy()` là bắt buộc. Recharts nặng khoảng 400 kB và không được lọt vào chunk đầu.
+`lazy()` is mandatory. Recharts weighs about 400 kB and must not leak into the initial chunk.
 
 ```ts
-// nav/catalog.ts (rút gọn)
+// nav/catalog.ts (abridged)
 type DashboardStatus = 'ready' | 'live' | 'stale' | 'planned';
 interface DashboardDef { id: string; name: string; desc?: LocalStr; status: DashboardStatus;
   board?: BoardKey; preview?: PreviewKey; icon?: GroupIcon }
@@ -123,72 +123,72 @@ interface SectionDef  { id; name; icon; divisions: DivisionDef[] }
 export const CATALOG = SECTIONS.flatMap(s => s.divisions);
 ```
 
-Ý nghĩa `status`:
+Meaning of `status`:
 
-| status | Ý nghĩa |
+| status | Meaning |
 |---|---|
-| `planned` | Ẩn ở mọi nơi |
-| `ready` | Hiện tên; trang vẽ `NoData` |
-| `live` | Đã nối dữ liệu |
-| `stale` | Đã nối nhưng số đã cũ |
+| `planned` | Hidden everywhere |
+| `ready` | Name shown; the page draws `NoData` |
+| `live` | Data connected |
+| `stale` | Connected but the numbers are out of date |
 
-`catalog.test.ts` khoá các ràng buộc sau:
+`catalog.test.ts` locks these constraints:
 
-- `live` / `stale` **phải** có `board`;
-- `planned` **không được** có `board`;
-- id không trùng trong cùng một tầng.
+- `live` / `stale` **must** have a `board`;
+- `planned` **must not** have a `board`;
+- no duplicate ids within the same level.
 
-**Thứ tự trong mảng chính là thứ tự hiển thị.** Đổi chỗ phần tử không làm hỏng URL của ai.
+**Array order is display order.** Reordering elements breaks nobody's URL.
 
-### Checklist thêm một board
+### Checklist for adding a board
 
-1. `data/<tên>.ts`: khai kiểu, `EMPTY_X`, `parseX` (ném lỗi khi thiếu cột, có đối chiếu cột dẫn xuất),
-   các hàm tổng hợp thuần và `loadX(fetchText)`.
-2. `data/<tên>.test.ts`: tạo dữ liệu ngay trong test, chạy ở env `node`.
-3. `data/glossary.ts`: thêm mục giải thích chỉ số (`what` có cả bản vi và ja, `formula`, `unit`, `note`) cho nút ⓘ.
-4. Hằng nguồn (folder + **tên file**). Không ghim `fileId`, vì ghi đè file thì id đổi còn tên giữ nguyên.
-5. `BoardKey` và mục trong catalog (`status: 'live'`, `board`, `icon`).
-6. `boards/<Tên>Board.tsx` theo khuôn §1c, và **một dòng** trong `registry.tsx`.
-7. Chỉ thêm CSS khi thật sự cần class mới. Grep tên class trước để chắc không trùng.
+1. `data/<name>.ts`: declare types, `EMPTY_X`, `parseX` (throws on missing columns, cross-checks derived columns),
+   pure aggregation functions and `loadX(fetchText)`.
+2. `data/<name>.test.ts`: build the data inside the test, run in the `node` env.
+3. `data/glossary.ts`: add a metric explanation entry (`what` in both vi and ja, `formula`, `unit`, `note`) for the ⓘ button.
+4. Source constants (folder + **file name**). Do not pin `fileId`, because overwriting a file changes the id while the name stays.
+5. `BoardKey` and the catalog entry (`status: 'live'`, `board`, `icon`).
+6. `boards/<Name>Board.tsx` following the §1c template, and **one line** in `registry.tsx`.
+7. Add CSS only when a new class is truly needed. Grep the class name first to make sure it is not taken.
 
-Không phải sửa `App.tsx`, thanh nhóm hay Home.
+No changes needed to `App.tsx`, the group bar or Home.
 
-## 4. Route hash (`nav/route.ts`)
+## 4. Hash routes (`nav/route.ts`)
 
-- Các kind: `login | home | dashboard{division, path[]}`. Hash có dạng `#/home`, `#/dashboard/<khối>/<nhóm>/<bảng>`.
-- `parseHash` / `toHash` là hàm thuần. Có test khoá `toHash(parseHash(h)) === h`.
-- `navigate(route, replace)`. Các bước chuyển tiếp tự động dùng `location.replace` để nút Back không bị kẹt.
-- `route.ts` **không biết catalog**. `nav/resolve.ts` lo phần nối route với catalog:
-  - rút gọn URL: nhóm duy nhất trùng tên khối thì bỏ segment nhóm;
-  - dịch link cũ bằng các bảng `LEGACY_*` tường minh.
-- **Lý do dùng hash:** host tĩnh không có rewrite, nên F5 ở path sâu sẽ 404. Hash giữ được deep link và bookmark.
+- Kinds: `login | home | dashboard{division, path[]}`. Hashes look like `#/home`, `#/dashboard/<division>/<group>/<board>`.
+- `parseHash` / `toHash` are pure functions. A test locks `toHash(parseHash(h)) === h`.
+- `navigate(route, replace)`. Automatic forwarding steps use `location.replace` so the Back button does not get stuck.
+- `route.ts` **does not know the catalog**. `nav/resolve.ts` connects routes to the catalog:
+  - URL shortening: when the only group has the same name as its division, drop the group segment;
+  - old links are translated through explicit `LEGACY_*` tables.
+- **Why hash:** a static host has no rewrites, so F5 on a deep path gives 404. The hash keeps deep links and bookmarks working.
 
-## 5. Vỏ app
+## 5. App shell
 
 ```
 main.tsx: initTheme(); initPalette(); set lang; initRouter(); render <App/>
-App: viewFor({loading, hasUser, ...}) → boot | login | app   (vẽ theo view, URL đi theo sau)
-.ui-app = [<Ambient/>] [AppSide (side panel)] [.ui-body = .ui-topbars + .ui-main (ô cuộn DUY NHẤT)]
-.ui-screen key={hash}  → đổi route thì dựng lại; useStaggerIn chạy hiệu ứng phóng ra
+App: viewFor({loading, hasUser, ...}) → boot | login | app   (render by view, the URL follows)
+.ui-app = [<Ambient/>] [AppSide (side panel)] [.ui-body = .ui-topbars + .ui-main (the ONLY scroll container)]
+.ui-screen key={hash}  → a route change remounts; useStaggerIn runs the fan-out effect
 ```
 
-Bố cục CSS chi tiết ở `02-DESIGN-SYSTEM.md` §3.
+Detailed CSS layout is in `02-DESIGN-SYSTEM.md` §3.
 
-## 6. Bộ lọc (`ui/filters/`)
+## 6. Filters (`ui/filters/`)
 
-Board chỉ import từ `ui/filters`, **không tự dựng bộ lọc**.
+Boards only import from `ui/filters`, they **do not build their own filters**.
 
-| Component | Việc |
+| Component | Job |
 |---|---|
-| `DateRangeFilter` | Khoảng ngày, kèm cột chọn nhanh |
-| `PeriodFilter` | Khoảng theo khối tuần / tháng / quý tài chính |
-| `PickFilter` | Chọn một (tuỳ chọn ô tìm `search`) |
-| `MultiPickFilter` | Chọn nhiều; tập rỗng = không lọc (`passesMulti`) |
-| `SelectFilter` | `<select>` gốc cho danh sách dài |
-| `RangeSliderFilter` | Khoảng số bằng thanh trượt |
-| `NumberRangeFilter` | Ngưỡng `≥ > ≤ <`; ô trống = không chặn |
-| `TextFilter` | Tìm trong hàng (NFKC, không phân biệt hoa/thường) |
-| `SegmentFilter` | 2–4 nấc cố định |
+| `DateRangeFilter` | Date range, with a quick-pick column |
+| `PeriodFilter` | Range in week / month / fiscal-quarter blocks |
+| `PickFilter` | Single choice (optional `search` box) |
+| `MultiPickFilter` | Multiple choice; empty set = no filtering (`passesMulti`) |
+| `SelectFilter` | Native `<select>` for long lists |
+| `RangeSliderFilter` | Numeric range with a slider |
+| `NumberRangeFilter` | Threshold `≥ > ≤ <`; empty box = no limit |
+| `TextFilter` | Search within rows (NFKC, case-insensitive) |
+| `SegmentFilter` | 2–4 fixed steps |
 
 ```tsx
 <FilterBar dirty={!samePeriodRange(range, def)} onReset={() => setRange(def)} aside={…}>
@@ -197,45 +197,45 @@ Board chỉ import từ `ui/filters`, **không tự dựng bộ lọc**.
 ```
 
 **FilterBar:**
-- Nút đặt lại (icon `filter-close`) chỉ hiện khi `dirty`.
-- `aside` là phần dạt sang phải, không tính vào `dirty`.
-- Panel được portal ra `body`.
-- Toàn app chỉ cho **một panel mở** một lúc (`openPanel.ts`).
+- The reset button (icon `filter-close`) only shows when `dirty`.
+- `aside` is the part pushed to the right, not counted in `dirty`.
+- Panels are portaled to `body`.
+- The whole app allows only **one open panel** at a time (`openPanel.ts`).
 
-**Phần thuần `period.ts`:**
-- `periodRangeDays` đổi khoảng thành ngày, nhờ đó board không cần biết đơn vị.
-- `prevPeriodRange` lùi đúng số khối.
-- `convertPeriodRange` luôn nở khoảng ra, không cắt bớt.
+**Pure part `period.ts`:**
+- `periodRangeDays` converts a range to days, so boards do not need to know the unit.
+- `prevPeriodRange` steps back exactly the same number of blocks.
+- `convertPeriodRange` always widens the range, never trims it.
 
 **`data/fiscal.ts`:**
-- Năm tài chính bắt đầu ở tháng `FISCAL_START_MONTH` và có **một** mốc neo `ANCHOR` (kỳ số mấy bắt đầu năm nào). Ở repo mới, đặt lại cả hai.
-- **Không** tự tính quý bằng `(month-1)/3`: kết quả lệch 2 tháng mà nhãn vẫn trông hợp lý.
+- The fiscal year starts in month `FISCAL_START_MONTH` and has **one** anchor `ANCHOR` (which period number starts in which year). In a new repo, reset both.
+- Do **not** compute quarters yourself with `(month-1)/3`: the result is off by 2 months while the labels still look plausible.
 
-**Cách cắm bộ lọc vào board:**
-- Mặc định chọn tháng mới nhất **có trong file**, không lấy theo đồng hồ hệ thống.
-- `min` / `max` lấy theo phạm vi của file.
-- KPI dùng `clearable={false}`. Với biểu đồ, giá trị `null` nghĩa là xem cả chuỗi.
-- Đại lượng **luồng** thì cộng. Đại lượng **tồn kho** thì lấy giá trị cuối kỳ (bảng thưa thì dùng LOCF, tức
-  giá trị gần nhất của từng thực thể).
-- Nhãn phải gọi đúng tên khoảng đang xem. `deltaNote` đổi theo độ dài khoảng ("so với tháng trước" / "so với khoảng trước").
-- Sparkline dùng cùng cửa sổ thời gian với con số đi kèm.
+**How to plug a filter into a board:**
+- Default to the latest month **present in the file**, not based on the system clock.
+- `min` / `max` come from the file's range.
+- KPIs use `clearable={false}`. For charts, a `null` value means viewing the whole series.
+- **Flow** quantities are summed. **Stock** quantities take the end-of-period value (for sparse tables use LOCF, i.e.
+  the most recent value of each entity).
+- Labels must name the range being viewed exactly. `deltaNote` changes with the range length ("vs previous month" / "vs previous period").
+- A sparkline uses the same time window as the number it accompanies.
 
-## 7. Deploy GitHub Pages
+## 7. GitHub Pages deploy
 
-- `vite.config.ts`: `base = command === 'build' ? (VITE_BASE_PATH || '/<tên-repo>/') : '/'`.
-  - Dùng domain riêng thì đặt `VITE_BASE_PATH=/`.
-  - Favicon dùng đường dẫn tương đối `./logo.svg`.
-  - Phiên bản lấy từ `define: { __APP_VERSION__ }`, đọc từ `package.json`.
-- Vitest: `environment: 'node'`, **`pool: 'threads'`**. Pool `forks` làm rơi file test một cách im lặng trên Windows.
-- `deploy.yml`: chạy khi `push` lên `main` hoặc `workflow_dispatch`; quyền `pages: write`, `id-token: write`;
-  `concurrency.cancel-in-progress: false`. Các bước:
+- `vite.config.ts`: `base = command === 'build' ? (VITE_BASE_PATH || '/<repo-name>/') : '/'`.
+  - With a custom domain, set `VITE_BASE_PATH=/`.
+  - The favicon uses the relative path `./logo.svg`.
+  - The version comes from `define: { __APP_VERSION__ }`, read from `package.json`.
+- Vitest: `environment: 'node'`, **`pool: 'threads'`**. The `forks` pool silently drops test files on Windows.
+- `deploy.yml`: runs on `push` to `main` or `workflow_dispatch`; permissions `pages: write`, `id-token: write`;
+  `concurrency.cancel-in-progress: false`. Steps:
   `npm ci → npm test → npm run build → check:clientid → privacy:bundle → check:glass → check:viewport → upload-pages-artifact(dist) → deploy-pages`.
 - `checks.yml`:
-  - chạy khi `pull_request`, **cùng bộ cổng và cùng thứ tự** với `deploy.yml`;
-  - chỉ có quyền `contents: read`, nên không thể vô tình deploy;
-  - thêm một cổng: `grep -c activeTooltipIndex dist/assets/index-*.js` phải trả về 0, tức Recharts không nằm trong chunk đầu.
-- Việc ngoài repo:
+  - runs on `pull_request`, with **the same gates in the same order** as `deploy.yml`;
+  - has only `contents: read` permission, so it cannot deploy by accident;
+  - adds one gate: `grep -c activeTooltipIndex dist/assets/index-*.js` must return 0, i.e. Recharts is not in the initial chunk.
+- Work outside the repo:
   - Pages Source = **GitHub Actions**;
   - default branch = `main`;
-  - ruleset bảo vệ `main` (bắt buộc PR, approvals = 0 nếu chỉ có một người, chặn force push);
-  - **không** tích "Require branches to be up to date", vì mỗi lần merge sẽ chạy lại CI cho mọi PR đang mở.
+  - a ruleset protecting `main` (require PR, approvals = 0 if there is only one person, block force push);
+  - do **not** tick "Require branches to be up to date", because every merge would rerun CI for every open PR.

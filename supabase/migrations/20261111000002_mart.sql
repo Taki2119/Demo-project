@@ -1,26 +1,26 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- Tầng MART — thứ DUY NHẤT web app (qua Vercel) và AI được đọc.
+-- MART layer — the ONLY thing the web app (via Vercel) and the AI may read.
 --
--- Luật (docs/SCHEMA.md §4):
---   · Mart chỉ chở số CỘNG ĐƯỢC (dòng chảy, tồn kho của một phân hoạch). Tỉ lệ (ARPA,
---     churn rate, stickiness…) tính ở CLIENT từ các tổng — cộng tỉ lệ là sai, và cột tỉ lệ
---     trong mart sẽ có ngày bị ai đó cộng.
---   · Bảng theo (tháng × gói) là bảng DÀY: tháng không có gì vẫn có dòng với số 0 thật ⇒
---     client không phải LOCF.
---   · Tháng đang chạy đo tới `as_of` (số tạm); cột `is_closed` nói tháng đã chốt chưa.
---   · Mỗi công ty ở ĐÚNG một gói trong một tháng ⇒ cộng các gói ra "tất cả gói" là đúng.
+-- Rules (docs/SCHEMA.md §4):
+--   · The mart carries only ADDITIVE numbers (flows, stocks of a partition). Ratios (ARPA,
+--     churn rate, stickiness…) are computed on the CLIENT from the totals — summing ratios is wrong,
+--     and a ratio column in the mart will one day get summed by someone.
+--   · (month × plan) tables are DENSE: a month with nothing still has a row with true 0s ⇒
+--     the client does not have to LOCF.
+--   · The running month is measured up to `as_of` (provisional numbers); the `is_closed` column says whether the month is closed.
+--   · Each company is in EXACTLY one plan in a month ⇒ summing the plans gives a correct "all plans".
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- "Hôm nay" của bộ dữ liệu — xem raw.dataset_meta.
--- ⚠ SECURITY DEFINER là bắt buộc: view chạy bằng quyền của chủ view, nhưng HÀM gọi trong
---   view chạy bằng quyền của người gọi ⇒ analytics_reader (không có quyền trên raw) sẽ lỗi
---   ngay ở mart.months. `search_path = ''` để hàm definer không bị đánh tráo bảng.
+-- The dataset's "today" — see raw.dataset_meta.
+-- ⚠ SECURITY DEFINER is mandatory: a view runs with the view owner's privileges, but a FUNCTION called
+--   inside the view runs with the caller's privileges ⇒ analytics_reader (no privileges on raw) would fail
+--   right at mart.months. `search_path = ''` so the definer function cannot have its tables swapped.
 create or replace function mart.as_of() returns date
 language sql stable security definer set search_path = '' as $$
   select coalesce((select value::date from raw.dataset_meta where key = 'as_of_date'), current_date)
 $$;
 
--- Trục tháng: từ tháng của subscription đầu tiên tới tháng chứa as_of.
+-- Month axis: from the month of the first subscription to the month containing as_of.
 create or replace view mart.months as
 select m::date                                                        as month,
        (m + interval '1 month' - interval '1 day')::date               as month_end,
@@ -31,9 +31,9 @@ from generate_series(
        date_trunc('month', mart.as_of())::timestamp,
        interval '1 month') as m;
 
--- ── MRR theo CÔNG TY × THÁNG ────────────────────────────────────────────────
--- Trạng thái lấy tại `measure_date` (cuối tháng, hoặc as_of với tháng đang chạy).
--- Công ty có nhiều subscription cùng lúc: cộng MRR, gói = gói tier cao nhất.
+-- ── MRR by COMPANY × MONTH ──────────────────────────────────────────────────
+-- State taken at `measure_date` (end of month, or as_of for the running month).
+-- A company with several concurrent subscriptions: sum MRR, plan = the highest-tier plan.
 create materialized view mart.company_mrr_monthly as
 with state as (
   select mo.month,
@@ -74,7 +74,7 @@ lagged as (
 )
 select l.month,
        l.company_id,
-       coalesce(l.plan_id, l.plan_prev) as plan_id,      -- tháng huỷ: gán về gói tháng trước
+       coalesce(l.plan_id, l.plan_prev) as plan_id,      -- churn month: attributed to last month's plan
        l.plan_prev,
        l.mrr,
        l.mrr_prev,
@@ -94,13 +94,13 @@ select l.month,
 from lagged l
 left join raw.plans pc on pc.plan_id = l.plan_id
 left join raw.plans pp on pp.plan_id = l.plan_prev
-where l.plan_id is not null or l.mrr_prev > 0;          -- bỏ các tháng công ty không có gì
+where l.plan_id is not null or l.mrr_prev > 0;          -- drop months where the company has nothing
 
 create unique index company_mrr_monthly_pk on mart.company_mrr_monthly (month, company_id);
 
--- ── Biến động MRR theo GÓI ──────────────────────────────────────────────────
--- Đổi gói = một dòng RA ở gói cũ (−mrr_prev) + một dòng VÀO ở gói mới (+mrr).
--- Nhờ vậy, với MỌI gói: Σ mrr_delta(tháng) = mrr_end(tháng) − mrr_end(tháng trước).
+-- ── MRR movements by PLAN ───────────────────────────────────────────────────
+-- Plan change = an OUT row in the old plan (−mrr_prev) + an IN row in the new plan (+mrr).
+-- This way, for EVERY plan: Σ mrr_delta(month) = mrr_end(month) − mrr_end(previous month).
 create or replace view mart.mrr_movements as
 select month, company_id, plan_prev as plan_id, 'plan_out'::text as movement, -mrr_prev as mrr_delta
 from mart.company_mrr_monthly
@@ -114,7 +114,7 @@ select month, company_id, plan_id, movement, mrr - mrr_prev
 from mart.company_mrr_monthly
 where plan_change is null and movement <> 'flat';
 
--- ── DOANH THU theo THÁNG × GÓI (bảng DÀY) ───────────────────────────────────
+-- ── REVENUE by MONTH × PLAN (DENSE table) ───────────────────────────────────
 create or replace view mart.revenue_monthly as
 with mv as (
   select month, plan_id,
@@ -172,9 +172,9 @@ left join st  on st.month  = mo.month and st.plan_id  = pl.plan_id
 left join mv  on mv.month  = mo.month and mv.plan_id  = pl.plan_id
 left join inv on inv.month = mo.month and inv.plan_id = pl.plan_id;
 
--- ── USER × THÁNG ────────────────────────────────────────────────────────────
--- Một dòng cho mỗi tháng user còn là GHẾ (tạo trước measure_date, chưa bị tắt) hoặc
--- bị tắt TRONG tháng đó. Gói = gói của công ty tháng đó (null nếu công ty không có gói).
+-- ── USER × MONTH ────────────────────────────────────────────────────────────
+-- One row for each month the user is still a SEAT (created before measure_date, not deactivated) or
+-- was deactivated DURING that month. Plan = the company's plan that month (null if the company has no plan).
 create materialized view mart.user_monthly as
 with act as (
   select date_trunc('month', activity_date)::date as month, user_id,
@@ -196,8 +196,8 @@ base as (
     on u.created_at <= mo.measure_date
    and (u.deactivated_at is null or u.deactivated_at >= mo.month)
 )
--- full_name / company_name chép sẵn vào đây: role analytics_reader không đọc được raw, mà
--- bảng "theo người dùng" phải bày được tên.
+-- full_name / company_name are copied in here: the analytics_reader role cannot read raw, yet
+-- the "by user" board must be able to show names.
 select b.month, b.user_id, b.full_name, b.company_id, co.name as company_name, c.plan_id,
        b.is_seat, b.is_new, b.is_deactivated,
        coalesce(a.active_days, 0)    as active_days,
@@ -212,8 +212,8 @@ left join mart.company_mrr_monthly c on c.month = b.month and c.company_id = b.c
 
 create unique index user_monthly_pk on mart.user_monthly (month, user_id);
 
--- ── SỐ USER theo THÁNG × GÓI (bảng DÀY) ─────────────────────────────────────
--- dau_avg = active_user_days / days_in_period (tính ở client); mau = user có ≥ 1 ngày hoạt động.
+-- ── USER COUNT by MONTH × PLAN (DENSE table) ────────────────────────────────
+-- dau_avg = active_user_days / days_in_period (computed on the client); mau = users with ≥ 1 active day.
 create or replace view mart.users_monthly as
 with agg as (
   select month, plan_id,
@@ -242,7 +242,7 @@ from mart.months mo
 cross join raw.plans pl
 left join agg a on a.month = mo.month and a.plan_id = pl.plan_id;
 
--- ── CÔNG TY × THÁNG (cho bảng "theo công ty") ──────────────────────────────
+-- ── COMPANY × MONTH (for the "by company" board) ────────────────────────────
 create or replace view mart.company_monthly as
 with u as (
   select month, company_id,
@@ -277,14 +277,14 @@ join raw.companies co on co.company_id = c.company_id
 left join u on u.month = c.month and u.company_id = c.company_id
 left join f on f.month = c.month and f.company_id = c.company_id;
 
--- ── RỦI RO HUỶ: ảnh chụp mỗi CHỦ NHẬT, 52 tuần gần nhất ─────────────────────
--- Chỉ công ty ĐANG TRẢ TIỀN tại ngày chụp. Công thức điểm (v2, heuristic — xem
--- docs/SCHEMA.md §5): sử dụng giảm / ngừng (≤40) + ghế ít dùng (≤20) + tính năng chính giảm
--- (≤30) + nợ hoá đơn (10), trần 100. Hẹn huỷ đang mở là một BAND riêng, đứng trên điểm.
--- ⚠ v1 đo "số ngày không ai vào" + "user có vào trong 28 ngày" và gần như KHÔNG BAO GIỜ báo
---   động: công ty nhiều user hiếm khi có 7 ngày trắng. v2 đo XU HƯỚNG (28 ngày so với 28 ngày
---   trước) + WAU so với ghế — đo bằng nhãn churned_within_90d trong generate.test.mjs.
--- `churned_within_90d` là NHÃN để đo độ chính xác của điểm (null khi chưa đủ 90 ngày sau).
+-- ── CHURN RISK: a snapshot every SUNDAY, last 52 weeks ──────────────────────
+-- Only companies PAYING on the snapshot date. Score formula (v2, heuristic — see
+-- docs/SCHEMA.md §5): usage drop / stop (≤40) + low seat usage (≤20) + key feature drop
+-- (≤30) + overdue invoice (10), capped at 100. An open cancel scheduled request is a separate BAND, above the score.
+-- ⚠ v1 measured "days with nobody logged in" + "users active within 28 days" and almost NEVER raised
+--   an alarm: companies with many users rarely have 7 blank days. v2 measures TRENDS (28 days vs. the 28 days
+--   before) + WAU vs. seats — validated with the churned_within_90d label in generate.test.mjs.
+-- `churned_within_90d` is the LABEL used to measure the score's accuracy (null until 90 days have passed).
 create materialized view mart.churn_risk_snapshot as
 with snaps as (
   select d::date as snapshot_date
@@ -357,7 +357,7 @@ scored as (
 ),
 points as (
   select s.*,
-         case when s.days_since_last_active > 14 then 40                          -- ngừng hẳn
+         case when s.days_since_last_active > 14 then 40                          -- stopped entirely
               when s.activity_trend <= -0.5  then 40
               when s.activity_trend <= -0.3  then 25
               when s.activity_trend <= -0.15 then 10
@@ -365,10 +365,10 @@ points as (
          case when s.seat_utilization < 0.2 then 20
               when s.seat_utilization < 0.4 then 10
               else 0 end as pts_seats,
-         case when s.key_events_28d = 0 and s.key_events_prev_28d > 0 then 30   -- bỏ hẳn tính năng chính
+         case when s.key_events_28d = 0 and s.key_events_prev_28d > 0 then 30   -- dropped key features entirely
               when s.key_trend <= -0.5  then 30
               when s.key_trend <= -0.25 then 15
-              when s.key_events_28d = 0 then 10                                   -- chưa từng dùng
+              when s.key_events_28d = 0 then 10                                   -- never used
               else 0 end as pts_key_features,
          case when s.overdue_invoices > 0 then 10 else 0 end as pts_billing
   from scored s
@@ -400,7 +400,7 @@ from points p;
 
 create unique index churn_risk_snapshot_pk on mart.churn_risk_snapshot (snapshot_date, company_id);
 
--- Danh sách cần chăm sóc = ảnh chụp MỚI NHẤT + thông tin công ty + lượt chăm sóc gần nhất.
+-- Care list = the LATEST snapshot + company info + the most recent care action.
 create or replace view mart.churn_watchlist as
 select r.*, co.name as company_name, co.industry, co.size_band,
        co.owner_staff_id, st.full_name as owner_name,
@@ -418,7 +418,7 @@ left join lateral (
 ) li on true
 where r.snapshot_date = (select max(snapshot_date) from mart.churn_risk_snapshot);
 
--- Hiệu quả chăm sóc theo tháng tạo lượt × kênh × nguồn kích hoạt.
+-- Care effectiveness by creation month × channel × trigger source.
 create or replace view mart.interventions_monthly as
 select date_trunc('month', created_at)::date as month, trigger, channel,
        count(*)                                     as interventions,
@@ -429,7 +429,7 @@ select date_trunc('month', created_at)::date as month, trigger, channel,
 from raw.interventions
 group by 1, 2, 3;
 
--- Danh mục cho bộ lọc / nhãn (đọc được qua mart, không cần mở raw).
+-- Catalogs for filters / labels (readable via mart, no need to expose raw).
 create or replace view mart.plans as
 select plan_id, name, tier, base_price, seat_price, included_seats, currency, is_active from raw.plans;
 create or replace view mart.features as
@@ -437,7 +437,7 @@ select feature_id, name, is_key, min_tier from raw.features;
 create or replace view mart.staff as
 select staff_id, full_name, team from raw.staff;
 
--- ── KIỂM TRA CHẤT LƯỢNG: mỗi dòng là một luật, failed_rows phải = 0 ─────────
+-- ── DATA QUALITY CHECKS: each row is one rule, failed_rows must = 0 ─────────
 create or replace view mart.dq_checks as
 select 'periods_overlap' as check_name, count(*) as failed_rows
 from raw.subscription_periods a
@@ -471,7 +471,7 @@ from (
 ) x
 where x.d_stock <> x.d_flow;
 
--- Làm mới các materialized view (theo thứ tự phụ thuộc). Gọi sau mỗi lượt nạp dữ liệu.
+-- Refresh the materialized views (in dependency order). Call after every data load.
 create or replace function mart.refresh() returns void
 language plpgsql as $$
 begin

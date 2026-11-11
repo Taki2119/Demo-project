@@ -1,7 +1,7 @@
-// Bộ sinh dữ liệu → CSV → COPY vào PGlite → mart.refresh() → kiểm:
-//   · mọi luật dq_checks = 0, mọi ngày ≤ as_of, sinh lại cùng seed ra đúng từng byte;
-//   · mọi cột của các view người dùng thấy + mọi mã giá trị trong dữ liệu đều có nhãn ja/vi;
-//   · tín hiệu huỷ là THẬT: công ty band cao huỷ trong 90 ngày nhiều hơn hẳn band thấp.
+// Data generator → CSV → COPY into PGlite → mart.refresh() → check:
+//   · every dq_checks rule = 0, every date ≤ as_of, regenerating with the same seed is byte-identical;
+//   · every column of the user-facing views + every value code in the data has ja/vi labels;
+//   · the churn signal is REAL: high-band companies churn within 90 days far more than the low band.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -39,12 +39,12 @@ before(async () => {
 
 after(async () => db?.close());
 
-test('cùng seed ⇒ cùng dữ liệu, từng byte; khác seed ⇒ khác', () => {
+test('same seed ⇒ same data, byte for byte; different seed ⇒ different', () => {
   assert.equal(hashOf(generate(OPTS)), hashOf(data));
   assert.notEqual(hashOf(generate({ ...OPTS, seed: 'other' })), hashOf(data));
 });
 
-test('dữ liệu đủ dày để biểu đồ có hình', () => {
+test('data is dense enough for charts to have shape', () => {
   const n = (t) => data[t].rows.length;
   assert.ok(n('companies') >= 120, `companies = ${n('companies')}`);
   assert.ok(n('user_activity_daily') >= 100000, `activity = ${n('user_activity_daily')}`);
@@ -52,11 +52,11 @@ test('dữ liệu đủ dày để biểu đồ có hình', () => {
   assert.ok(n('interventions') >= 10, `interventions = ${n('interventions')}`);
 });
 
-test('mọi luật chất lượng = 0 dòng hỏng', async () => {
+test('every quality rule = 0 failed rows', async () => {
   assert.deepEqual(await q(`select check_name, failed_rows from mart.dq_checks where failed_rows <> 0`), []);
 });
 
-test('không có ngày nào sau as_of', async () => {
+test('no date after as_of', async () => {
   const r = await q(`
     select 'activity' t, max(activity_date) m from raw.user_activity_daily
     union all select 'feature', max(activity_date) from raw.feature_usage_daily
@@ -68,14 +68,14 @@ test('không có ngày nào sau as_of', async () => {
   for (const { t, m } of r) if (m) assert.ok(m.toISOString().slice(0, 10) <= OPTS.asOf, `${t}: ${m.toISOString()}`);
 });
 
-test('tiền là số nguyên yên', async () => {
+test('money is integer yen', async () => {
   const [r] = await q(`select count(*)::int n from raw.subscription_periods where mrr <> round(mrr)`);
   assert.equal(r.n, 0);
   const [c] = await q(`select string_agg(distinct currency, ',') c from raw.plans`);
   assert.equal(c.c, 'JPY');
 });
 
-test('mọi cột người dùng thấy đều có nhãn ja + vi', async () => {
+test('every user-facing column has ja + vi labels', async () => {
   const missing = await q(`
     select c.relname || '.' || a.attname as col
     from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -89,7 +89,7 @@ test('mọi cột người dùng thấy đều có nhãn ja + vi', async () => {
   assert.equal(blank.n, 0);
 });
 
-test('mọi mã giá trị xuất hiện trong dữ liệu đều có nhãn', async () => {
+test('every value code appearing in the data has a label', async () => {
   const missing = await q(`
     with used(domain, code) as (
       select 'plan', plan_id from raw.plans
@@ -116,7 +116,7 @@ test('mọi mã giá trị xuất hiện trong dữ liệu đều có nhãn', as
   assert.deepEqual(missing, []);
 });
 
-test('tín hiệu huỷ là thật: band cao huỷ trong 90 ngày nhiều hơn hẳn band thấp', async () => {
+test('the churn signal is real: the high band churns within 90 days far more than the low band', async () => {
   const r = await q(`
     select case when risk_band in ('high', 'cancel_scheduled') then 'risky' else risk_band end as band,
            count(*)::int as n,
@@ -125,12 +125,12 @@ test('tín hiệu huỷ là thật: band cao huỷ trong 90 ngày nhiều hơn h
     where churned_within_90d is not null
     group by 1`);
   const by = Object.fromEntries(r.map((x) => [x.band, x]));
-  console.log('  churn trong 90 ngày theo band:', r.map((x) => `${x.band}=${(x.churn_rate * 100).toFixed(1)}% (n=${x.n})`).join(' · '));
-  assert.ok(by.risky && by.low, 'phải có cả band rủi ro lẫn band thấp');
-  assert.ok(by.risky.churn_rate > 3 * by.low.churn_rate, 'band rủi ro phải huỷ nhiều hơn ít nhất 3 lần');
+  console.log('  churn within 90 days by band:', r.map((x) => `${x.band}=${(x.churn_rate * 100).toFixed(1)}% (n=${x.n})`).join(' · '));
+  assert.ok(by.risky && by.low, 'there must be both a risky band and a low band');
+  assert.ok(by.risky.churn_rate > 3 * by.low.churn_rate, 'the risky band must churn at least 3× more');
 });
 
-test('analytics_reader đọc được nhãn', async () => {
+test('analytics_reader can read labels', async () => {
   await db.exec(`set role analytics_reader`);
   try {
     const r = await q(`select ja, vi from mart.labels where domain = 'plan' and code = 'growth'`);

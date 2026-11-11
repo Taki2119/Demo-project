@@ -1,5 +1,5 @@
-// Số học NGÀY bằng số nguyên (số ngày kể từ 1970-01-01, theo UTC) — không đi qua múi giờ máy.
-// Mọi ngày trong bộ dữ liệu là ngày theo múi giờ kinh doanh; phép tính ở đây không đổi nó.
+// DATE arithmetic with integers (days since 1970-01-01, in UTC) — never goes through the machine's time zone.
+// Every date in the dataset is a date in the business time zone; the arithmetic here does not change it.
 
 const MS = 86400000;
 
@@ -21,7 +21,7 @@ export function monthStart(y, m) {
   return Date.UTC(y, m - 1, 1) / MS;
 }
 
-/** Ngày 1 của tháng chứa `day`, dịch thêm `k` tháng. */
+/** Day 1 of the month containing `day`, shifted by `k` months. */
 export function monthStartOf(day, k = 0) {
   const { y, m } = ymOf(day);
   return Date.UTC(y, m - 1 + k, 1) / MS;
@@ -31,12 +31,12 @@ export function monthEndOf(day) {
   return monthStartOf(day, 1) - 1;
 }
 
-/** 0 = Chủ nhật … 6 = Thứ bảy (1970-01-01 là Thứ năm). */
+/** 0 = Sunday … 6 = Saturday (1970-01-01 was a Thursday). */
 export function dow(day) {
   return (((day + 4) % 7) + 7) % 7;
 }
 
-// Kỳ nghỉ dài của Nhật (xấp xỉ — đủ để biểu đồ có "lõm" đúng chỗ, không phải lịch chính thức).
+// Japanese long holidays (approximate — enough for charts to "dip" in the right places, not the official calendar).
 const HOLIDAY_MD = new Set([
   '01-01', '01-02', '01-03', '02-11', '02-23', '03-20', '04-29', '05-03', '05-04', '05-05',
   '07-21', '08-11', '08-13', '08-14', '08-15', '08-16', '09-16', '09-23', '10-14', '11-03',

@@ -1,5 +1,5 @@
-// Vị trí popover (position: fixed) — hàm THUẦN. Mặc định dưới nút; không đủ chỗ mà phía trên đủ
-// ⇒ lật lên. Luôn nằm trong khung nhìn, cách mép `M` px (kit 03: popover cách mép 8px).
+// Popover position (position: fixed) — PURE function. Default below the button; not enough room but enough above
+// ⇒ flip up. Always inside the viewport, `M` px from the edge (kit 03: popover 8px from the edge).
 export const M = 8;
 const GAP = 6;
 

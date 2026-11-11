@@ -1,6 +1,6 @@
-// Khối câu trả lời của Hỏi AI (bản demo). Câu trả lời dựng LẠI mỗi lần render từ dữ liệu thô +
-// ngôn ngữ đang chọn (chat.ts) ⇒ đổi ja/vi thì cả hội thoại đổi theo.
-// Mảnh dùng lại của kit: .tile (ô số), .table-wrap (bảng), HBars (thanh ngang DOM), SoloLine (nạp động).
+// Answer block of Ask AI (demo version). The answer is REBUILT on every render from raw data +
+// the selected language (chat.ts) ⇒ switching ja/vi switches the whole conversation.
+// Reused kit pieces: .tile (stat tile), .table-wrap (table), HBars (horizontal DOM bars), SoloLine (lazy-loaded).
 import { lazy, Suspense } from 'react';
 import type { Message } from '../../ask/chat';
 import type { Answer, Ctx } from '../../ask/kit';
@@ -17,7 +17,7 @@ const AskLine = lazy(boardChunk('ask-chart', () => import('./AskLine')));
 
 type Bot = Extract<Message, { role: 'bot' }>;
 
-/** Nút câu hỏi (gợi ý / liên quan / danh sách mẫu). */
+/** Question buttons (suggestions / related / sample list). */
 export function QuestionButtons({ ids, onPick, lang }: { ids: readonly string[]; onPick: (id: string) => void; lang: Lang }) {
   return (
     <ul className="ask-qs">
@@ -120,7 +120,7 @@ function AnswerBody({ a, label }: { a: Answer; label: Ctx['label'] }) {
   );
 }
 
-/** Tin nhắn của trợ lý: đang nghĩ · trả lời · gợi ý · lỗi / chưa cấu hình API. */
+/** Assistant message: thinking · answer · suggestions · error / API not configured. */
 export function BotMessage({ m, label, onPick }: { m: Bot; label: Ctx['label']; onPick: (id: string, slots?: Slots) => void }) {
   const t = useT();
   const lang = useLangStore((s) => s.lang);

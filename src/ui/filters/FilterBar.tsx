@@ -1,5 +1,5 @@
-// Thanh lọc (kit 01 §6 FilterBar): các bộ lọc + nút đặt lại CHỈ hiện khi khác mặc định (`dirty`).
-// Bấm đặt lại ⇒ nút biến mất, nên focus chuyển về nút lọc đầu tiên (không rơi về body).
+// Filter bar (kit 01 §6 FilterBar): the filters + a reset button shown ONLY when different from default (`dirty`).
+// Clicking reset ⇒ the button disappears, so focus moves to the first filter button (doesn't fall back to body).
 import { useRef, type ReactNode } from 'react';
 import { useT } from '../i18n';
 

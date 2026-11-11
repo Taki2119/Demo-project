@@ -1,12 +1,12 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- TỪ ĐIỂN NHÃN ja / vi — MỘT nguồn cho cả web app lẫn AI.
+-- ja / vi LABEL DICTIONARY — ONE source for both the web app and the AI.
 --
--- DB giữ tên cột + mã giá trị bằng TIẾNG ANH (ổn định, dễ viết SQL). Thứ người dùng THẤY thì
--- lấy ở đây:
---   · mart.column_labels — tên cột (và đơn vị) bằng tiếng Nhật / tiếng Việt;
---   · mart.labels        — giá trị mã hoá (gói, ngành, lý do huỷ, band rủi ro…) + tên chỉ số.
--- Chữ GIAO DIỆN (nút, bộ lọc, thông báo) KHÔNG ở đây — nó thuộc từ điển i18n của frontend.
--- ⚠ Thêm cột / mã mới mà quên nhãn ⇒ test `labels.test.mjs` đỏ.
+-- The DB keeps column names + value codes in ENGLISH (stable, easy to write SQL). What users SEE
+-- comes from here:
+--   · mart.column_labels — column names (and units) in Japanese / Vietnamese;
+--   · mart.labels        — coded values (plan, industry, churn reason, risk band…) + metric names.
+-- UI text (buttons, filters, messages) is NOT here — it belongs to the frontend's i18n dictionary.
+-- ⚠ Add a new column / code and forget the label ⇒ the test "every user-facing column has ja + vi labels" in `supabase/tests/generate.test.mjs` goes red.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 create table mart.column_labels (
@@ -26,14 +26,14 @@ create table mart.labels (
 );
 
 insert into mart.column_labels (column_name, ja, vi, unit) values
-  -- thời gian
+  -- time
   ('month',               '月',                   'Tháng',                        null),
   ('month_end',           '月末日',               'Ngày cuối tháng',              null),
   ('measure_date',        '集計基準日',           'Ngày chốt số',                 null),
   ('is_closed',           '確定済み',             'Đã chốt',                      null),
   ('days_in_period',      '期間日数',             'Số ngày trong kỳ',             '日'),
   ('snapshot_date',       'スナップショット日',   'Ngày chụp',                    null),
-  -- danh mục
+  -- catalogs
   ('plan_id',             'プラン',               'Gói',                          null),
   ('plan_prev',           '前月のプラン',         'Gói tháng trước',              null),
   ('name',                '名称',                 'Tên',                          null),
@@ -49,7 +49,7 @@ insert into mart.column_labels (column_name, ja, vi, unit) values
   ('staff_id',            '担当者ID',             'Mã nhân viên',                 null),
   ('full_name',           '氏名',                 'Họ tên',                       null),
   ('team',                'チーム',               'Nhóm',                         null),
-  -- công ty
+  -- company
   ('company_id',          '企業ID',               'Mã công ty',                   null),
   ('company_name',        '企業名',               'Tên công ty',                  null),
   ('industry',            '業種',                 'Ngành',                        null),
@@ -78,7 +78,7 @@ insert into mart.column_labels (column_name, ja, vi, unit) values
   ('churned_companies',   '解約企業数',           'Số công ty huỷ',               '社'),
   ('seats',               '契約シート数',         'Số ghế hợp đồng',              '席'),
   ('seats_end',           '月末契約シート数',     'Số ghế hợp đồng cuối tháng',   '席'),
-  -- hoá đơn
+  -- invoices
   ('invoiced_amount',     '請求額',               'Số tiền xuất hoá đơn',         'JPY'),
   ('paid_amount',         '入金額',               'Số tiền đã thu',               'JPY'),
   ('unpaid_amount',       '未入金額',             'Số tiền chưa thu',             'JPY'),
@@ -99,7 +99,7 @@ insert into mart.column_labels (column_name, ja, vi, unit) values
   ('last_active_date',    '最終利用日',           'Ngày dùng gần nhất',           null),
   ('feature_events',      '機能利用回数',         'Lượt dùng tính năng',          '回'),
   ('key_feature_events',  '重要機能の利用回数',   'Lượt dùng tính năng chính',    '回'),
-  -- rủi ro huỷ
+  -- churn risk
   ('days_since_last_active','最終利用からの日数', 'Số ngày từ lần dùng cuối',     '日'),
   ('active_users_28d',    '直近28日の利用者数',   'Người dùng 28 ngày gần nhất',  '人'),
   ('active_users_7d',     '直近7日の利用者数',    'Người dùng 7 ngày gần nhất',   '人'),
@@ -119,7 +119,7 @@ insert into mart.column_labels (column_name, ja, vi, unit) values
   ('risk_band',           'リスク区分',           'Mức rủi ro',                   null),
   ('top_reason',          '主な要因',             'Nguyên nhân chính',            null),
   ('churned_within_90d',  '90日以内に解約',       'Huỷ trong 90 ngày',            null),
-  -- chăm sóc
+  -- care
   ('last_intervention_at',      '最終フォロー日',     'Lần chăm sóc gần nhất',      null),
   ('last_intervention_channel', '最終フォロー手段',   'Kênh chăm sóc gần nhất',     null),
   ('last_intervention_outcome', '最終フォロー結果',   'Kết quả chăm sóc gần nhất',  null),
@@ -130,7 +130,7 @@ insert into mart.column_labels (column_name, ja, vi, unit) values
   ('churned',             '解約',                 'Đã huỷ',                       '件'),
   ('no_response',         '応答なし',             'Không phản hồi',               '件'),
   ('pending',             '対応中',               'Đang xử lý',                   '件'),
-  -- kiểm tra chất lượng
+  -- quality checks
   ('check_name',          'チェック項目',         'Hạng mục kiểm tra',            null),
   ('failed_rows',         '不整合件数',           'Số dòng lỗi',                  '件');
 
@@ -234,7 +234,7 @@ insert into mart.labels (domain, code, ja, vi, sort_order) values
   ('intervention_outcome', 'no_response', '応答なし', 'Không phản hồi', 3),
   ('intervention_outcome', 'pending',     '対応中',   'Đang xử lý',     4),
 
-  -- CHỈ SỐ tính ở client (docs/SCHEMA.md §4.2) — tên hiển thị cùng một chỗ với nhãn cột.
+  -- METRICS computed on the client (docs/SCHEMA.md §4.2) — display names kept in the same place as column labels.
   ('metric', 'arpa',             'ARPA（1社あたり平均MRR）', 'ARPA (MRR trung bình mỗi công ty)', 1),
   ('metric', 'gross_mrr_churn',  'グロスMRRチャーン率',      'Tỉ lệ mất MRR gộp',     2),
   ('metric', 'nrr',              'NRR（売上継続率）',        'NRR (tỉ lệ giữ doanh thu)', 3),

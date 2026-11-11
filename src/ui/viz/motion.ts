@@ -1,4 +1,4 @@
-// Nhịp animation của chart (kit 03 §7). Recharts KHÔNG tự đọc prefers-reduced-motion ⇒ truyền vào.
+// Chart animation timing (kit 03 §7). Recharts does NOT read prefers-reduced-motion itself ⇒ pass it in.
 import { useMediaQuery } from '../useMediaQuery';
 
 export const CHART_ANIM_MS = 1000;

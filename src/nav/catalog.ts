@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// CATALOG — MỘT nguồn cho side panel, Home và tiêu đề trang. Thêm một bảng = thêm một mục ở
-// đây (+ một component ở boards/registry.tsx); không sửa màn nào.
+// CATALOG — ONE source for the side panel, Home and page titles. Adding a board = adding an entry
+// here (+ a component in boards/registry.tsx); no screen needs editing.
 //
-// Cây: Home · Gói dịch vụ (Tất cả gói + từng gói) × 4 bảng · Dự án (cảnh báo huỷ sớm).
-// ⚠ TÊN GÓI không khai ở đây: nó là DỮ LIỆU (mart.labels domain 'plan'), xem data/labels.ts.
-//   Ở đây chỉ có MÃ gói, khớp raw.plans.plan_id.
+// Tree: Home · Plans (All plans + each plan) × 4 boards · Project (early churn alert).
+// ⚠ PLAN NAMES are not declared here: they are DATA (mart.labels domain 'plan'), see data/labels.ts.
+//   Only plan CODES live here, matching raw.plans.plan_id.
 // ─────────────────────────────────────────────────────────────────────────────
 import type { Lang } from '../ui/i18n';
 
@@ -15,14 +15,14 @@ export interface LocalStr {
 
 export const pick = (s: LocalStr, lang: Lang): string => s[lang];
 
-/** `all` = cộng mọi gói (đúng vì mỗi công ty ở đúng một gói mỗi tháng — docs/SCHEMA.md §4). */
+/** `all` = sum of all plans (valid because each company is on exactly one plan per month — docs/SCHEMA.md §4). */
 export const PLAN_KEYS = ['all', 'starter', 'growth', 'scale'] as const;
 export type PlanKey = (typeof PLAN_KEYS)[number];
 
 export const BOARD_KEYS = ['revenue', 'users', 'by-user', 'by-company'] as const;
 export type BoardKey = (typeof BOARD_KEYS)[number];
 
-/** Mã nguồn dữ liệu của API (khớp registry phía Vercel) — KHÔNG phải tên view SQL. */
+/** API data source keys (matching the Vercel-side registry) — NOT SQL view names. */
 export type SourceKey =
   | 'revenue-monthly'
   | 'users-monthly'
@@ -38,7 +38,7 @@ export interface BoardDef {
   key: BoardKey;
   name: LocalStr;
   desc: LocalStr;
-  /** Câu hỏi trang này trả lời (trang Giới thiệu). */
+  /** The question this page answers (About page). */
   question: LocalStr;
   source: SourceKey;
 }
@@ -87,9 +87,9 @@ export const PROJECT_CHURN = {
   sources: ['churn-watchlist', 'churn-history', 'interventions-monthly'] as const satisfies readonly SourceKey[],
 } as const;
 
-/** Hỏi AI — BẢN DEMO: trả lời từ bộ câu hỏi mẫu (src/ask/), không gọi AI thật. KHÔNG phải một trang:
- *  là cửa sổ chat mở từ nút góc trên bên phải, có ở mọi màn (src/ui/ask/ChatDock.tsx). Mục này cho tên
- *  nút + dòng mô tả ở trang Giới thiệu. */
+/** Ask AI — DEMO VERSION: answers from the sample question set (src/ask/), no real AI call. NOT a page:
+ *  it's a chat window opened from the top-right button, on every screen (src/ui/ask/ChatDock.tsx). This entry
+ *  provides the button name + the description line on the About page. */
 export const PAGE_ASK = {
   name: { ja: 'AIに質問', vi: 'Hỏi AI' },
   desc: {
@@ -104,6 +104,6 @@ export const PAGE_ASK = {
 
 export function boardOf(key: BoardKey): BoardDef {
   const b = BOARDS.find((x) => x.key === key);
-  if (!b) throw new Error(`board lạ: ${key}`);
+  if (!b) throw new Error(`unknown board: ${key}`);
   return b;
 }

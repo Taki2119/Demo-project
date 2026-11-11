@@ -1,6 +1,6 @@
-// Cột (kit 03 §4): bo BAR_R ở MÉP TỰ DO; cột xếp lớp có khe 0.5px, mép thật tính từ GIÁ TRỊ;
-// lớp phủ gradient chung id `ui-bar-shade` khai NGAY trong shape (bọc trong component con thì
-// Recharts lọc mất mà không báo); hover = 2 path (quầng mờ + cột đục) nhấc 3px.
+// Bars (kit 03 §4): BAR_R radius on the FREE EDGE; stacked bars have a 0.5px gap, the real edge is computed from the VALUE;
+// shared gradient overlay id `ui-bar-shade` declared RIGHT inside the shape (wrapping it in a child component makes
+// Recharts silently filter it out); hover = 2 paths (faint halo + opaque bar) lifted 3px.
 import { HOVER_GLOW } from './axis';
 
 export const BAR_R = 6;
@@ -10,8 +10,8 @@ export type Edge = 'top' | 'bottom' | null;
 
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
-/** Mép tự do của lát `key` trong cột xếp lớp (thứ tự `keys` = thứ tự xếp, phần tử đầu ở đáy).
- *  Tính từ GIÁ TRỊ: lát cuối CÙNG DẤU có giá trị ≠ 0 mới là mép (lát cuối = 0 không cướp mép). */
+/** Free edge of slice `key` in a stacked bar (order of `keys` = stacking order, first element at the bottom).
+ *  Computed from the VALUE: only the last SAME-SIGN slice with value ≠ 0 is the edge (a trailing 0 slice doesn't steal the edge). */
 export function stackEdge(keys: readonly string[], key: string, row: Record<string, unknown>): Edge {
   const v = num(row[key]);
   if (v == null || v === 0) return null;
@@ -23,7 +23,7 @@ export function stackEdge(keys: readonly string[], key: string, row: Record<stri
   return v > 0 ? 'top' : 'bottom';
 }
 
-/** Path chữ nhật bo riêng từng góc [tl, tr, br, bl]. */
+/** Rectangle path with each corner rounded separately [tl, tr, br, bl]. */
 export function roundedRect(x: number, y: number, w: number, h: number, [tl, tr, br, bl]: [number, number, number, number]): string {
   return [
     `M${x + tl},${y}`,
@@ -47,7 +47,7 @@ interface ShapeProps {
   payload?: Record<string, unknown>;
 }
 
-/** Hàm `shape` (và `activeBar` với hot=true) cho <Bar>. */
+/** `shape` function (and `activeBar` with hot=true) for <Bar>. */
 export function barShape({ color, edge, hot = false }: { color: string; edge: (row: Record<string, unknown>) => Edge; hot?: boolean }) {
   return function BarMark(p: unknown) {
     const { x = 0, y = 0, width = 0, height = 0, payload = {} } = p as ShapeProps;
@@ -55,7 +55,7 @@ export function barShape({ color, edge, hot = false }: { color: string; edge: (r
     const e = edge(payload);
     let top = Math.min(y, y + height);
     let h = Math.abs(height);
-    // Khe 0.5px: mỗi mép KHÔNG tự do lùi 0.25px ⇒ hai lát kề nhau cách 0.5px.
+    // 0.5px gap: each NON-free edge pulls back 0.25px ⇒ two adjacent slices are 0.5px apart.
     if (e !== 'top') { top += GAP / 2; h -= GAP / 2; }
     if (e !== 'bottom') h -= GAP / 2;
     if (h <= 0) return <g />;

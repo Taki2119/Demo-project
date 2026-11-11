@@ -1,5 +1,5 @@
-// Nhãn ja / vi của DỮ LIỆU — đọc từ mart.labels + mart.column_labels (docs/SCHEMA.md §4.3).
-// Chưa tải được (hoặc chưa cấu hình API) ⇒ rơi về chính MÃ, để màn hình không trống trơn.
+// ja / vi labels for DATA — read from mart.labels + mart.column_labels (docs/SCHEMA.md §4.3).
+// Not loaded yet (or API not configured) ⇒ fall back to the CODE itself, so the screen isn't blank.
 import { useLangStore, type Lang } from '../ui/i18n';
 import { useSource, type Row } from './api';
 
@@ -36,7 +36,7 @@ export function labelOf(idx: LabelIndex, domain: string, code: string, lang: Lan
   return idx.get(keyOf(domain, code))?.[lang] ?? code;
 }
 
-/** `label('plan', 'growth')` → 'グロース' / 'Tăng trưởng' (hoặc 'growth' khi chưa có nhãn). */
+/** `label('plan', 'growth')` → 'グロース' / 'Tăng trưởng' (or 'growth' when there's no label yet). */
 export function useLabel(): (domain: string, code: string) => string {
   const lang = useLangStore((s) => s.lang);
   const { data } = useSource('labels');
@@ -52,7 +52,7 @@ export function useColumnLabel(): (column: string) => string {
   return (column) => idx.get(column)?.[lang] ?? column;
 }
 
-/** Đơn vị của cột ('JPY' · '%' · '人'…) — quyết định cách định dạng ô. */
+/** Unit of a column ('JPY' · '%' · '人'…) — decides how the cell is formatted. */
 export function useColumnUnit(): (column: string) => string | null {
   const { data } = useSource('column-labels');
   const units = new Map<string, string>();
@@ -60,8 +60,8 @@ export function useColumnUnit(): (column: string) => string | null {
   return (column) => units.get(column) ?? null;
 }
 
-/** Tên chỉ số của glossary: các nhãn được trỏ tới, nối " · ". Thiếu BẤT KỲ nhãn nào (chưa tải /
- *  chưa cấu hình API) ⇒ null — nơi gọi hiện chữ thay thế, KHÔNG hiện mã cột. */
+/** Metric name for the glossary: the referenced labels, joined with " · ". ANY label missing (not loaded /
+ *  API not configured) ⇒ null — the caller shows fallback text, NOT the column code. */
 export function useNameRefs(): (refs: readonly ({ col: string } | { label: readonly [string, string] })[]) => string | null {
   const lang = useLangStore((s) => s.lang);
   const cols = useSource('column-labels').data;

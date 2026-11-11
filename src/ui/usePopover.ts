@@ -1,9 +1,9 @@
-// Hành vi chung của MỌI popover / panel (nút ⓘ, bộ lọc) — kit 02 §6 popoverFocus + 01 §6 FilterBar:
-//   · toàn app chỉ MỘT panel mở mỗi lúc (store `useOpenPanel`): mở cái mới ⇒ cái cũ đóng;
-//   · mở ⇒ focus vào panel (hoặc phần tử `focusInside` chỉ ra); Esc ⇒ đóng + focus về nút;
-//   · bấm ra ngoài (pointerdown) ⇒ đóng;
-//   · vị trí position: fixed, kẹp trong khung (popoverPlace.ts), đặt lại khi cuộn (capture — scroll
-//     của .main không nổi bọt) / đổi cỡ. Panel PORTAL ra body là việc của nơi gọi.
+// Shared behaviour of EVERY popover / panel (ⓘ button, filters) — kit 02 §6 popoverFocus + 01 §6 FilterBar:
+//   · only ONE panel open at a time app-wide (store `useOpenPanel`): opening a new one ⇒ the old one closes;
+//   · open ⇒ focus into the panel (or the element `focusInside` points to); Esc ⇒ close + focus back to the button;
+//   · click outside (pointerdown) ⇒ close;
+//   · position: fixed, clamped to the viewport (popoverPlace.ts), repositioned on scroll (capture — scroll
+//     of .main doesn't bubble) / resize. PORTALing the panel to body is the caller's job.
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { create } from 'zustand';
 import { placePopover } from './popoverPlace';
@@ -24,7 +24,7 @@ export function usePopover<B extends HTMLElement = HTMLButtonElement>(opts: { fo
     [id],
   );
   const toggle = useCallback(() => setOpen(useOpenPanel.getState().id !== id), [id, setOpen]);
-  /** Đóng; `focusBack` ⇒ trả focus về nút (Esc, chọn xong). */
+  /** Close; `focusBack` ⇒ return focus to the button (Esc, after picking). */
   const close = useCallback(
     (focusBack = true) => {
       setOpen(false);
@@ -71,11 +71,11 @@ export function usePopover<B extends HTMLElement = HTMLButtonElement>(opts: { fo
     };
   }, [open, place, close]);
 
-  // Gỡ khỏi màn khi đang mở ⇒ nhả khe "panel đang mở".
+  // Unmounted while open ⇒ release the "panel open" slot.
   useEffect(() => () => setOpen(false), [setOpen]);
 
-  // Vị trí tính trong useLayoutEffect (trước khi vẽ) ⇒ không nháy. KHÔNG dùng visibility: hidden
-  // lúc chờ: phần tử ẩn không nhận focus, và focus phải vào panel ngay khi mở.
+  // Position computed in useLayoutEffect (before paint) ⇒ no flicker. Do NOT use visibility: hidden
+  // while waiting: hidden elements can't take focus, and focus must go into the panel as soon as it opens.
   const style: CSSProperties = pos ? { top: pos.top, left: pos.left } : { top: 0, left: 0 };
   return { id, open, toggle, close, btn, pop, style, place };
 }

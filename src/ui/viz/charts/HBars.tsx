@@ -1,5 +1,5 @@
-// Thanh NGANG bằng DOM (kit 03 §2) — xếp hạng, nhãn dài. Giá trị null ⇒ không vẽ thanh, chữ "—".
-// Lớp phủ: --mark-shade-grad-x. Hover DOM: box-shadow bán kính GẤP ĐÔI drop-shadow (1.5→3, 5→10).
+// HORIZONTAL bars in DOM (kit 03 §2) — rankings, long labels. null value ⇒ no bar drawn, text "—".
+// Overlay: --mark-shade-grad-x. DOM hover: box-shadow radius TWICE the drop-shadow (1.5→3, 5→10).
 import type { CSSProperties } from 'react';
 import { NO_VALUE } from '../../format';
 

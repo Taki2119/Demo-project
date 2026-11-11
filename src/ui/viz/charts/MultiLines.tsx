@@ -1,4 +1,4 @@
-// 2–6 chuỗi CÙNG đơn vị theo thời gian (kit 03 §2). Không có pill tĩnh; chấm nóng tô --accent.
+// 2–6 series of the SAME unit over time (kit 03 §2). No static pill; hot dot filled with --accent.
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AXIS, AXIS_PAD, AXIS_TICK_GAP, GRID, gutterFor, HOVER_GLOW, Y_WIDTH } from '../axis';
 import type { LegendItem } from '../Legend';
@@ -19,7 +19,7 @@ export const lineItems = (series: readonly SeriesSpec[]): LegendItem[] =>
   series.map((s) => ({ key: s.key, label: s.label, color: s.color, kind: 'line' }));
 
 export function MultiLines({ data, xKey, series, fmt }: { data: readonly Point[]; xKey: string; series: readonly SeriesSpec[]; fmt: ChartFormat }) {
-  if (series.length > MULTI_LINES_MAX) throw new Error(`MultiLines: ${series.length} chuỗi > ${MULTI_LINES_MAX}`);
+  if (series.length > MULTI_LINES_MAX) throw new Error(`MultiLines: ${series.length} series > ${MULTI_LINES_MAX}`);
   const anim = useChartAnim();
   const values = data.flatMap((d) => series.map((s) => num(d[s.key])));
   const items = lineItems(series);

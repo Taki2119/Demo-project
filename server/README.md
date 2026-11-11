@@ -1,68 +1,68 @@
-# API (Vercel) — triển khai
+# API (Vercel) — deployment
 
-Một project Vercel **riêng**, Root Directory = `server/` (để Vercel không build app Vite ở gốc
-repo). Hai endpoint:
+A **separate** Vercel project, Root Directory = `server/` (so Vercel doesn't build the Vite app at the repo
+root). Two endpoints:
 
-| Endpoint | Việc |
+| Endpoint | Purpose |
 |---|---|
-| `POST /api/board-data` | đường đọc dữ liệu duy nhất của web app — hợp đồng ở [`../docs/API.md`](../docs/API.md) |
-| `GET /api/health` | kiểm sau deploy: `{ ok, asOf }` |
+| `POST /api/board-data` | the web app's only data read path — contract in [`../docs/API.md`](../docs/API.md) |
+| `GET /api/health` | post-deploy check: `{ ok, asOf }` |
 
-## 1. Supabase — một lần
+## 1. Supabase — once
 
-1. Chạy 4 migration trong `supabase/migrations/` theo thứ tự (SQL editor, hoặc `supabase db push`).
-2. Đặt mật khẩu cho role chỉ đọc (SQL editor; **không** dán mật khẩu vào repo hay vào chat):
+1. Run the 4 migrations in `supabase/migrations/` in order (SQL editor, or `supabase db push`).
+2. Set a password for the read-only role (SQL editor; do **not** paste the password into the repo or into chat):
    ```sql
-   alter role analytics_reader with login password '<mật khẩu mạnh>';
+   alter role analytics_reader with login password '<strong password>';
    ```
-3. Nạp dữ liệu từ máy: `npm run data:generate && npm run data:load` (cần `DATABASE_URL` của
-   user `postgres` trong `.env`, xem `docs/SCHEMA.md` §8).
+3. Load data from your machine: `npm run data:generate && npm run data:load` (needs the `DATABASE_URL` of
+   user `postgres` in `.env`, see `docs/SCHEMA.md` §8).
 
-## 2. Vercel — tạo project
+## 2. Vercel — create the project
 
-1. *Add New → Project* → chọn repo `Demo-project` → **Root Directory = `server`**.
-   Framework Preset: *Other*. Không có build command.
+1. *Add New → Project* → choose repo `Demo-project` → **Root Directory = `server`**.
+   Framework Preset: *Other*. No build command.
 2. *Settings → Environment Variables* (Production):
 
-| Biến | Giá trị | Ghi chú |
+| Variable | Value | Notes |
 |---|---|---|
-| `DATABASE_URL` | chuỗi **Transaction pooler** (cổng **6543**), user `analytics_reader.<project-ref>` | *Supabase → Connect → Transaction pooler*. Đánh dấu **Sensitive** |
-| `ALLOWED_ORIGINS` | `https://taki2119.github.io` | nhiều origin ngăn bằng dấu phẩy; KHÔNG có path, KHÔNG có `/` cuối. Bỏ trống ⇒ mặc định (Pages + localhost) |
-| `MAX_RESPONSE_BYTES` | (tuỳ chọn) | mặc định 4.000.000 |
+| `DATABASE_URL` | **Transaction pooler** string (port **6543**), user `analytics_reader.<project-ref>` | *Supabase → Connect → Transaction pooler*. Mark as **Sensitive** |
+| `ALLOWED_ORIGINS` | `https://taki2119.github.io` | multiple origins separated by commas; NO path, NO trailing `/`. Empty ⇒ default (Pages + localhost) |
+| `MAX_RESPONSE_BYTES` | (optional) | default 4,000,000 |
 
-3. *Region*: `vercel.json` đặt `hnd1` (Tokyo). **Chọn cùng vùng với project Supabase** (vd.
-   Supabase `ap-northeast-1` ⇒ `hnd1`; `ap-southeast-1` ⇒ `sin1`), nếu không mỗi truy vấn sẽ đi
-   vòng qua một vùng khác.
-4. Deploy, rồi kiểm:
+3. *Region*: `vercel.json` sets `hnd1` (Tokyo). **Choose the same region as the Supabase project** (e.g.
+   Supabase `ap-northeast-1` ⇒ `hnd1`; `ap-southeast-1` ⇒ `sin1`), otherwise every query will take a detour
+   through another region.
+4. Deploy, then check:
    ```bash
    curl https://<project>.vercel.app/api/health
    curl -X POST -H "content-type: application/json" -d '{"source":"labels"}' https://<project>.vercel.app/api/board-data
    ```
 
-## 3. Nối web app
+## 3. Connect the web app
 
 GitHub repo → *Settings → Secrets and variables → Actions → **Variables*** → `VITE_API_URL` =
-`https://<project>.vercel.app` (không có `/` cuối). Đây không phải secret: nó nằm trong bundle.
-Push lên `main` ⇒ `deploy.yml` build lại với biến này.
+`https://<project>.vercel.app` (no trailing `/`). This is not a secret: it ends up in the bundle.
+Pushing to `main` ⇒ `deploy.yml` rebuilds with this variable.
 
-## Chạy cục bộ (không cần Supabase)
+## Running locally (no Supabase needed)
 
 ```bash
-npm run api:dev                                   # DB demo trong bộ nhớ (PGlite) — dựng ~1–2 phút
-VITE_API_URL=http://localhost:3001 npm run dev    # app đọc API cục bộ
-npm run api:dev -- --supabase                     # hoặc: nối DATABASE_URL thật trong .env
-npm run api:test                                  # test toàn bộ handler trên PGlite, bằng role analytics_reader
+npm run api:dev                                   # in-memory demo DB (PGlite) — ~1–2 minutes to build
+VITE_API_URL=http://localhost:3001 npm run dev    # the app reads the local API
+npm run api:dev -- --supabase                     # or: connect to the real DATABASE_URL in .env
+npm run api:test                                  # test the whole handler on PGlite, as role analytics_reader
 ```
 
-## Vì sao an toàn khi không có đăng nhập
+## Why it is safe without login
 
-Dữ liệu là dữ liệu tổng hợp, và đường này **chỉ đọc**. Có 4 lớp gác:
+The data is synthetic, and this path is **read-only**. There are 4 layers of protection:
 
-| Lớp | Gác gì |
+| Layer | Guards against |
 |---|---|
-| SQL cố định theo `source` | client không gửi SQL; tham số qua placeholder và được kiểm dạng |
-| Role `analytics_reader` | chỉ `SELECT` trên `mart`, giao dịch READ ONLY, `statement_timeout = 15s` |
-| Trần dung lượng phản hồi | 413 khi vượt trần |
-| Giới hạn nhịp | 120 lượt / phút / IP / instance |
+| SQL fixed per `source` | the client sends no SQL; params go through placeholders and are type-checked |
+| Role `analytics_reader` | only `SELECT` on `mart`, READ ONLY transactions, `statement_timeout = 15s` |
+| Response size cap | 413 when exceeded |
+| Rate limit | 120 requests / minute / IP / instance |
 
-CORS chỉ chặn được trình duyệt từ origin lạ, không chặn được `curl`. Đừng coi nó là hàng rào.
+CORS only blocks browsers from unknown origins, not `curl`. Don't treat it as a barrier.

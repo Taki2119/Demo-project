@@ -1,15 +1,15 @@
-// Router HASH — GitHub Pages là host tĩnh, không rewrite được đường dẫn, nên mọi trang đi sau `#`.
+// HASH router — GitHub Pages is a static host and can't rewrite paths, so every page goes after `#`.
 //   #/                          Home
-//   #/plans/<gói>/<bảng>        một bảng của một gói (gói = all | starter | growth | scale)
-//   #/project/churn             dự án cảnh báo huỷ sớm
-//   #/about                     trang Giới thiệu
-// Hash lạ ⇒ Home. parse/ghép là phép THUẦN trên chuỗi; bất biến: toHash(parseHash(h)) === h
-// với mọi h hợp lệ (route.test.ts).
+//   #/plans/<plan>/<board>      one board of one plan (plan = all | starter | growth | scale)
+//   #/project/churn             early churn alert project
+//   #/about                     About page
+// Unknown hash ⇒ Home. parse/build are PURE string operations; invariant: toHash(parseHash(h)) === h
+// for every valid h (route.test.ts).
 //
-// BỘ LỌC đi sau `?` (vd. `#/plans/all/revenue?from=2026-01&to=2026-11`) và KHÔNG thuộc Route:
-// App dựng lại trang theo key = toHash(route), nên đổi bộ lọc không được đổi route (panel sẽ đóng,
-// trang dựng lại). Query chỉ giữ khoá hợp lệ CHO TRANG ĐÓ và đúng dạng 'YYYY-MM'; còn phạm vi dữ
-// liệu thì trang kiểm khi có dữ liệu (data/period.ts). Đổi bộ lọc = replaceState (Back không bị dồn).
+// FILTERS go after `?` (e.g. `#/plans/all/revenue?from=2026-01&to=2026-11`) and are NOT part of Route:
+// App rebuilds the page keyed on toHash(route), so changing a filter must not change the route (the panel would
+// close, the page would rebuild). The query keeps only keys valid FOR THAT PAGE in 'YYYY-MM' form; the data range
+// is checked by the page once data arrives (data/period.ts). Changing a filter = replaceState (Back doesn't pile up).
 import { create } from 'zustand';
 import { isYm, type FilterQuery } from '../data/period';
 import { BOARD_KEYS, PLAN_KEYS, type BoardKey, type PlanKey } from './catalog';
@@ -57,15 +57,15 @@ export function sameRoute(a: Route, b: Route): boolean {
 export type Query = FilterQuery;
 const QUERY_ORDER = ['from', 'to', 'month'] as const;
 
-/** Khoá query mà trang nhận: khoảng tháng (Doanh thu, Người dùng, Cảnh báo huỷ) · 1 tháng (Theo
- *  người dùng, Theo công ty) · không có (Home, Giới thiệu). */
+/** Query keys a page accepts: month range (Revenue, Users, Churn alert) · single month (By user,
+ *  By company) · none (Home, About). */
 export function queryKeysFor(route: Route): readonly (keyof Query)[] {
   if (route.kind === 'churn') return ['from', 'to'];
   if (route.kind !== 'board') return [];
   return route.board === 'revenue' || route.board === 'users' ? ['from', 'to'] : ['month'];
 }
 
-/** Đọc phần sau `?`: chỉ giữ khoá của trang + giá trị đúng dạng 'YYYY-MM'. Rác bị bỏ, không lỗi. */
+/** Read the part after `?`: keep only the page's keys + values in 'YYYY-MM' form. Garbage is dropped, no error. */
 export function parseQuery(hash: string, route: Route): Query {
   const at = hash.indexOf('?');
   if (at < 0) return {};
@@ -78,7 +78,7 @@ export function parseQuery(hash: string, route: Route): Query {
   return q;
 }
 
-/** Query → '?from=…&to=…' theo thứ tự cố định; rỗng ⇒ ''. */
+/** Query → '?from=…&to=…' in a fixed order; empty ⇒ ''. */
 export function toQueryString(q: Query): string {
   const parts = QUERY_ORDER.filter((k) => q[k] != null).map((k) => `${k}=${q[k]}`);
   return parts.length ? `?${parts.join('&')}` : '';
@@ -96,14 +96,14 @@ export const useRouteStore = create<{ route: Route; query: Query }>(() => read(c
 export const useRoute = (): Route => useRouteStore((s) => s.route);
 export const useQuery = (): Query => useRouteStore((s) => s.query);
 
-/** Sang trang khác (bộ lọc KHÔNG đi theo: mỗi trang tự về mặc định). */
+/** Go to another page (filters do NOT carry over: each page resets to its default). */
 export function navigate(route: Route): void {
   const h = toHash(route);
   if (window.location.hash !== h) window.location.hash = h;
   else useRouteStore.setState({ route, query: {} });
 }
 
-/** Đổi bộ lọc của trang đang xem: replaceState (không đẻ mục lịch sử, không bắn hashchange). */
+/** Change the current page's filters: replaceState (no new history entry, no hashchange fired). */
 export function setQuery(q: Query): void {
   const { route, query } = useRouteStore.getState();
   if (toQueryString(q) === toQueryString(query)) return;
@@ -114,7 +114,7 @@ export function setQuery(q: Query): void {
 export function initRouter(): void {
   const sync = () => {
     const next = read(currentHash());
-    // Chuẩn hoá URL lạ về dạng chính tắc (không đẻ mục lịch sử mới).
+    // Normalize unusual URLs to canonical form (no new history entry).
     const canonical = toHash(next.route) + toQueryString(next.query);
     if (window.location.hash !== canonical) history.replaceState(null, '', canonical);
     useRouteStore.setState(next);

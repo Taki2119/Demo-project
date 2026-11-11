@@ -1,5 +1,5 @@
-/* Vỏ app (kit 02 §4). Giữ tên class cũ: .app .side .main .page.
-   .main là ô cuộn DUY NHẤT; document không cuộn. */
+/* App shell (kit 02 §4). Keeps the old class names: .app .side .main .page.
+   .main is the ONLY scroll container; the document doesn't scroll. */
 
 .app {
   display: flex;
@@ -7,7 +7,7 @@
   overflow: hidden;
   position: relative;
 }
-/* Đường lui riêng — KHÔNG viết `height:100vh; height:100dvh` liền nhau (minifier gộp mất). */
+/* Separate fallback — do NOT write `height:100vh; height:100dvh` back to back (the minifier merges them away). */
 @supports not (height: 100dvh) {
   .app { height: 100vh; }
 }
@@ -52,16 +52,16 @@
   position: relative;
   z-index: 1;
 }
-/* max-width đặt ở màn, KHÔNG đặt ở ô cuộn (thanh cuộn sẽ mọc giữa màn hình). */
+/* max-width goes on the screen, NOT on the scroll container (the scrollbar would appear mid-screen). */
 .page { max-width: 84rem; margin: 0 auto; padding: 1.5rem var(--screen-pad) 3rem; }
 .page h1 { margin: 0 0 6px; font-size: 1.62rem; line-height: 1.25; }
 .crumb { margin: 0 0 4px; color: var(--ink-3); font-size: .82rem; }
 .lead { margin: 0 0 var(--blk-out); color: var(--ink-2); font-size: .82rem; }
 
-/* ── ≤640px (breakpoint của kit): side panel thành NGĂN KÉO ──
-   Thanh trên (.side-bar, z 10) có nút mở · lớp phủ (.side-scrim) z 39 · ngăn kéo z 40, rộng
-   min(--sidenav-w, 100vw − 2.5rem). Kit có dải icon (rail) — repo không có bộ icon nên dùng
-   thanh trên thay rail. Mở ⇒ Sidebar.tsx đặt [data-drawer-open] trên <html> + .main inert. */
+/* ── ≤640px (the kit's breakpoint): side panel becomes a DRAWER ──
+   Top bar (.side-bar, z 10) holds the open button · scrim (.side-scrim) z 39 · drawer z 40, width
+   min(--sidenav-w, 100vw − 2.5rem). The kit has an icon rail — the repo has no icon set, so the
+   top bar replaces the rail. Open ⇒ Sidebar.tsx sets [data-drawer-open] on <html> + .main inert. */
 .side-bar, .side-scrim { display: none; }
 @media (max-width: 640px) {
   .app { flex-direction: column; }
@@ -109,14 +109,14 @@
     visibility: visible;
     transition: opacity var(--menu-open-dur) ease, visibility 0s;
   }
-  /* Ngăn kéo mở ⇒ nội dung phía sau không cuộn. */
+  /* Drawer open ⇒ content behind it doesn't scroll. */
   :root[data-drawer-open] .main { overflow: hidden; }
 }
 @media (prefers-reduced-motion: reduce) {
   .side, .side[data-open='true'], .side-scrim, .side-scrim[data-open='true'] { transition: none; }
 }
 
-/* ── Trang Giới thiệu ── */
+/* ── About page ── */
 .about-block { margin: 0 0 var(--blk-in); padding: 1rem 1.15rem; border-radius: 16px; }
 .about-block h2 { margin: 0 0 8px; font-size: 1rem; }
 .about-block h3 { margin: 14px 0 4px; font-size: .9rem; }
@@ -135,7 +135,7 @@
 .gloss thead th { color: var(--ink-3); font-weight: 600; white-space: nowrap; }
 .gloss tbody th { font-weight: 600; min-width: 8rem; }
 .gloss code { font-size: .74rem; overflow-wrap: anywhere; }
-/* ≤640px: mỗi chỉ số thành một khối dọc (không cuộn ngang); nhãn cột lấy từ data-h. */
+/* ≤640px: each metric becomes a vertical block (no horizontal scroll); column labels come from data-h. */
 @media (max-width: 640px) {
   .gloss thead { display: none; }
   .gloss, .gloss tbody, .gloss tr, .gloss th, .gloss td { display: block; width: auto; }

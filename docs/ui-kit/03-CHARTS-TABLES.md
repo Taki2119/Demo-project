@@ -1,79 +1,79 @@
-# 03 · Biểu đồ và bảng số
+# 03 · Charts and number tables
 
-Toàn bộ tầng này nằm trong `src/ui/viz/` và `src/ui/table*.ts` của repo gốc. Nó chỉ phụ thuộc React 18,
-Recharts 2.x và các token CSS. Khi tài liệu gốc và code nói khác nhau, file này **theo code**.
+This whole layer lives in the original repo's `src/ui/viz/` and `src/ui/table*.ts`. It depends only on React 18,
+Recharts 2.x and the CSS tokens. Where the original docs and the code disagree, this file **follows the code**.
 
-## 1. Ba luật chung (áp cho mọi khuôn)
+## 1. Three general rules (apply to every template)
 
-1. **Component không tự định dạng số.** Chỗ gọi truyền vào `format: (v) => string` hoặc một chuỗi đã định dạng sẵn.
-2. **`goodWhen: 'up' | 'down'` không có giá trị mặc định.** Nếu để mặc định `'up'`, một chỉ số như churn tăng sẽ bị tô xanh.
-3. **Không tự đặt cỡ chữ riêng.** Cỡ chữ lấy từ thang chung (`02-DESIGN-SYSTEM.md` §2).
+1. **Components do not format numbers themselves.** The caller passes `format: (v) => string` or an already formatted string.
+2. **`goodWhen: 'up' | 'down'` has no default value.** With a default of `'up'`, a rising metric like churn would be colored green.
+3. **No ad-hoc font sizes.** Font sizes come from the shared scale (`02-DESIGN-SYSTEM.md` §2).
 
-Mọi khuôn lấy prop animation từ `useChartAnim()` (`motion.ts`).
+Every template takes its animation props from `useChartAnim()` (`motion.ts`).
 
-## 2. Mười hai khuôn chart
+## 2. Twelve chart templates
 
-| File | Dùng cho | Props chính | Cách vẽ |
+| File | Used for | Main props | How it draws |
 |---|---|---|---|
-| `charts/SimpleBars.tsx` | So độ cao giữa các hạng mục rời, hoặc chuỗi thời gian ngắn có 1 chuỗi | `data, xKey, valueKey, label, color, format, head?, maxBarSize=26` | Recharts `BarChart` |
-| `charts/ComboCharts.tsx › BarLineChart` | Cột + 1 đường, **cùng đơn vị** | `data, xKey, bar, line{key,label,color,dashed?}, format, xTickFormat?, maxBarSize=22` | Recharts `ComposedChart` |
-| `ComboCharts.tsx › StackedBarLineChart` | Cột xếp lớp (phân hoạch), có thể kèm đường | `stacks: BarSpec[]` (phần tử đầu ở đáy), `line?`, `wideAxis?`, `maxBarSize=26` | Recharts |
-| `charts/MultiLines.tsx` | 2–6 chuỗi cùng đơn vị theo thời gian | `data, xKey, series[{key,label,color}], format` (`MULTI_LINES_MAX=6`) | Recharts `LineChart` |
-| `charts/LayeredArea.tsx` | 2–3 chuỗi **bao nhau** (gửi ≥ mở ≥ bấm) | `data, xKey, layers[{key,label}]` (phần tử đầu là lớp ngoài cùng), `format`; không có prop màu | Recharts `AreaChart` |
-| `charts/DonutList.tsx` | Cơ cấu tại **một thời điểm**, 2–5 lát | `slices[{key,label,value,color}], total, totalUnit?, format, formatPct, aside?` (`DONUT_MAX_SLICES=5`) | Recharts `Pie` |
-| `charts/FunnelChart.tsx` | Tỉ lệ đi tiếp qua 3–5 bậc lồng nhau | `rows[{key,label,value}], formatValue, formatPct, stepLabel, topLabel, valueLabel` | **SVG tay** (dải cubic) |
-| `charts/RadarChart.tsx` | Hồ sơ của 1 chủ thể trên ≤ 8 tiêu chí cùng thang | `data[{key,label,subject,reference}], subjectLabel, referenceLabel, color, max=100, format` | Recharts `RadarChart` (circle) |
-| `charts/RangeBars.tsx` | Mức thực đạt so với trần (dạng bullet) | `rows[{key,label,value,track}], color, format, formatPct, …` | Recharts, lát đệm `track − value` |
-| `charts/ScatterPlot.tsx` | Quan hệ 2 biến, ≤ 3 nhóm | `data[{id,name,x,y,series}], series, xLabel, yLabel, formatX, formatY` | Recharts `ScatterChart` |
-| `charts/HBars.tsx › HBars` | Xếp hạng, nhãn tiếng Nhật dài | `rows[{key,label,value,text,note?,color?}], max?, labelW=7` (rem) | **DOM thuần** |
-| `HBars.tsx › SplitBars` | Phần trên tổng, mỗi hàng **khác đơn vị** (chuẩn hoá về 100%) | `rows[{key,label,pct,lead,trail,text}], labelW=9` | **DOM thuần** |
-| `charts/HeatGrid.tsx` | Một đại lượng trải trên 2 chiều hạng mục | `cols, rows[{label,values}], top, formatCell, formatTip, valueLabel, emptyLabel` | DOM/table + `FloatTip` |
-| `charts/TickSparkline.tsx` | Hình dáng của nhiều mốc rời (≥ ~20 mốc) | `values, color='var(--line-solo)', tick=3, gap=2, emphasizeLast=1` | **SVG tay** |
+| `charts/SimpleBars.tsx` | Comparing heights across discrete categories, or a short time series with 1 series | `data, xKey, valueKey, label, color, format, head?, maxBarSize=26` | Recharts `BarChart` |
+| `charts/ComboCharts.tsx › BarLineChart` | Bars + 1 line, **same unit** | `data, xKey, bar, line{key,label,color,dashed?}, format, xTickFormat?, maxBarSize=22` | Recharts `ComposedChart` |
+| `ComboCharts.tsx › StackedBarLineChart` | Stacked bars (a partition), optionally with a line | `stacks: BarSpec[]` (first element at the bottom), `line?`, `wideAxis?`, `maxBarSize=26` | Recharts |
+| `charts/MultiLines.tsx` | 2–6 series of the same unit over time | `data, xKey, series[{key,label,color}], format` (`MULTI_LINES_MAX=6`) | Recharts `LineChart` |
+| `charts/LayeredArea.tsx` | 2–3 **nested** series (sent ≥ opened ≥ clicked) | `data, xKey, layers[{key,label}]` (first element is the outermost layer), `format`; no color prop | Recharts `AreaChart` |
+| `charts/DonutList.tsx` | Composition at **one point in time**, 2–5 slices | `slices[{key,label,value,color}], total, totalUnit?, format, formatPct, aside?` (`DONUT_MAX_SLICES=5`) | Recharts `Pie` |
+| `charts/FunnelChart.tsx` | Pass-through rate across 3–5 nested steps | `rows[{key,label,value}], formatValue, formatPct, stepLabel, topLabel, valueLabel` | **Hand-drawn SVG** (cubic bands) |
+| `charts/RadarChart.tsx` | Profile of 1 subject on ≤ 8 criteria on the same scale | `data[{key,label,subject,reference}], subjectLabel, referenceLabel, color, max=100, format` | Recharts `RadarChart` (circle) |
+| `charts/RangeBars.tsx` | Actual level against a ceiling (bullet style) | `rows[{key,label,value,track}], color, format, formatPct, …` | Recharts, padding slice `track − value` |
+| `charts/ScatterPlot.tsx` | Relationship between 2 variables, ≤ 3 groups | `data[{id,name,x,y,series}], series, xLabel, yLabel, formatX, formatY` | Recharts `ScatterChart` |
+| `charts/HBars.tsx › HBars` | Rankings, long Japanese labels | `rows[{key,label,value,text,note?,color?}], max?, labelW=7` (rem) | **Plain DOM** |
+| `HBars.tsx › SplitBars` | Part of a total, each row in a **different unit** (normalized to 100%) | `rows[{key,label,pct,lead,trail,text}], labelW=9` | **Plain DOM** |
+| `charts/HeatGrid.tsx` | One quantity spread over 2 category dimensions | `cols, rows[{label,values}], top, formatCell, formatTip, valueLabel, emptyLabel` | DOM/table + `FloatTip` |
+| `charts/TickSparkline.tsx` | The shape of many discrete points (≥ ~20 points) | `values, color='var(--line-solo)', tick=3, gap=2, emphasizeLast=1` | **Hand-drawn SVG** |
 
-Khuôn chữ/số:
-- `StatTile` (thẻ KPI): `label, value, format, unit?, delta, goodWhen, spark?, info?, deltaNote?, deltaCount?`
-- `stats.tsx`: `RingStat` (chỉ cho tỉ lệ 0–100 có mẫu số thật; `size=74`, `stroke=6`), `DeltaRow`, `MiniStat`, `ValueList`, `ChipRow`
-- `CellBar` (thanh trong ô bảng): `pct, color, text`
+Text/number templates:
+- `StatTile` (KPI tile): `label, value, format, unit?, delta, goodWhen, spark?, info?, deltaNote?, deltaCount?`
+- `stats.tsx`: `RingStat` (only for 0–100 ratios with a real denominator; `size=74`, `stroke=6`), `DeltaRow`, `MiniStat`, `ValueList`, `ChipRow`
+- `CellBar` (bar inside a table cell): `pct, color, text`
 
-## 3. Chọn hình theo việc của dữ liệu
+## 3. Choosing a form by what the data has to do
 
-| Dữ liệu cần làm gì | Hình |
+| What the data needs to do | Form |
 |---|---|
-| 3–5 con số đầu bài | Một hàng `StatTile`. **Không** dùng biểu đồ chỉ có 1 cột |
-| 1 chuỗi theo thời gian | Vùng hoặc đường. Chỉ 1 mốc (mốc tốt nhất) được gắn pill |
-| Vào/ra quanh mốc 0 | Cột phân cực, tô bằng token status (`--ok-fill` / `--crit-fill`) |
-| Cơ cấu thay đổi theo thời gian | Cột xếp lớp, 3–4 lớp |
-| Cơ cấu tại một thời điểm | Donut (≤ 5 lát; nhiều hơn thì kèm bảng ở `aside`) |
-| Cột + đường cùng đơn vị | `BarLineChart` / `StackedBarLineChart` |
-| Phần còn lại qua từng bậc | Phễu (≤ 5 bậc) |
-| Quan hệ 2 biến | Scatter (≤ 3 nhóm) |
-| Hồ sơ đa tiêu chí | Radar: 1 chủ thể + 1 tham chiếu, ≤ 8 trục, thang 0–100 |
-| Hạng mục có nhãn dài | `HBars` (ngang) |
-| Thang có thứ tự, nhãn ngắn | `SimpleBars` (dọc) |
-| Nhiều đại lượng khác đơn vị | `SplitBars` |
-| Nhiều nhóm có cỡ mẫu lệch mạnh | **Bảng**: cột cỡ mẫu đặt ngay sau tên, sort cỡ mẫu giảm dần |
-| Cần đọc số mà không phải rê chuột | **Bảng** |
-| Dưới ~12 mốc / trên ~20 mốc | Sparkline đường / `TickSparkline` |
+| 3–5 headline numbers | A row of `StatTile`s. Do **not** use a chart with just 1 bar |
+| 1 series over time | Area or line. Only 1 point (the best point) gets a pill |
+| In/out around zero | Diverging bars, colored with status tokens (`--ok-fill` / `--crit-fill`) |
+| Composition changing over time | Stacked bars, 3–4 layers |
+| Composition at one point in time | Donut (≤ 5 slices; more than that, add a table in `aside`) |
+| Bars + line in the same unit | `BarLineChart` / `StackedBarLineChart` |
+| What remains through each step | Funnel (≤ 5 steps) |
+| Relationship between 2 variables | Scatter (≤ 3 groups) |
+| Multi-criteria profile | Radar: 1 subject + 1 reference, ≤ 8 axes, 0–100 scale |
+| Categories with long labels | `HBars` (horizontal) |
+| Ordered scale, short labels | `SimpleBars` (vertical) |
+| Several quantities in different units | `SplitBars` |
+| Many groups with highly uneven sample sizes | **Table**: sample-size column right after the name, sorted by sample size descending |
+| Numbers must be readable without hovering | **Table** |
+| Under ~12 points / over ~20 points | Line sparkline / `TickSparkline` |
 
-**Cấm tuyệt đối:**
-- Biểu đồ 2 trục Y. Mỗi biểu đồ chỉ có 1 trục Y.
-- `<Funnel>` hình thang của Recharts, vì mắt người đọc theo diện tích.
-- Dữ liệu bịa trong `src/`.
+**Strictly forbidden:**
+- Dual-Y-axis charts. Each chart has only 1 Y axis.
+- Recharts' trapezoid `<Funnel>`, because the eye reads area.
+- Made-up data in `src/`.
 
-## 4. Ngôn ngữ mark: NODE – VÀNH – PILL
+## 4. Mark language: NODE – RING – PILL
 
-Mỗi mốc dữ liệu là **một chấm có vành**. Con số đáng đọc nằm trên **một pill** đặt ngay cạnh mốc đó.
+Every data point is **a dot with a ring**. The number worth reading sits on **a pill** placed right next to that point.
 
-### Trục và lưới (`axis.ts`)
+### Axes and grid (`axis.ts`)
 
 ```ts
-AXIS = { fill: 'var(--ink-3)', fontSize: 12.5 }   // dùng fill, KHÔNG dùng stroke (stroke làm chữ nhoè)
-GRID = 'var(--grid)'                              // hairline liền, vertical={false}; không nét đứt
-AXIS_PAD = { left: 16, right: 16 }                // padding của <XAxis> category (không phải margin)
-AXIS_GUTTER = -8      // margin.left khi nhãn Y dài 2–4 ký tự
-AXIS_GUTTER_WIDE = 4  // khi nhãn Y từ 5 chữ số trở lên
-AXIS_TICK_GAP = 52    // minTickGap cho chuỗi dài
-// YAxis width={44} ở mọi khuôn
+AXIS = { fill: 'var(--ink-3)', fontSize: 12.5 }   // use fill, NOT stroke (stroke blurs the text)
+GRID = 'var(--grid)'                              // solid hairline, vertical={false}; no dashes
+AXIS_PAD = { left: 16, right: 16 }                // padding of the category <XAxis> (not margin)
+AXIS_GUTTER = -8      // margin.left when Y labels are 2–4 characters long
+AXIS_GUTTER_WIDE = 4  // when Y labels have 5 or more digits
+AXIS_TICK_GAP = 52    // minTickGap for long series
+// YAxis width={44} in every template
 ```
 
 ### Node (`nodes.tsx`)
@@ -81,65 +81,65 @@ AXIS_TICK_GAP = 52    // minTickGap cho chuỗi dài
 ```ts
 DOT_RING = { stroke: 'var(--node-ring)', strokeWidth: 2, fillOpacity: 1, strokeOpacity: 1, strokeDasharray: 'none' }
 NODE = { r: 4, hotR: 5, sparkR: 3, sparkRing: 1.5, pillEdge: 34 }
-HOT_NODE  // activeDot r 5, tô --accent (cam = lớp tương tác)
-SOLO_HOT  // đường đơn: activeDot tô --line-solo, chấm --line-solo-hot (tránh cam chồng lên cam)
+HOT_NODE  // activeDot r 5, filled --accent (orange = interaction layer)
+SOLO_HOT  // single line: activeDot filled --line-solo, dot --line-solo-hot (avoids orange on orange)
 seriesNode({ color, r?, ring?, lastOnly?, pill?: { at, value, text, title } })
 ```
 
-- `seriesNode` tự bỏ qua mốc trống (`cy: null`).
-- Với `<Area>`, `value` có dạng `[đáy, giá trị]`.
-- `pill.value` đóng vai trò **assertion**: nếu không khớp giá trị của mốc thì pill không hiện, thay vì gắn nhầm sang mốc khác.
+- `seriesNode` skips empty points automatically (`cy: null`).
+- For `<Area>`, `value` has the form `[base, value]`.
+- `pill.value` acts as an **assertion**: if it does not match the point's value, the pill is not shown, rather than being attached to the wrong point.
 
 ### Pill
 
 ```ts
 VALUE_PILL = { h: 22, font: 12.5, padX: 10, gap: 6, ch: 7.5 }   // rx = h/2
-// bề rộng ≈ max(h*1.4, len*ch + 2*padX); nền --pill-flat, chữ --on-pill-flat, 600, tabular-nums
-PILL_TOP = 34          // margin.top của chart
+// width ≈ max(h*1.4, len*ch + 2*padX); background --pill-flat, text --on-pill-flat, 600, tabular-nums
+PILL_TOP = 34          // chart margin.top
 margin.right = 34      // NODE.pillEdge
 ```
 
-Cả biểu đồ đường lẫn phễu dùng chung **một cỡ pill**.
-`bestIn(values, start, end, goodWhen)` chọn mốc tốt nhất để gắn pill.
+Line charts and funnels share **one pill size**.
+`bestIn(values, start, end, goodWhen)` picks the best point to attach the pill to.
 
-### Cột (`marks.tsx`)
+### Bars (`marks.tsx`)
 
-- `BAR_R = 6`: bo ở **mép tự do** của cột. `BAR_R_PILL = 999` chỉ dùng cho `RangeBars`.
-- Cột xếp lớp:
-  - khe giữa các lát 0.5px;
-  - hai mép giáp nhau bo 0, chỉ lát trên cùng bo `[6, 6, 0, 0]`;
-  - mép thật của cột tính từ **giá trị** (`stackEdges`), không tính từ chỉ số mảng, vì lát cuối có thể bằng 0.
-- `barShape(opts)` được truyền vào prop `shape` dưới dạng **hàm**. `activeBar` dùng **cùng object** đó.
-- Lớp phủ gradient của cột:
-  - Dùng chung một `linearGradient` id `ui-bar-shade`. Def phải đặt **ngay trong shape**: nếu bọc trong component con, Recharts lọc mất mà không báo lỗi.
-  - Theme sáng: `--mark-shade: #000`, top 0 → bot 0.2 (tối ở chân cột).
-  - Theme tối: `#fff`, top 0.2 → bot 0 (sáng ở đỉnh).
-  - Phần tử DOM dùng `--mark-shade-grad` (180deg) và `--mark-shade-grad-x` (90deg, đảo stop).
-  - Không áp gradient cho đường, vùng, phễu, donut.
+- `BAR_R = 6`: rounding on the bar's **free edge**. `BAR_R_PILL = 999` is only for `RangeBars`.
+- Stacked bars:
+  - 0.5px gap between slices;
+  - touching edges have radius 0, only the top slice is rounded `[6, 6, 0, 0]`;
+  - the bar's real edge is computed from the **values** (`stackEdges`), not from the array index, because the last slice can be 0.
+- `barShape(opts)` is passed to the `shape` prop as a **function**. `activeBar` uses **the same object**.
+- Bar gradient overlay:
+  - Shares one `linearGradient` with id `ui-bar-shade`. The def must sit **directly in the shape**: wrapped in a child component, Recharts silently filters it out.
+  - Light theme: `--mark-shade: #000`, top 0 → bot 0.2 (darker at the bar's foot).
+  - Dark theme: `#fff`, top 0.2 → bot 0 (brighter at the top).
+  - DOM elements use `--mark-shade-grad` (180deg) and `--mark-shade-grad-x` (90deg, stops reversed).
+  - No gradient on lines, areas, funnels, donuts.
 
-### Hover cột (`axis.ts`)
+### Bar hover (`axis.ts`)
 
 ```ts
 HOVER_GLOW = { lift: 3, near: 1.5, far: 5, dim: 0.45, room: 16 }
 ```
 
-- Vẽ 2 path. Path dưới có `filter: drop-shadow(0 0 1.5px <fill>) drop-shadow(0 0 5px <fill>)` và `opacity .45`. Path trên là cột đục.
-- Cột được nhấc lên bằng thuộc tính SVG `transform="translate(0 -3)"`.
-- `margin.top` phải lớn hơn hoặc bằng `room`.
-- Tooltip của cột đặt `cursor={false}`.
-- Đường **không có quầng**, chỉ có `activeDot`.
-- Mark dạng DOM dùng `box-shadow` với bán kính **gấp đôi** để trông khớp `drop-shadow`: 1.5 → 3, 5 → 10.
-- Vùng bắt chuột tối thiểu 24px.
+- Draw 2 paths. The lower path has `filter: drop-shadow(0 0 1.5px <fill>) drop-shadow(0 0 5px <fill>)` and `opacity .45`. The upper path is the opaque bar.
+- The bar is lifted with the SVG attribute `transform="translate(0 -3)"`.
+- `margin.top` must be greater than or equal to `room`.
+- Bar tooltips set `cursor={false}`.
+- Lines have **no glow**, only `activeDot`.
+- DOM marks use `box-shadow` with **double** the radius to visually match `drop-shadow`: 1.5 → 3, 5 → 10.
+- Minimum hit area 24px.
 
-### Đường, vùng, sparkline
+### Lines, areas, sparklines
 
-- Đường: `type="monotone"`, `strokeWidth={2}`, `strokeLinecap="round"`.
-- Đường tham chiếu: `strokeDasharray='5 4'`, **không có node**.
-- Sparkline:
+- Lines: `type="monotone"`, `strokeWidth={2}`, `strokeLinecap="round"`.
+- Reference lines: `strokeDasharray='5 4'`, **no nodes**.
+- Sparklines:
   - `strokeWidth 1.5`, `fillOpacity .14`;
-  - chỉ có node ở mốc cuối;
+  - a node on the last point only;
   - `domain={['dataMin','dataMax']}`;
-  - cao 34px.
+  - 34px tall.
 
 ### Donut (`donutCorner.ts`)
 
@@ -147,11 +147,11 @@ HOVER_GLOW = { lift: 3, near: 1.5, far: 5, dim: 0.45, room: 16 }
 DONUT_INNER = 0.62, OUTER = 0.92, PAD_ANGLE = 3, CORNER = 8, CORNER_MIN = 0.25
 ```
 
-- `cornerRadius` tính **cho từng lát** (`sliceCorner`). Lý do: Recharts bỏ hẳn bo góc khi lát quá hẹp.
-- Lát đang hover chuyển sang vân sọc chéo: `<pattern>` 8×8, `rotate(45)`, nét `--slice-hatch` 3.5px.
-- Số tổng ở giữa là lớp HTML `.ui-donut-center` với `pointer-events: none`.
+- `cornerRadius` is computed **per slice** (`sliceCorner`). Reason: Recharts drops rounding entirely when a slice is too narrow.
+- The hovered slice switches to diagonal hatching: `<pattern>` 8×8, `rotate(45)`, stroke `--slice-hatch` 3.5px.
+- The total in the center is an HTML layer `.ui-donut-center` with `pointer-events: none`.
 
-### Phễu
+### Funnel
 
 ```ts
 HEAD = 30, FILL = 0.64, MIN_HH = 1.25, BEND = 1
@@ -159,177 +159,177 @@ HALO = [{ px: 14, alpha: .34 }, { px: 14, alpha: .16 }]
 FONT = { stage: 12, value: 13, drop: 11.5 }
 ```
 
-- Pill % hiện ở mọi bậc.
-- Màu đi từ đậm sang nhạt theo `funnelSteps`.
+- A % pill is shown at every step.
+- Colors go from dark to light following `funnelSteps`.
 
-### Các khuôn còn lại
+### Remaining templates
 
 - `LayeredArea`:
-  - tối đa 3 lớp;
-  - fill từ .18 đến .48;
-  - chỉ lớp trong cùng có node.
+  - at most 3 layers;
+  - fill from .18 to .48;
+  - only the innermost layer has nodes.
 - `ScatterPlot`:
-  - chấm R 4.5;
-  - vùng bắt chuột HIT 12.
+  - dot R 4.5;
+  - hit area HIT 12.
 - `RadarChart`:
-  - viền 2px;
-  - chỉ chủ thể được tô (.07);
-  - tham chiếu loại "mục tiêu" vẽ `--ink-3` nét đứt.
+  - 2px outline;
+  - only the subject is filled (.07);
+  - a "target"-type reference is drawn in `--ink-3`, dashed.
 
-## 5. Màu chuỗi và mark
+## 5. Series and mark colors
 
-**Chỉ dùng tên token, không gõ hex trong component.**
+**Use token names only; never type hex in a component.**
 
 ```ts
-SERIES  = ['var(--series-1)', …, 'var(--series-6)']   // seriesColors(n) NÉM nếu n > 6
+SERIES  = ['var(--series-1)', …, 'var(--series-6)']   // seriesColors(n) THROWS if n > 6
 ORDINAL = ['var(--ord-1)', …, 'var(--ord-5)']
-FUNNEL_RAMP = ORDINAL đảo        // bậc đầu đậm nhất
-LAYER_RAMP  = ['var(--layer-1)', …]  // sáng = ord-1/3/5, tối = ord-5/3/1 (đảo ở CSS)
-rampSteps / layerSteps / funnelSteps  // rải ĐỀU n bậc, không slice
+FUNNEL_RAMP = ORDINAL reversed        // the first step is the darkest
+LAYER_RAMP  = ['var(--layer-1)', …]  // light = ord-1/3/5, dark = ord-5/3/1 (reversed in CSS)
+rampSteps / layerSteps / funnelSteps  // spread n steps EVENLY, no slicing
 ```
 
-**Giá trị Ember:**
-- Sáng: `--series-1..6 = #a49c26 #8a6e4d #892d0a #741337 #a15598 #472678`
-- Tối: `#fcf264 #cfab7f #da623b #c1466c #f08de4 #845dc8`
+**Ember values:**
+- Light: `--series-1..6 = #a49c26 #8a6e4d #892d0a #741337 #a15598 #472678`
+- Dark: `#fcf264 #cfab7f #da623b #c1466c #f08de4 #845dc8`
 
-Rime và Aurora có bộ riêng (index.css 1130–1460). Riêng `--ok` / `--crit` **không đổi** theo bộ màu.
+Rime and Aurora have their own sets (index.css 1130–1460). Only `--ok` / `--crit` **do not change** with the palette.
 
-**Token phụ:**
+**Secondary tokens:**
 
-| Token | Giá trị / vai trò |
+| Token | Value / role |
 |---|---|
-| `--node-ring` | Sáng #f8f6f1, tối #453427 |
-| `--pill-flat` / `--on-pill-flat` | Sáng #3f3733 / #faf7f3, tối #e8ded4 / #2b2521 |
-| `--grid` | Sáng #e6e1d8, tối #3a332f |
-| `--bar-fill` | Thanh ngang một màu |
-| `--slice-hatch` | Sáng `rgb(255 255 255 / .62)`, tối `rgb(0 0 0 / .3)` |
-| `--heat-1..5` | `color-mix` cam 14 / 30 / 48 / 66 / 85% |
-| `--series-total` | Chuỗi tổng |
-| `--line-solo` / `--line-solo-hot` | Đường đơn |
+| `--node-ring` | Light #f8f6f1, dark #453427 |
+| `--pill-flat` / `--on-pill-flat` | Light #3f3733 / #faf7f3, dark #e8ded4 / #2b2521 |
+| `--grid` | Light #e6e1d8, dark #3a332f |
+| `--bar-fill` | Single-color horizontal bar |
+| `--slice-hatch` | Light `rgb(255 255 255 / .62)`, dark `rgb(0 0 0 / .3)` |
+| `--heat-1..5` | `color-mix` orange 14 / 30 / 48 / 66 / 85% |
+| `--series-total` | Total series |
+| `--line-solo` / `--line-solo-hot` | Single line |
 
-**Sàn kiểm định** (test `markContrast.test.ts` đọc hex trực tiếp từ CSS):
+**Verification floors** (the `markContrast.test.ts` test reads hex directly from the CSS):
 
-| Phép đo | Sàn |
+| Measure | Floor |
 |---|---|
-| Tương phản mark ↔ **nền tệ nhất** của thẻ kính | ≥ 2:1 |
-| ΔE2000 giữa 6 chuỗi | ≥ 15 |
-| ΔE khi mô phỏng mù màu (D + P) | ≥ 6 |
-| ΔE giữa chuỗi và `--accent-fill` | ≥ 10 |
-| ΔE giữa status và chuỗi | ≥ 10 |
-| Chữ | ≥ 4.5 |
-| Đường kẻ bảng | ≥ 2:1 |
+| Contrast mark ↔ **worst background** of a glass card | ≥ 2:1 |
+| ΔE2000 between the 6 series | ≥ 15 |
+| ΔE under color-blindness simulation (D + P) | ≥ 6 |
+| ΔE between a series and `--accent-fill` | ≥ 10 |
+| ΔE between status and series | ≥ 10 |
+| Text | ≥ 4.5 |
+| Table rules | ≥ 2:1 |
 
-**"Nền tệ nhất" đổi chiều theo theme:**
-- Theme sáng: mark phải tối hơn nền, nên ca khó là điểm **tối nhất** của nền.
-- Theme tối: ngược lại, ca khó là điểm **sáng nhất**.
+**The "worst background" flips with the theme:**
+- Light theme: marks must be darker than the background, so the hard case is the background's **darkest** point.
+- Dark theme: the reverse; the hard case is the **brightest** point.
 - Ember: `#e8dbd0` / `#543a25` · Rime: `#dce4ea` / `#2f3d46` · Aurora: `#e2e0f2` / `#283e3c`.
 
-**Luật đi kèm:**
-- Chữ chú giải dùng token **chữ**, không dùng màu chuỗi.
-- Ô màu trong chú giải phải mô phỏng đúng hình của mark: `Swatch kind 'bar' | 'dot' | 'line' | 'dash'`, kích thước 11×11, `border-radius: 30%`.
-- Mark mang nghĩa tốt/xấu cần thêm một kênh mã hoá thứ hai (vị trí, icon hoặc nhãn), không chỉ dựa vào màu.
+**Accompanying rules:**
+- Legend text uses **text** tokens, not series colors.
+- A legend swatch must mimic the mark's shape: `Swatch kind 'bar' | 'dot' | 'line' | 'dash'`, size 11×11, `border-radius: 30%`.
+- Marks carrying a good/bad meaning need a second encoding channel (position, icon or label), not color alone.
 
-## 6. Định dạng số (`ui/format.ts`)
+## 6. Number formatting (`ui/format.ts`)
 
-- Mọi hàm nhận `null` và trả về `'—'`. **Không bao giờ trả "0".** Viết `?? 0` tức là bịa số.
-- Hàm chính:
-  - `jpy`, `count`: in đủ chữ số, dùng trong bảng;
+- Every function accepts `null` and returns `'—'`. **Never return "0".** Writing `?? 0` means making up a number.
+- Main functions:
+  - `jpy`, `count`: print all digits, used in tables;
   - `pct`;
-  - `pctSigned`: tự thêm dấu `+` / `−` (U+2212);
-  - `monthLabel`: đọc chuỗi `YYYY-MM`, không qua `new Date`.
-- **Hai hệ đếm:**
-  - Tiếng Nhật: 万 (10⁴), 億 (10⁸).
-  - Tiếng Việt: nghìn, tr (10⁶), tỷ (10⁹).
+  - `pctSigned`: adds the `+` / `−` sign (U+2212) itself;
+  - `monthLabel`: reads a `YYYY-MM` string, not via `new Date`.
+- **Two counting systems:**
+  - Japanese: 万 (10⁴), 億 (10⁸).
+  - Vietnamese: nghìn, tr (10⁶), tỷ (10⁹).
   - `moneyScale(target, lang)`:
-    - JA: ≥ 1e8 thì `億円` với 2 số lẻ; ≥ 1e4 thì `万円`.
-    - VI: ≥ 1e9 thì `tỷ <tiền tệ>`; ≥ 1e6 thì `tr <tiền tệ>`.
-  - Ký hiệu tiền tệ trong code nguồn cố định (`円` / `¥`). Đổi theo tiền tệ của repo mới.
-- **Đơn vị chọn theo ĐÍCH của hiệu ứng đếm**, không theo giá trị đang hiển thị ở khung hiện tại. Nếu chọn theo khung hiện tại, đơn vị sẽ nhảy từ 万円 sang 億円 giữa chừng.
-- `toneOf(delta, goodWhen)` trả 4 tông:
+    - JA: ≥ 1e8 gives `億円` with 2 decimals; ≥ 1e4 gives `万円`.
+    - VI: ≥ 1e9 gives `tỷ <currency>`; ≥ 1e6 gives `tr <currency>`.
+  - The currency symbol is hard-coded in the source code (`円` / `¥`). Change it to the new repo's currency.
+- **The unit is chosen from the TARGET of the count-up effect**, not from the value shown in the current frame. Choosing from the current frame makes the unit jump from 万円 to 億円 midway.
+- `toneOf(delta, goodWhen)` returns 4 tones:
 
-  | Tông | Khi nào | Màu |
+  | Tone | When | Color |
   |---|---|---|
-  | `good` | Biến động theo hướng tốt | Theo token status |
-  | `bad` | Biến động theo hướng xấu | Theo token status |
-  | `flat` | delta = 0 | Cam |
-  | `none` | delta = null | Xám |
+  | `good` | Change in the good direction | Per status token |
+  | `bad` | Change in the bad direction | Per status token |
+  | `flat` | delta = 0 | Orange |
+  | `none` | delta = null | Gray |
 
-- Icon mũi tên mang **hướng**, màu mang **ý nghĩa** tốt/xấu.
+- The arrow icon carries the **direction**; the color carries the good/bad **meaning**.
 
-## 7. Tooltip, animation, nạp động
+## 7. Tooltip, animation, lazy-loading
 
 **Tooltip:**
-- `Tip` (nhiều dòng): `.ui-tip.ui-glass` trên nền `--glass-fill-panel`, `min-width 9.5rem`, bo 12, chữ .84rem, giá trị `tabular-nums` đậm 600.
-- `Pill`: chỉ dùng khi có **đúng 1 chuỗi**. Ô giá trị nền `--accent-fill`.
-- Cột xếp lớp: thứ tự dòng trong tooltip **đảo lại** để khớp với hình (lát trên cùng đứng trước).
-- Phần nổi lên (`FloatTip`, popover) portal ra body, `position: fixed`, giữ trong khung nhìn và cách mép 8px.
+- `Tip` (multi-line): `.ui-tip.ui-glass` on a `--glass-fill-panel` background, `min-width 9.5rem`, radius 12, text .84rem, values `tabular-nums` weight 600.
+- `Pill`: only when there is **exactly 1 series**. The value cell has an `--accent-fill` background.
+- Stacked bars: the tooltip's row order is **reversed** to match the picture (top slice first).
+- Floating parts (`FloatTip`, popover) portal to body, `position: fixed`, stay within the viewport with an 8px margin from the edges.
 
 **Animation:**
-- `CHART_ANIM_MS = 1000`, `animationEasing: 'ease-out'`, `isAnimationActive = !prefers-reduced-motion`. Recharts không tự đọc cờ reduced-motion nên phải truyền vào.
-- `useCountUp` (đếm số):
-  - `easeOutCubic = 1 - (1 - t)^3`, chạy bằng rAF;
-  - lần mount đầu đếm từ 0, các lần sau đếm từ giá trị đang hiện;
-  - `null` thì không đếm; khi reduced-motion thì nhảy thẳng tới giá trị cuối.
-- Ô số **bắt buộc** `tabular-nums`.
-- Nhịp animation truyền sang CSS qua biến inline `--x-anim: ${CHART_ANIM_MS}ms`.
-- Thẻ hiện ra bằng animation thì dùng `fill-mode: backwards` (xem `02` §3, bẫy backdrop root).
+- `CHART_ANIM_MS = 1000`, `animationEasing: 'ease-out'`, `isAnimationActive = !prefers-reduced-motion`. Recharts does not read the reduced-motion flag itself, so it must be passed in.
+- `useCountUp` (number count-up):
+  - `easeOutCubic = 1 - (1 - t)^3`, driven by rAF;
+  - the first mount counts from 0, later updates count from the value currently shown;
+  - `null` does not count; under reduced-motion it jumps straight to the final value.
+- Number cells **must** use `tabular-nums`.
+- The animation timing is passed to CSS via the inline variable `--x-anim: ${CHART_ANIM_MS}ms`.
+- Cards that appear via animation use `fill-mode: backwards` (see `02` §3, the backdrop root pitfall).
 
-**Recharts nạp động:**
-- Mọi board đi qua `lazy(boardChunk(...))`.
-- Đã đo: nếu import tĩnh, bundle đầu tăng từ 170 lên **578 kB** (gzip từ 55 lên 169).
-- Cổng kiểm: `grep -c activeTooltipIndex dist/assets/index-*.js` phải ra 0.
+**Recharts lazy-loaded (dynamic import):**
+- Every board goes through `lazy(boardChunk(...))`.
+- Measured: with a static import, the initial bundle grows from 170 to **578 kB** (gzip from 55 to 169).
+- Gate: `grep -c activeTooltipIndex dist/assets/index-*.js` must return 0.
 
-**Brush/zoom (`ChartZoom.tsx`, hiện chưa board nào dùng):**
-- Board giữ state `startIndex` / `endIndex`.
+**Brush/zoom (`ChartZoom.tsx`, not used by any board yet):**
+- The board holds the `startIndex` / `endIndex` state.
 - `MIN_WINDOW = 3`.
-- 2 nút zoom đóng vai trò đường điều khiển bằng bàn phím.
-- Đổi bộ lọc thì reset cửa sổ.
+- 2 zoom buttons serve as the keyboard control path.
+- Changing a filter resets the window.
 
-**Khung thẻ biểu đồ:**
-- `.ui-chart` cao 15rem; biến thể `--tall` / `--brush` cao 17rem.
-- `.ui-card` bắt buộc có `min-width: 0`.
+**Chart card frame:**
+- `.ui-chart` is 15rem tall; the `--tall` / `--brush` variants are 17rem.
+- `.ui-card` must have `min-width: 0`.
 
-## 8. Bảng số
+## 8. Number tables
 
 ```html
 <div class="ui-tablewrap"><table class="ui-table">
   <thead><tr><SortHead …/></tr></thead>
-  <tbody><tr><th scope="row">Tên</th><td class="ui-num">1,234</td></tr></tbody>
+  <tbody><tr><th scope="row">Name</th><td class="ui-num">1,234</td></tr></tbody>
 </table></div>
 <TablePager …/>
 ```
 
 **CSS:**
 - `.ui-tablewrap { position: relative; overflow-x: auto }`.
-  - `relative` là bắt buộc. Thiếu nó, phần tử con `absolute` sẽ làm cả trang cuộn ngang.
-- `.ui-table`: chữ .86rem, ô `padding: .5rem .6rem`, `white-space: nowrap`.
-- `thead th`: .72rem, đậm 600, `letter-spacing: .03em`, màu `--ink-2`. **Không** viết hoa toàn bộ.
-- Đường kẻ pha từ `--ink`: giữa các hàng 34%, dưới header 42%.
-- `.ui-num`: căn phải và `tabular-nums`.
-- Selector phải ghi rõ `thead` / `tbody`. Không viết `.ui-table th` hay `tr:last-child` không kèm ngữ cảnh.
-- Ô chứa khoá nghiệp vụ không được dùng `text-transform`.
-- Không có sticky header. Bảng rộng cuộn ngang trong thẻ.
+  - `relative` is mandatory. Without it, an `absolute` child makes the whole page scroll horizontally.
+- `.ui-table`: text .86rem, cells `padding: .5rem .6rem`, `white-space: nowrap`.
+- `thead th`: .72rem, weight 600, `letter-spacing: .03em`, color `--ink-2`. **No** all-caps.
+- Rules mixed from `--ink`: between rows 34%, under the header 42%.
+- `.ui-num`: right-aligned and `tabular-nums`.
+- Selectors must name `thead` / `tbody` explicitly. Do not write `.ui-table th` or `tr:last-child` without context.
+- Cells holding business keys must not use `text-transform`.
+- No sticky header. Wide tables scroll horizontally inside the card.
 
-**Chia trang (`tablePage.ts`, hàm thuần):**
+**Pagination (`tablePage.ts`, pure functions):**
 - `PAGE_SIZES = [20, 50, 100]`.
-- Các hàm: `pageCount`, `clampPage`, `pageSlice` (trang đánh số từ 1).
-- `pageKeepingRow`: đổi cỡ trang mà vẫn giữ hàng đang ở đầu trong tầm nhìn.
+- Functions: `pageCount`, `clampPage`, `pageSlice` (pages numbered from 1).
+- `pageKeepingRow`: changes the page size while keeping the current top row in view.
 - `pageItems`:
-  - ≤ 7 trang thì liệt kê hết;
-  - nhiều hơn thì hiện trang đầu, trang cuối, ±1 quanh trang hiện tại, còn lại thay bằng `'gap'`;
-  - không dùng `…` để thay cho đúng một trang.
-- `TablePager`: `<nav aria-label>`, `aria-current="page"`, chọn cỡ trang bằng `SegmentFilter`. Bảng ≤ 20 hàng thì không hiện thanh chia trang.
+  - ≤ 7 pages: list them all;
+  - more: show the first page, the last page, ±1 around the current page, and replace the rest with `'gap'`;
+  - never use `…` to stand in for exactly one page.
+- `TablePager`: `<nav aria-label>`, `aria-current="page"`, page size picked with `SegmentFilter`. Tables with ≤ 20 rows do not show the pager.
 
-**Sắp xếp (`tableSort.ts`, hàm thuần):**
+**Sorting (`tableSort.ts`, pure functions):**
 - `sortRows(rows, valueFn, dir)`:
-  - sort **ổn định**;
-  - ô `null` **luôn nằm cuối** ở cả hai chiều;
-  - chuỗi so bằng `Intl.Collator('ja')`.
-- `toggleSort`: bấm lần đầu vào cột số thì `desc`, cột chữ thì `asc`.
-- `SortHead`: `<th aria-sort>` bọc một `<button>`. Ở cột số, icon nằm bên trái chữ.
-- Đổi cách sort thì `setPage(1)`.
-- Bảng đã có cột sort được thì bỏ bộ lọc thứ tự riêng.
-- Mẫu ghép (board giữ state, phần thuần làm hết việc):
+  - **stable** sort;
+  - `null` cells **always go last** in both directions;
+  - strings compared with `Intl.Collator('ja')`.
+- `toggleSort`: the first click on a numeric column gives `desc`, on a text column `asc`.
+- `SortHead`: `<th aria-sort>` wrapping a `<button>`. In numeric columns, the icon sits left of the text.
+- Changing the sort calls `setPage(1)`.
+- A table that already has sortable columns drops any separate ordering filter.
+- Wiring pattern (the board holds state, the pure part does all the work):
   ```tsx
   const [sort, setSort] = useState<SortState>({ key: 'total', dir: 'desc' });
   const [page, setPage] = useState(1);
@@ -341,7 +341,7 @@ Rime và Aurora có bộ riêng (index.css 1130–1460). Riêng `--ok` / `--crit
   // SortHead onClick: setSort(s => toggleSort(s, key, isNumeric ? 'desc' : 'asc')); setPage(1);
   ```
 
-**CellBar:** thanh tỉ lệ nằm **cùng ô** với con số, không thay thế con số.
-- Rãnh cao .5rem, bo 999, nền ink 9%.
-- Thanh có `min-width: 2px`.
-- Phần số có `min-width: 3.4rem`.
+**CellBar:** the ratio bar sits **in the same cell** as the number; it does not replace the number.
+- Track .5rem tall, radius 999, ink 9% background.
+- The bar has `min-width: 2px`.
+- The number part has `min-width: 3.4rem`.

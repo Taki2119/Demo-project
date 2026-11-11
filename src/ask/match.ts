@@ -1,14 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// SO KHỚP GẦN ĐÚNG câu người dùng gõ ↔ bộ câu hỏi mẫu (bản demo "Hỏi AI", không gọi AI thật).
+// FUZZY MATCHING of the user's typed question ↔ the sample question set ("Ask AI" demo version, no real AI call).
 //
-// Không cần khớp 100%:
-//   · chuẩn hoá NFKC + chữ thường; chữ Latin BỎ DẤU ("doanh thu" = "doanh thu") — chỉ bỏ dấu
-//     của ký tự Latin, KHÔNG đụng kana (bỏ dấu kana sẽ biến が thành か);
-//   · tiếng Việt / Latin ⇒ từ + cặp từ liền nhau; tiếng Nhật (không có dấu cách) ⇒ bigram ký tự;
-//   · trọng số IDF tính trên chính bộ câu hỏi ⇒ từ xuất hiện ở mọi câu ("bao nhiêu", "の") nhẹ ký;
-//   · điểm câu hỏi = trộn Dice có trọng số (giống CÁCH HỎI nào nhất) + độ phủ của câu người dùng
-//     trên toàn bộ từ của câu hỏi đó (người dùng nói ít hơn nhưng đúng chủ đề vẫn được điểm).
-// Tham số (gói, top N) được trích ra TRƯỚC rồi xoá khỏi câu, để tên gói không kéo lệch điểm.
+// No 100% match needed:
+//   · NFKC normalization + lowercase; Latin letters have DIACRITICS STRIPPED ("doanh thu" = "doanh thu") — only
+//     Latin characters are stripped, kana is NOT touched (stripping kana marks would turn が into か);
+//   · Vietnamese / Latin ⇒ words + adjacent word pairs; Japanese (no spaces) ⇒ character bigrams;
+//   · IDF weights computed over the question set itself ⇒ words found in every question ("bao nhiêu", "の") weigh little;
+//   · question score = blend of weighted Dice (best-matching PHRASING) + coverage of the user's query
+//     over all words of that question (a user who says less but on-topic still scores).
+// Parameters (plan, top N) are extracted FIRST and removed from the query, so plan names don't skew the score.
 // ─────────────────────────────────────────────────────────────────────────────
 import type { PlanKey } from '../nav/catalog';
 
@@ -17,13 +17,13 @@ export interface Slots {
   topN: number | null;
 }
 
-/** Tên gói để nhận ra trong câu: mã (luôn có) + nhãn ja/vi từ DB (có khi API đã trả nhãn). */
+/** Plan names to recognize in a query: code (always present) + ja/vi labels from the DB (present once the API has returned labels). */
 export type PlanNames = Partial<Record<Exclude<PlanKey, 'all'>, { ja?: string; vi?: string }>>;
 
 const PLAN_CODES = ['starter', 'growth', 'scale'] as const;
 const LATIN_MARKED = /[À-ɏḀ-ỿ]/;
 
-/** Chuẩn hoá để so: NFKC, chữ thường, Latin bỏ dấu, đ → d. Kana / kanji giữ nguyên. */
+/** Normalize for comparison: NFKC, lowercase, Latin diacritics stripped, đ → d. Kana / kanji unchanged. */
 export function fold(s: string): string {
   let out = '';
   for (const ch of s.normalize('NFKC').toLowerCase()) {
@@ -34,8 +34,8 @@ export function fold(s: string): string {
   return out;
 }
 
-// Từ tiếng Việt (đã bỏ dấu) gần như câu nào cũng có ⇒ bỏ hẳn. IDF lo phần còn lại.
-// ⚠ KHÔNG đưa từ phủ định vào đây ("không", "chưa"): "không hoạt động" ≠ "hoạt động".
+// Vietnamese words (diacritics stripped) that appear in almost every query ⇒ dropped outright. IDF handles the rest.
+// ⚠ Do NOT put negation words here ("không", "chưa"): "không hoạt động" ≠ "hoạt động".
 const VI_STOP = new Set(
   ('la cua cac nhung co the nao gi bao nhieu cho toi minh em anh chi ban hay xem giup voi va o trong den tu ' +
     'mot duoc khi nay do thi ma ra ve nhu a vay nhe di nhi biet muon can hoi liet ke dang').split(' '),
@@ -44,9 +44,9 @@ const HIRA = /[぀-ゟ]/;
 const CJK = /[぀-ヿ㐀-鿿豈-﫿ｦ-ﾟ]/;
 const WORD = /[a-z0-9]/;
 
-/** Cụm CJK → bigram, tách theo LOẠI CHỮ: kanji/katakana riêng, hiragana riêng. Bigram vắt qua trợ
- *  từ ('の売', 'を使') chỉ là nhiễu. Kanji/katakana 1 ký tự giữ nguyên (高, 中); hiragana 1 ký tự
- *  (の, を, は) là trợ từ ⇒ bỏ. */
+/** CJK run → bigrams, split by SCRIPT: kanji/katakana separately, hiragana separately. Bigrams spanning a
+ *  particle ('の売', 'を使') are just noise. Single kanji/katakana characters are kept (高, 中); single
+ *  hiragana characters (の, を, は) are particles ⇒ dropped. */
 function cjkFeatures(run: string, out: Set<string>): void {
   let i = 0;
   while (i < run.length) {
@@ -63,7 +63,7 @@ function cjkFeatures(run: string, out: Set<string>): void {
   }
 }
 
-/** Đặc trưng của một câu đã `fold`: 'w:từ', 'p:từ từ', 'j:bigram' (hoặc 1 ký tự). */
+/** Features of a `fold`ed query: 'w:word', 'p:word word', 'j:bigram' (or a single character). */
 export function features(folded: string): Set<string> {
   const out = new Set<string>();
   const words: string[] = [];
@@ -81,7 +81,7 @@ export function features(folded: string): Set<string> {
       let j = i;
       while (j < folded.length && WORD.test(folded[j]!)) j++;
       const w = folded.slice(i, j);
-      // Số thuần (10, 2026…) là tham số, không phải chủ đề.
+      // Pure numbers (10, 2026…) are parameters, not topics.
       if (!/^\d+$/.test(w) && !VI_STOP.has(w)) words.push(w);
       i = j;
     } else if (CJK.test(ch)) {
@@ -91,7 +91,7 @@ export function features(folded: string): Set<string> {
       cjkFeatures(folded.slice(i, j), out);
       i = j;
     } else {
-      // Dấu câu ngắt cụm từ (không tạo cặp từ xuyên qua dấu phẩy).
+      // Punctuation breaks phrases (no word pairs across a comma).
       if (!/\s/.test(ch)) flushWords();
       i++;
     }
@@ -100,15 +100,15 @@ export function features(folded: string): Set<string> {
   return out;
 }
 
-/** Trích gói + top N, trả câu đã xoá phần tham số. */
+/** Extract plan + top N, return the query with the parameter parts removed. */
 export function extractSlots(folded: string, names: PlanNames = {}): { slots: Slots; rest: string } {
   let rest = folded;
   let plan: Slots['plan'] = null;
   for (const code of PLAN_CODES) {
-    // Mã gói (starter/growth/scale) đứng riêng một từ.
+    // Plan code (starter/growth/scale) as a standalone word.
     const codeRe = new RegExp(`(^|[^a-z])${code}([^a-z]|$)`);
-    // Nhãn tiếng Việt CHỈ nhận sau chữ "gói": "Mở rộng"/"Tăng trưởng" còn là nghĩa thường
-    // (MRR mở rộng = expansion, tăng trưởng MRR) ⇒ không có "gói" thì không coi là tên gói.
+    // Vietnamese labels are ONLY recognized after the word "gói": "Mở rộng"/"Tăng trưởng" also have ordinary
+    // meanings (MRR mở rộng = expansion, tăng trưởng MRR) ⇒ without "gói" it's not treated as a plan name.
     const vi = names[code]?.vi ? fold(names[code]!.vi!) : null;
     const viRe = vi ? new RegExp(`goi\\s+${vi.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) : null;
     const ja = names[code]?.ja ? fold(names[code]!.ja!) : null;
@@ -134,7 +134,7 @@ export function extractSlots(folded: string, names: PlanNames = {}): { slots: Sl
   return { slots: { plan, topN }, rest };
 }
 
-/** Câu hỏi đưa vào bộ so khớp: id + mọi cách hỏi (cả ja lẫn vi) + từ khoá phụ. */
+/** A question fed to the matcher: id + all phrasings (both ja and vi) + extra keywords. */
 export interface MatchDoc {
   id: string;
   phrasings: readonly string[];
@@ -160,8 +160,8 @@ export function buildIndex(docs: readonly MatchDoc[]): MatchIndex {
   const n = built.length;
   const idf = new Map<string, number>();
   for (const [f, c] of df) idf.set(f, Math.log(1 + n / c));
-  // Từ không có trong bộ câu hỏi (gõ sai, chủ đề lạ) vẫn tính vào mẫu số ⇒ kéo điểm xuống,
-  // nhưng nhẹ hơn một từ hiếm có thật để một chữ thừa không đánh rớt cả câu.
+  // Words not in the question set (typos, unrelated topics) still count in the denominator ⇒ pull the score down,
+  // but weigh less than a real rare word so one stray word doesn't sink the whole query.
   return { docs: built, idf, unknownWeight: Math.log(1 + n) * 0.6 };
 }
 
@@ -173,11 +173,11 @@ export interface Ranked {
 export interface MatchResult {
   slots: Slots;
   ranked: Ranked[];
-  /** Câu hỏi đủ gần để trả lời luôn; null ⇒ chỉ gợi ý. */
+  /** Question close enough to answer directly; null ⇒ suggestions only. */
   best: Ranked | null;
 }
 
-/** Ngưỡng trả lời — chỉnh bằng bảng câu thử trong match.test.ts, đừng sửa mò. */
+/** Answer threshold — tune it with the test-query table in match.test.ts, don't tweak by guesswork. */
 export const ANSWER_MIN = 0.3;
 
 export function match(index: MatchIndex, query: string, names: PlanNames = {}): MatchResult {
@@ -202,7 +202,7 @@ export function match(index: MatchIndex, query: string, names: PlanNames = {}): 
     for (const f of q) if (d.all.has(f)) cover += w(f);
     return { id: d.id, score: 0.55 * bestDice + 0.45 * (cover / wq) };
   });
-  // Ổn định: điểm bằng nhau ⇒ giữ thứ tự của bộ câu hỏi (câu phổ biến đứng trước).
+  // Stable: equal scores ⇒ keep the question-set order (common questions come first).
   const order = new Map(index.docs.map((d, i) => [d.id, i]));
   ranked.sort((a, b) => b.score - a.score || order.get(a.id)! - order.get(b.id)!);
   const top = ranked[0];

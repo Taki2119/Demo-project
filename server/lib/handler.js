@@ -1,19 +1,19 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Handler của POST /api/board-data — KHÔNG biết DB thật là gì: nhận một hàm `query(sql, args)`
-// (postgres.js trên Vercel, PGlite trong test / dev) nên toàn bộ đường đi test được cục bộ.
-// Chỉ dùng res.statusCode / setHeader / end ⇒ chạy được cả trên Vercel lẫn node:http.
+// Handler for POST /api/board-data — does NOT know what the real DB is: it takes a `query(sql, args)` function
+// (postgres.js on Vercel, PGlite in test / dev) so the whole path is testable locally.
+// Uses only res.statusCode / setHeader / end ⇒ runs both on Vercel and on node:http.
 // ─────────────────────────────────────────────────────────────────────────────
 import { AS_OF_SQL, resolveRequest } from './sources.js';
 
 export const DEFAULT_ORIGINS = ['https://taki2119.github.io', 'http://localhost:5180', 'http://localhost:5173'];
 
-/** 'a,b' → ['a','b']. Origin = scheme + host (+ cổng), KHÔNG có path, KHÔNG có '/' cuối. */
+/** 'a,b' → ['a','b']. Origin = scheme + host (+ port), NO path, NO trailing '/'. */
 export function originsFromEnv(value) {
   const list = (value ?? '').split(',').map((s) => s.trim().replace(/\/+$/, '')).filter(Boolean);
   return list.length ? list : DEFAULT_ORIGINS;
 }
 
-/** Date → 'YYYY-MM-DD' (mart chỉ có kiểu date), bigint → number. */
+/** Date → 'YYYY-MM-DD' (the mart only has the date type), bigint → number. */
 export function normalizeRow(row) {
   const out = {};
   for (const [k, v] of Object.entries(row)) {
@@ -38,8 +38,8 @@ function clientIp(req) {
 }
 
 export function createHandler({ query, allowedOrigins = DEFAULT_ORIGINS, maxBytes = 4_000_000, rateLimitPerMin = 120, log = console.error }) {
-  // Giới hạn nhịp THEO INSTANCE (bộ nhớ của một function) — chặn vòng lặp lỡ tay, không phải hàng
-  // rào chống tấn công; hàng rào thật là statement_timeout + quyền chỉ đọc ở DB.
+  // Rate limit PER INSTANCE (one function's memory) — stops an accidental loop, not a barrier
+  // against attacks; the real barriers are statement_timeout + read-only rights in the DB.
   const hits = new Map();
   const limited = (ip) => {
     const now = Date.now();
@@ -61,8 +61,8 @@ export function createHandler({ query, allowedOrigins = DEFAULT_ORIGINS, maxByte
     }
     res.setHeader('Vary', 'Origin');
 
-    // Trình duyệt từ origin lạ ⇒ chặn. Không có Origin (curl, health check) ⇒ cho qua: CORS chỉ là
-    // rào của trình duyệt; dữ liệu là dữ liệu tổng hợp và đường này chỉ đọc.
+    // Browser from an unknown origin ⇒ block. No Origin (curl, health check) ⇒ let through: CORS is only
+    // a browser barrier; the data is aggregated and this path is read-only.
     if (origin && !allowed) return send(res, 403, { error: 'forbidden_origin' });
     if (req.method === 'OPTIONS') return send(res, 204);
     if (req.method !== 'POST') return send(res, 405, { error: 'method_not_allowed' });

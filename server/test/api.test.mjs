@@ -1,5 +1,5 @@
-// Toàn bộ đường POST /api/board-data trên PGlite với dữ liệu sinh, chạy bằng role
-// analytics_reader (đúng quyền production): mọi nguồn chạy được, tham số được kiểm, CORS, lỗi.
+// The whole POST /api/board-data path on PGlite with generated data, run as the
+// analytics_reader role (same rights as production): every source runs, parameters are validated, CORS, errors.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createDemoDb, readerQuery } from '../../scripts/dev/demo-db.mjs';
@@ -28,18 +28,18 @@ before(async () => {
 });
 after(async () => db?.close());
 
-test('mọi nguồn trong registry chạy được bằng analytics_reader và trả hình đúng', async () => {
+test('every source in the registry runs as analytics_reader and returns the right shape', async () => {
   for (const source of Object.keys(SOURCES)) {
     const r = await call({ source });
     assert.equal(r.status, 200, `${source}: ${JSON.stringify(r.json)}`);
     assert.equal(r.json.source, source);
     assert.equal(r.json.updatedAt, '2026-11-10');
-    assert.ok(Array.isArray(r.json.rows) && r.json.rows.length > 0, `${source} rỗng`);
+    assert.ok(Array.isArray(r.json.rows) && r.json.rows.length > 0, `${source} is empty`);
     assert.equal(r.json.rowCount, r.json.rows.length);
   }
 });
 
-test('ngày ra chuỗi YYYY-MM-DD, các cột hợp đồng có mặt', async () => {
+test('dates come out as YYYY-MM-DD strings, contract columns are present', async () => {
   const r = await call({ source: 'revenue-monthly' });
   const row = r.json.rows[0];
   assert.match(row.month, /^\d{4}-\d{2}-01$/);
@@ -48,7 +48,7 @@ test('ngày ra chuỗi YYYY-MM-DD, các cột hợp đồng có mặt', async ()
   for (const c of ['full_name', 'company_name', 'plan_id', 'active_days']) assert.ok(c in u.json.rows[0], c);
 });
 
-test('tham số plan + month lọc đúng; mặc định là tháng mới nhất', async () => {
+test('plan + month parameters filter correctly; default is the latest month', async () => {
   const all = await call({ source: 'company-monthly' });
   const months = new Set(all.json.rows.map((r) => r.month));
   assert.deepEqual([...months], ['2026-11-01']);
@@ -58,7 +58,7 @@ test('tham số plan + month lọc đúng; mặc định là tháng mới nhất
   assert.ok(growth.json.rows.every((r) => r.plan_id === 'growth' && r.month === '2026-08-01'));
 });
 
-test('tham số sai / nguồn lạ / khoá lạ ⇒ 400, không chạm DB', async () => {
+test('bad parameters / unknown source / unknown key ⇒ 400, DB not touched', async () => {
   assert.equal((await call({ source: 'nope' })).json.error, 'bad_source');
   assert.equal((await call({ source: 'company-monthly', month: '2026-13' })).json.error, 'bad_params');
   assert.equal((await call({ source: 'company-monthly', plan: "x'; drop table" })).json.error, 'bad_params');
@@ -67,7 +67,7 @@ test('tham số sai / nguồn lạ / khoá lạ ⇒ 400, không chạm DB', asyn
   assert.throws(() => resolveRequest(null), /bad_source/);
 });
 
-test('CORS: origin được phép thì vọng lại; origin lạ ⇒ 403; preflight 204; GET ⇒ 405', async () => {
+test('CORS: allowed origin is echoed; unknown origin ⇒ 403; preflight 204; GET ⇒ 405', async () => {
   const ok = await call({ source: 'labels' });
   assert.equal(ok.headers['access-control-allow-origin'], ORIGIN);
   const bad = await call({ source: 'labels' }, { origin: 'https://evil.example' });
@@ -79,7 +79,7 @@ test('CORS: origin được phép thì vọng lại; origin lạ ⇒ 403; prefli
   assert.equal(noOrigin.status, 200);
 });
 
-test('phản hồi quá lớn ⇒ 413; DB lỗi ⇒ 502 không lộ chi tiết', async () => {
+test('response too large ⇒ 413; DB error ⇒ 502 without leaking details', async () => {
   const tiny = createHandler({ query: await readerQuery(db), allowedOrigins: [ORIGIN], maxBytes: 100, log: () => {} });
   assert.equal((await call({ source: 'labels' }, { h: tiny })).status, 413);
   const broken = createHandler({ query: async () => { throw new Error('secret detail'); }, allowedOrigins: [ORIGIN], log: () => {} });
@@ -87,7 +87,7 @@ test('phản hồi quá lớn ⇒ 413; DB lỗi ⇒ 502 không lộ chi tiết',
   assert.deepEqual([r.status, r.json], [502, { error: 'db_error' }]);
 });
 
-test('originsFromEnv bỏ "/" cuối, rỗng ⇒ mặc định', () => {
+test('originsFromEnv drops the trailing "/", empty ⇒ default', () => {
   assert.deepEqual(originsFromEnv(' https://a.example/ , http://localhost:5180 '), ['https://a.example', 'http://localhost:5180']);
   assert.ok(originsFromEnv('').includes('https://taki2119.github.io'));
 });

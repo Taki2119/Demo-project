@@ -1,4 +1,4 @@
-// POST /api/board-data — đường đọc dữ liệu duy nhất của web app. Hợp đồng: docs/API.md.
+// POST /api/board-data — the web app's single data read path. Contract: docs/API.md.
 import { getQuery } from '../lib/db.js';
 import { createHandler, originsFromEnv } from '../lib/handler.js';
 

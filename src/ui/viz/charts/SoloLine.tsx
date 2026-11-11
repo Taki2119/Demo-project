@@ -1,5 +1,5 @@
-// Đường 1 chuỗi theo thời gian (kit 03 §3) — ĐÚNG MỘT pill, ở mốc tốt nhất theo goodWhen.
-// Khuôn riêng (không dùng MultiLines): khuôn nhiều chuỗi không có pill tĩnh.
+// Single-series line over time (kit 03 §3) — EXACTLY ONE pill, at the best point per goodWhen.
+// Its own template (doesn't use MultiLines): the multi-series template has no static pill.
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AXIS, AXIS_PAD, AXIS_TICK_GAP, GRID, gutterFor, PILL_TOP, Y_WIDTH } from '../axis';
 import type { LegendItem } from '../Legend';
@@ -20,7 +20,7 @@ export function SoloLine({
   xKey: string;
   yKey: string;
   label: string;
-  /** KHÔNG có mặc định (kit 03 §1). */
+  /** NO default (kit 03 §1). */
   goodWhen: 'up' | 'down';
   fmt: ChartFormat;
 }) {

@@ -1,8 +1,8 @@
-// Biểu đồ trang Cảnh báo huỷ sớm (nạp động):
-//   · số công ty theo mức rủi ro qua từng ảnh chụp tuần (bỏ mức "thấp" — nó lấn át 3 mức cần chăm sóc)
-//   · kết quả chăm sóc theo tháng (interventions-monthly)
-//   (2 biểu đồ trên theo khoảng tháng của bộ lọc; biểu đồ nguyên nhân theo danh sách hiện tại)
-//   · nguyên nhân chính trong danh sách cần chăm sóc
+// Charts for the Early churn warning page (lazy-loaded):
+//   · number of companies by risk level per weekly snapshot (drops the "low" level — it dwarfs the 3 levels that need attention)
+//   · outreach results by month (interventions-monthly)
+//   (the 2 charts above follow the filter's month range; the cause chart follows the current list)
+//   · main causes in the watch list
 import { useSource, type Row } from '../../data/api';
 import { countBy, crossCount, fillMonths, sumByKey } from '../../data/chartData';
 import { BAND_ORDER } from '../../data/churn';
@@ -20,8 +20,8 @@ import { rampSteps, seriesColors } from '../../ui/viz/series';
 const AT_RISK = BAND_ORDER.filter((b) => b !== 'low');
 const OUTCOMES = ['saved', 'churned', 'no_response', 'pending'] as const;
 
-// `history` đã lọc theo khoảng ở trang; `range` lọc kết quả chăm sóc (nguồn tự nạp ở đây).
-// range null (chưa có lịch sử) ⇒ vẽ cả chuỗi.
+// `history` is already filtered by range on the page; `range` filters the outreach results (source loaded here).
+// range null (no history yet) ⇒ draw the whole series.
 export default function ChurnCharts({ watch, history, range }: { watch: readonly Row[]; history: readonly Row[]; range: MonthRange | null }) {
   const lang = useLangStore((s) => s.lang);
   const t = useT();
@@ -30,7 +30,7 @@ export default function ChurnCharts({ watch, history, range }: { watch: readonly
   const interventions = useSource('interventions-monthly');
   const counts = (v: number) => count(v, lang);
 
-  // Xếp lớp: lát ĐẦU ở đáy ⇒ mức nặng nhất (hẹn huỷ) nằm sát trục, đậm nhất.
+  // Stacking: the FIRST slice is at the bottom ⇒ the most severe level (cancel scheduled) sits against the axis, darkest.
   const ramp = rampSteps(AT_RISK.length);
   const bands: BarSpec[] = AT_RISK.map((b, i) => ({ key: b, label: label('risk_band', b), color: ramp[i] as string }));
   const bandData = crossCount(history, 'snapshot_date', 'risk_band', AT_RISK);
@@ -38,7 +38,7 @@ export default function ChurnCharts({ watch, history, range }: { watch: readonly
 
   const colors = seriesColors(OUTCOMES.length);
   const outcomes: BarSpec[] = OUTCOMES.map((o, i) => ({ key: o, label: label('intervention_outcome', o), color: colors[i] as string }));
-  // Nguồn chỉ có dòng ở tháng CÓ lượt chăm sóc ⇒ lấp tháng trống = 0 thật, để trục thời gian không nhảy cóc.
+  // The source only has rows in months WITH outreach ⇒ fill empty months with a real 0, so the time axis doesn't skip.
   const outcomeRows = interventions.data ? numericRows(interventions.data.rows) : [];
   const outcomeData = fillMonths(sumByKey(range ? sliceRows(outcomeRows, range) : outcomeRows, 'month', OUTCOMES), 'month', OUTCOMES);
   const monthly: ChartFormat = { value: counts, tick: counts, xTick: (m) => monthShort(m, lang), xTitle: (m) => monthLabel(m, lang) };

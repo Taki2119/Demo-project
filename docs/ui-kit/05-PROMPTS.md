@@ -1,185 +1,185 @@
-# 05 · Prompt cho Claude Code và mẫu CLAUDE.md
+# 05 · Prompts for Claude Code and the CLAUDE.md template
 
-Giả định ở repo mới đã có thư mục `docs/ui-kit/` chứa các file của bộ kit này (`README.md`, `00`–`05`).
-Dùng VS Code thì chạy **P1-VSCode** ở `00-HUONG-DAN-VSCODE.md` thay cho P1 bên dưới.
-Mọi prompt bên dưới đều tham chiếu tới thư mục đó.
-Phần trong `<...>` là chỗ bạn phải thay giá trị trước khi dán.
+This assumes the new repo already has a `docs/ui-kit/` folder containing this kit's files (`README.md`, `00`–`05`).
+If you use VS Code, run **P1-VSCode** from `00-VSCODE-GUIDE.md` instead of P1 below.
+Every prompt below refers to that folder.
+The parts inside `<...>` are where you must fill in values before pasting.
 
 ---
 
-## P0 · Mẫu `CLAUDE.md` cho repo mới
+## P0 · `CLAUDE.md` template for the new repo
 
-Dán vào file `CLAUDE.md` ở gốc repo mới, rồi sửa các phần `<...>`.
+Paste into `CLAUDE.md` at the root of the new repo, then fill in the `<...>` parts.
 
 ```markdown
-# CLAUDE.md: <Tên dự án>
+# CLAUDE.md: <Project name>
 
-Dashboard tĩnh trên GitHub Pages. UI/UX và logic vẽ biểu đồ/bảng theo bộ kit `docs/ui-kit/`.
-Luật chi tiết nằm ở `docs/ui-kit/` (01 kiến trúc · 02 hệ thiết kế · 03 biểu đồ & bảng · 04 bẫy & checklist).
-**Trước khi dựng hoặc sửa board, biểu đồ hay CSS, đọc file tương ứng trong thư mục đó.**
+Static dashboard on GitHub Pages. UI/UX and the chart/table drawing logic follow the kit in `docs/ui-kit/`.
+Detailed rules live in `docs/ui-kit/` (01 architecture · 02 design system · 03 charts & tables · 04 pitfalls & checklist).
+**Before building or changing a board, a chart or CSS, read the matching file in that folder.**
 
-## Tech stack (KHOÁ, không tự đổi)
-Vite 6 · React 18 + TypeScript strict (không `any`) · zustand · Tailwind CSS v4 · **Recharts 2.x** (chỉ một
-thư viện biểu đồ, nạp ĐỘNG qua `lazy`) · vitest (`environment: node`, `pool: threads`) · GitHub Pages · route hash.
+## Tech stack (LOCKED, do not change on your own)
+Vite 6 · React 18 + TypeScript strict (no `any`) · zustand · Tailwind CSS v4 · **Recharts 2.x** (the only
+chart library, lazy-loaded via DYNAMIC `lazy`) · vitest (`environment: node`, `pool: threads`) · GitHub Pages · hash routes.
 
-## Luật không thương lượng
-1. Không có dữ liệu bịa trong `src/`. Chưa có nguồn thì để board ở `status: 'ready'` và hiện `NoData`.
-2. Mỗi biểu đồ chỉ có MỘT trục Y. Không dùng `<Funnel>` của Recharts.
-3. Mọi byte trong `dist/` coi như đã công khai: không đưa dữ liệu thật, SQL hay secret vào bundle.
-4. Component biểu đồ không tự định dạng số. `goodWhen` không có mặc định. Không có số thì hiện `—`, không hiện `0`.
-5. Chỉ dùng token màu (`var(--series-n)`…), không gõ hex trong component. `--accent` chỉ dành cho lớp tương tác.
-6. `backdrop-filter` chỉ được khai trong `.ui-glass`. Overlay (popover, menu, dialog, toast) phải portal ra `body`.
-7. Board không tự vẽ H1 và không tự khai `ui-board`. Thêm board = 1 file parser + 1 file board + 1 dòng registry + 1 mục catalog.
-8. Typecheck bằng `npm run typecheck`, KHÔNG dùng `npx tsc --noEmit`. Sau khi build, grep `dist/` để xác nhận CSS mới có trong bản ship.
+## Non-negotiable rules
+1. No made-up data in `src/`. With no source yet, keep the board at `status: 'ready'` and show `NoData`.
+2. Each chart has only ONE Y axis. Do not use Recharts' `<Funnel>`.
+3. Treat every byte in `dist/` as public: no real data, SQL or secrets in the bundle.
+4. Chart components do not format numbers themselves. `goodWhen` has no default. With no number, show `—`, not `0`.
+5. Use color tokens only (`var(--series-n)`…), never type hex in a component. `--accent` is only for the interaction layer.
+6. `backdrop-filter` may only be declared in `.ui-glass`. Overlays (popover, menu, dialog, toast) must portal to `body`.
+7. A board does not draw its own H1 and does not declare `ui-board` itself. Adding a board = 1 parser file + 1 board file + 1 registry line + 1 catalog entry.
+8. Typecheck with `npm run typecheck`, NOT `npx tsc --noEmit`. After building, grep `dist/` to confirm the new CSS is in the shipped build.
 
-## Quy trình
-Không commit thẳng vào `main`. Tạo nhánh `feat/*` · `fix/*` · `chore/*` · `docs/*`, push nhánh rồi DỪNG chờ duyệt.
-Agent không tự mở PR và không tự merge.
+## Workflow
+Never commit directly to `main`. Create a `feat/*` · `fix/*` · `chore/*` · `docs/*` branch, push the branch, then STOP and wait for review.
+The agent does not open PRs or merge on its own.
 
-## Bản đồ src/
-| Thư mục | Việc |
+## Map of src/
+| Folder | Job |
 |---|---|
-| `src/data/` | Parser thuần + loader + glossary |
+| `src/data/` | Pure parsers + loaders + glossary |
 | `src/boards/` | `registry.tsx` (lazy + boardChunk) + `*Board.tsx` |
 | `src/nav/` | `catalog.ts` · `route.ts` (hash) · `resolve.ts` |
-| `src/screens/` | Vỏ màn (DashboardScreen, Home, side panel) |
-| `src/ui/` | Theme / palette / i18n / format / toast / dialog / tooltip / bảng |
-| `src/ui/viz/` | Mark, trục, màu chuỗi, motion + `charts/` (12 khuôn) |
-| `src/ui/filters/` | Bộ lọc dùng chung (board không tự dựng bộ lọc riêng) |
-| `src/styles/` | CSS trích từ index.css gốc, chia theo khối |
+| `src/screens/` | Screen shells (DashboardScreen, Home, side panel) |
+| `src/ui/` | Theme / palette / i18n / format / toast / dialog / tooltip / table |
+| `src/ui/viz/` | Marks, axes, series colors, motion + `charts/` (12 templates) |
+| `src/ui/filters/` | Shared filters (boards do not build their own filters) |
+| `src/styles/` | CSS extracted from the original index.css, split by block |
 ```
 
 ---
 
-## P1 · Chép file từ repo nguồn sang repo mới
+## P1 · Copy files from the source repo to the new repo
 
-Chạy prompt này **trong repo nguồn** `<ĐƯỜNG_DẪN_REPO_NGUỒN>`, vì ở đó có sẵn code.
+Run this prompt **in the source repo** `<SOURCE_REPO_PATH>`, because the code is there.
 
 ```
-Đọc <THƯ_MỤC_KIT>/README.md, mục "Bản đồ file". Chép sang repo đích <ĐƯỜNG_DẪN_REPO_MỚI>:
-- nhóm A (bê nguyên): chép nguyên văn, giữ nguyên cấu trúc thư mục dưới src/;
-- nhóm B (cắt dây): chép sang rồi CHƯA sửa; ghi danh sách vào <ĐƯỜNG_DẪN_REPO_MỚI>/docs/ui-kit/TODO-cut.md,
-  mỗi file một dòng ghi dây nào cần cắt;
-- KHÔNG chép nhóm C và KHÔNG chép src/index.css.
-- Chép thư mục <THƯ_MỤC_KIT>/ vào <ĐƯỜNG_DẪN_REPO_MỚI>/docs/ui-kit/.
-- Trên các file VỪA CHÉP sang repo đích:
-  · đổi tiền tố `jw-` thành `ui-` (class, id SVG, biến CSS);
-  · đổi STORAGE_KEY trong theme.ts, palette.ts, i18n.ts sang '<app>.theme' / '<app>.palette' / '<app>.lang';
-  · grep -i tên sản phẩm/công ty nguồn trong chuỗi lẫn comment rồi gỡ hoặc viết lại trung tính,
-    xoá import tới logo/wordmark thương hiệu. Báo lại số chỗ đã sửa ở mỗi file.
-Không commit gì ở repo nguồn. Báo lại danh sách đã chép, kèm số file của từng nhóm.
+Read <KIT_FOLDER>/README.md, section "File map". Copy into the target repo <NEW_REPO_PATH>:
+- group A (as-is): copy verbatim, keeping the folder structure under src/;
+- group B (cut wires): copy over but DO NOT edit YET; write the list into <NEW_REPO_PATH>/docs/ui-kit/TODO-cut.md,
+  one line per file stating which wires must be cut;
+- DO NOT copy group C and DO NOT copy src/index.css.
+- Copy the folder <KIT_FOLDER>/ into <NEW_REPO_PATH>/docs/ui-kit/.
+- On the files JUST COPIED into the target repo:
+  · rename the prefix `jw-` to `ui-` (classes, SVG ids, CSS variables);
+  · rename STORAGE_KEY in theme.ts, palette.ts, i18n.ts to '<app>.theme' / '<app>.palette' / '<app>.lang';
+  · grep -i the source product/company name in strings and comments and remove or rewrite it neutrally,
+    delete imports of brand logos/wordmarks. Report the number of edits in each file.
+Commit nothing in the source repo. Report the list of copied files, with the file count per group.
 ```
 
 ---
 
-## P2 · Dựng khung repo mới
+## P2 · Build the new repo's skeleton
 
-Chạy **trong repo mới**.
+Run **in the new repo**.
 
 ```
-Repo này là một dashboard GitHub Pages mới. Đọc CLAUDE.md và docs/ui-kit/01-ARCHITECTURE.md (§5, §7),
-rồi dựng khung:
-1. package.json theo đúng stack ở CLAUDE.md, với các script: dev, build (tsc -b && vite build), typecheck
+This repo is a new GitHub Pages dashboard. Read CLAUDE.md and docs/ui-kit/01-ARCHITECTURE.md (§5, §7),
+then build the skeleton:
+1. package.json with exactly the stack in CLAUDE.md, with the scripts: dev, build (tsc -b && vite build), typecheck
    (tsc --noEmit -p tsconfig.app.json), test (vitest run), privacy:bundle, check:glass, check:viewport.
-2. vite.config.ts: base = command === 'build' ? (process.env.VITE_BASE_PATH || '/<TÊN_REPO>/') : '/';
-   plugin react + @tailwindcss/vite; define __APP_VERSION__ đọc từ package.json; vitest với environment 'node', pool 'threads'.
-3. index.html: script prePaint (thẻ script thường, đặt trong <head>) set data-theme và data-palette từ localStorage
-   trước khi body được vẽ; khoá localStorage dùng tiền tố '<app>.'; tải Google Fonts Space Grotesk, Noto Sans JP,
+2. vite.config.ts: base = command === 'build' ? (process.env.VITE_BASE_PATH || '/<REPO_NAME>/') : '/';
+   plugins react + @tailwindcss/vite; define __APP_VERSION__ read from package.json; vitest with environment 'node', pool 'threads'.
+3. index.html: a prePaint script (classic script tag, placed in <head>) that sets data-theme and data-palette from localStorage
+   before the body is painted; localStorage keys use the prefix '<app>.'; load Google Fonts Space Grotesk, Noto Sans JP,
    Zen Kaku Gothic New, Outfit.
-4. src/main.tsx gọi initTheme(), initPalette(), initRouter() rồi mới render. App.tsx dựng vỏ
+4. src/main.tsx calls initTheme(), initPalette(), initRouter() and only then renders. App.tsx builds the shell
    .ui-app > [Ambient][AppSide][.ui-body > .ui-topbars + .ui-main > .ui-screen key={hash}].
-5. .github/workflows/deploy.yml (chỉ chạy trên main, có quyền pages: write) và checks.yml (chạy trên pull_request,
-   chỉ có contents: read), với CÙNG bộ cổng và CÙNG thứ tự; checks.yml thêm cổng grep activeTooltipIndex trong
-   chunk đầu phải bằng 0.
-6. Tạo nhánh chore/bootstrap, chạy npm test, typecheck và build; nếu xanh thì push nhánh rồi DỪNG.
-Tuân thủ docs/ui-kit/04-PITFALLS-CHECKLIST.md (mục A, B).
+5. .github/workflows/deploy.yml (runs only on main, with pages: write permission) and checks.yml (runs on pull_request,
+   with only contents: read), with the SAME gates in the SAME order; checks.yml adds a gate: grep activeTooltipIndex in
+   the initial chunk must equal 0.
+6. Create branch chore/bootstrap, run npm test, typecheck and build; if green, push the branch and STOP.
+Follow docs/ui-kit/04-PITFALLS-CHECKLIST.md (sections A, B).
 ```
 
 ---
 
-## P3 · Port hệ thiết kế (CSS + theme)
+## P3 · Port the design system (CSS + theme)
 
 ```
-Đọc docs/ui-kit/02-DESIGN-SYSTEM.md, đọc hết. Trích CSS từ <ĐƯỜNG_DẪN_REPO_NGUỒN>/src/index.css theo
-bảng ở §9. CHỈ đọc đúng các khoảng dòng ghi trong bảng; không đọc cả file vì file rất lớn.
-- Chia thành src/styles/{tokens,palettes,base,ambient,controls,motion,shell,viz,overlays,hover}.css.
-  src/index.css chỉ còn @import "tailwindcss", @custom-variant dark, và @import các file trên.
-- Giữ nguyên tên token. Đổi tiền tố class/id/biến `jw-` của CSS nguồn thành `ui-`.
-- Bỏ mọi khối CSS chỉ phục vụ một board hay tính năng riêng của repo nguồn (tức những khối không có trong bảng §9).
-- Thay logo và màu thương hiệu bằng <MÔ_TẢ_THƯƠNG_HIỆU_MỚI>. Giữ nguyên 3 bộ màu Ember/Rime/Aurora,
-  trừ khi tôi bảo đổi.
-- Thêm các test cssSource.test.ts (bắt chuỗi đóng comment nằm ngoài comment), prePaint.test.ts và
-  markContrast.test.ts (sàn tương phản ở 03-CHARTS-TABLES.md §5).
-- Sau khi build, grep dist/assets/*.css để xác nhận có .ui-glass, .ui-app, @supports not (height:100dvh)
-  và đủ 2 dòng backdrop-filter (một dòng có tiền tố -webkit-).
-Dựng một trang /#/home tạm có 3 thẻ .ui-card.ui-glass và một nút đổi theme/palette, rồi chụp ảnh ở
-1440 và 430 × sáng/tối. Nhánh: feat/design-system. Push rồi DỪNG.
-```
-
----
-
-## P4 · Port tầng biểu đồ và bảng
-
-```
-Đọc docs/ui-kit/03-CHARTS-TABLES.md và docs/ui-kit/TODO-cut.md.
-1. Cắt dây cho các file nhóm B: format.ts (dùng locale cố định '<ja-JP|vi-VN>' và khai type Bucket tại chỗ),
-   StatTile.tsx và stats.tsx (dùng i18n của repo này; InfoTip đọc src/data/glossary.ts mới), TablePager.tsx
-   và SortHead.tsx (thay SolarIcon bằng bộ icon của repo này, hoặc chép SolarIcon + solarIcons nếu cần).
-2. KHÔNG đổi các hằng số trong axis.ts, nodes.tsx, marks.tsx, motion.ts, donutCorner.ts. Đó là kết quả đo
-   qua nhiều vòng chỉnh.
-3. Dựng một trang demo #/dashboard/demo/charts, nạp lazy, vẽ đủ 12 khuôn chart bằng dữ liệu SINH TRONG
-   FILE TEST (không đưa vào src/). Nếu luật "không bịa dữ liệu" khiến trang demo không có số thì chỉ bày
-   NoData, và chụp ảnh từ harness test.
-4. Chạy đủ checklist máy ở 04-PITFALLS-CHECKLIST.md. Nhánh: feat/viz-port. Push rồi DỪNG.
+Read docs/ui-kit/02-DESIGN-SYSTEM.md, all of it. Extract CSS from <SOURCE_REPO_PATH>/src/index.css following
+the table in §9. Read ONLY the line ranges listed in the table; do not read the whole file because it is very large.
+- Split into src/styles/{tokens,palettes,base,ambient,controls,motion,shell,viz,overlays,hover}.css.
+  src/index.css keeps only @import "tailwindcss", @custom-variant dark, and @import of the files above.
+- Keep token names unchanged. Rename the source CSS's class/id/variable prefix `jw-` to `ui-`.
+- Drop every CSS block that only serves a specific board or feature of the source repo (i.e. blocks not in the §9 table).
+- Replace the logo and brand colors with <NEW_BRAND_DESCRIPTION>. Keep the 3 palettes Ember/Rime/Aurora as they are,
+  unless I say to change them.
+- Add the tests cssSource.test.ts (catches comment-close sequences outside comments), prePaint.test.ts and
+  markContrast.test.ts (contrast floors in 03-CHARTS-TABLES.md §5).
+- After building, grep dist/assets/*.css to confirm .ui-glass, .ui-app, @supports not (height:100dvh)
+  and both backdrop-filter lines (one with the -webkit- prefix) are present.
+Build a temporary /#/home page with 3 .ui-card.ui-glass cards and a theme/palette switch button, then take screenshots at
+1440 and 430 × light/dark. Branch: feat/design-system. Push, then STOP.
 ```
 
 ---
 
-## P5 · Thêm một board mới (dùng lặp lại cho mỗi board)
+## P4 · Port the chart and table layer
 
 ```
-Thêm board "<TÊN_BOARD>" vào khối/nhóm "<KHỐI> › <NHÓM>".
-Nguồn: <file CSV ở URL/Drive/BigQuery proxy>, grain = một dòng là <…>. Các cột: <cột:kiểu:ý nghĩa…>.
-Câu hỏi nghiệp vụ board phải trả lời: <…>. Chỉ số cần có: <tên — công thức — luồng hay tồn kho — goodWhen>.
-
-Làm theo checklist ở docs/ui-kit/01-ARCHITECTURE.md §3:
-1. src/data/<tên>.ts: kiểu dữ liệu + EMPTY + parseX (ném lỗi khi thiếu cột, đối chiếu cột dẫn xuất nếu có)
-   + các hàm tổng hợp thuần (luồng cộng dồn, tồn kho lấy cuối kỳ, prevSpan, delta trả null khi không tính được).
-2. src/data/<tên>.test.ts chạy ở env node, dựng dữ liệu ngay trong test.
-3. Thêm mục vào glossary cho mỗi chỉ số (ⓘ).
-4. Thêm mục catalog (status 'live', board, icon) và một dòng lazy(boardChunk(...)) trong registry.
-5. Board theo khuôn ở 01 §1c: XBoard → Connected → XCharts. Thứ tự khối: FilterBar + khối nó điều khiển →
-   .ui-kpis (StatTile) → .ui-charts (2 cột, số thẻ chẵn) → bảng (SortHead + TablePager).
-6. Chọn hình theo bảng ở 03 §3. Trước khi code, giải thích cho tôi vì sao chọn hình đó.
-7. Chạy checklist máy + mắt ở 04. Nhánh feat/<tên>. Push rồi DỪNG, gửi 4 ảnh chụp.
+Read docs/ui-kit/03-CHARTS-TABLES.md and docs/ui-kit/TODO-cut.md.
+1. Cut the wires for the group B files: format.ts (use the fixed locale '<ja-JP|vi-VN>' and declare type Bucket locally),
+   StatTile.tsx and stats.tsx (use this repo's i18n; InfoTip reads the new src/data/glossary.ts), TablePager.tsx
+   and SortHead.tsx (replace SolarIcon with this repo's icon set, or copy SolarIcon + solarIcons if needed).
+2. DO NOT change the constants in axis.ts, nodes.tsx, marks.tsx, motion.ts, donutCorner.ts. They are the result of
+   measurement over many tuning rounds.
+3. Build a demo page #/dashboard/demo/charts, lazy-loaded, drawing all 12 chart templates with data GENERATED IN
+   A TEST FILE (not put into src/). If the "no made-up data" rule leaves the demo page without numbers, show only
+   NoData, and take screenshots from the test harness.
+4. Run the full machine checklist in 04-PITFALLS-CHECKLIST.md. Branch: feat/viz-port. Push, then STOP.
 ```
 
 ---
 
-## P6 · Thêm hoặc đổi một biểu đồ trong board có sẵn
+## P5 · Add a new board (reuse for each board)
 
 ```
-Trong board <TÊN_BOARD>, tôi muốn thấy <câu hỏi dữ liệu>. Trước khi code:
-(a) nói rõ dữ liệu này làm VIỆC gì (so sánh / cơ cấu / xu hướng / bậc / quan hệ…);
-(b) chọn khuôn theo docs/ui-kit/03-CHARTS-TABLES.md §3, và nêu cột "KHÔNG dùng khi" của khuôn đó;
-(c) liệt kê token màu sẽ dùng.
-Chờ tôi duyệt rồi mới code. Không thêm trục Y thứ hai, không tự chọn cỡ chữ, không gõ hex.
+Add board "<BOARD_NAME>" to division/group "<DIVISION> › <GROUP>".
+Source: <CSV file at URL/Drive/BigQuery proxy>, grain = one row is <…>. Columns: <column:type:meaning…>.
+Business question the board must answer: <…>. Required metrics: <name — formula — flow or stock — goodWhen>.
+
+Follow the checklist in docs/ui-kit/01-ARCHITECTURE.md §3:
+1. src/data/<name>.ts: data types + EMPTY + parseX (throws on missing columns, cross-checks derived columns if any)
+   + pure aggregation functions (flows summed, stocks take end-of-period, prevSpan, delta returns null when it cannot be computed).
+2. src/data/<name>.test.ts runs in the node env, building data inside the test.
+3. Add a glossary entry for each metric (ⓘ).
+4. Add a catalog entry (status 'live', board, icon) and one lazy(boardChunk(...)) line in the registry.
+5. Board follows the template in 01 §1c: XBoard → Connected → XCharts. Block order: FilterBar + the block it controls →
+   .ui-kpis (StatTile) → .ui-charts (2 columns, even card count) → table (SortHead + TablePager).
+6. Choose forms per the table in 03 §3. Before coding, explain to me why you chose each form.
+7. Run the machine + eyes checklist in 04. Branch feat/<name>. Push, then STOP, and send the 4 screenshots.
 ```
 
 ---
 
-## P7 · Review một nhánh theo bộ luật
+## P6 · Add or change a chart in an existing board
 
 ```
-Review diff của nhánh hiện tại so với main, theo docs/ui-kit/04-PITFALLS-CHECKLIST.md và các luật ở CLAUDE.md.
-Với mỗi vi phạm, ghi: file:dòng · luật bị phạm · vì sao sai (kịch bản cụ thể) · cách sửa.
-Chạy luôn các cổng máy và báo SỐ file/test (không chỉ chữ "passed"). Không sửa gì, chỉ báo cáo.
+In board <BOARD_NAME>, I want to see <data question>. Before coding:
+(a) state what JOB this data does (comparison / composition / trend / steps / relationship…);
+(b) choose a template per docs/ui-kit/03-CHARTS-TABLES.md §3, and state that template's "DO NOT use when" column;
+(c) list the color tokens you will use.
+Wait for my approval before coding. No second Y axis, no picking font sizes yourself, no typing hex.
 ```
 
 ---
 
-## P8 · Hỏi nhanh khi đang làm (một dòng)
+## P7 · Review a branch against the rule set
 
-- `Theo docs/ui-kit/03 §3, dữ liệu <…> nên vẽ bằng khuôn nào? Nêu cả lý do loại các khuôn khác.`
-- `Mark này có đạt sàn tương phản ở 03 §5 trên nền tệ nhất của cả theme sáng lẫn tối không? Đo bằng số.`
-- `Kiểm xem rule CSS vừa thêm có thật trong dist/ không, và có tạo backdrop root đè lên kính nào không.`
+```
+Review the current branch's diff against main, per docs/ui-kit/04-PITFALLS-CHECKLIST.md and the rules in CLAUDE.md.
+For each violation, write: file:line · rule broken · why it is wrong (a concrete scenario) · how to fix it.
+Also run the machine gates and report the NUMBER of files/tests (not just the word "passed"). Change nothing, only report.
+```
+
+---
+
+## P8 · Quick questions while working (one line)
+
+- `Per docs/ui-kit/03 §3, which template should draw the data <…>? Also give the reasons for ruling out the other templates.`
+- `Does this mark meet the contrast floor in 03 §5 against the worst background in both the light and dark themes? Measure with numbers.`
+- `Check whether the CSS rule just added is really in dist/, and whether it creates a backdrop root over any glass.`

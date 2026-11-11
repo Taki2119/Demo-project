@@ -1,7 +1,7 @@
-// API chạy CỤC BỘ, cùng handler với Vercel:
-//   npm run api:dev                  → DB demo trong bộ nhớ (PGlite + dữ liệu sinh), không cần Supabase
-//   npm run api:dev -- --supabase    → nối DATABASE_URL thật (đọc từ .env)
-// Rồi chạy web app với:  VITE_API_URL=http://localhost:3001 npm run dev
+// API running LOCALLY, same handler as Vercel:
+//   npm run api:dev                  → in-memory demo DB (PGlite + generated data), no Supabase needed
+//   npm run api:dev -- --supabase    → connect to the real DATABASE_URL (read from .env)
+// Then run the web app with:  VITE_API_URL=http://localhost:3001 npm run dev
 import { createServer } from 'node:http';
 import { parseArgs } from 'node:util';
 import { createHandler } from '../../server/lib/handler.js';
@@ -22,10 +22,10 @@ if (values.supabase) {
 } else {
   const { createDemoDb, readerQuery } = await import('./demo-db.mjs');
   const t0 = Date.now();
-  console.log('Đang dựng DB demo trong bộ nhớ (PGlite)…');
+  console.log('Building the in-memory demo DB (PGlite)…');
   const db = await createDemoDb({ months: Number(values.months) });
   query = await readerQuery(db);
-  console.log(`DB demo sẵn sàng sau ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  console.log(`Demo DB ready after ${((Date.now() - t0) / 1000).toFixed(0)}s`);
 }
 
 const boardData = createHandler({ query });

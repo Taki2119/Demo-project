@@ -1,26 +1,26 @@
-// Cổng soi BẢN SHIP (dist/) — hàm THUẦN: nhận { html, files: Map<'assets/x.js', nội dung> }, trả
-// danh sách lỗi (mảng chuỗi; rỗng = qua). Đọc đĩa + env ở check-bundle.mjs.
+// Gates inspecting the SHIPPED BUILD (dist/) — PURE functions: take { html, files: Map<'assets/x.js', content> },
+// return a list of errors (array of strings; empty = pass). Disk + env are read in check-bundle.mjs.
 //
-// Vì sao không chỉ `grep activeTooltipIndex dist/assets/index-*.js` (cách của kit): nếu chunk đầu
-// IMPORT TĨNH chunk Recharts (vd. manualChunks kéo React sang đó) hoặc index.html modulepreload nó,
-// Recharts vẫn nạp ngay trang đầu mà grep vẫn ra 0 (CLAUDE.md §6). Nên cổng đi từ index.html →
-// chunk đầu → BAO ĐÓNG import tĩnh, và nhận chunk Recharts theo NỘI DUNG, không theo tên file.
+// Why not just `grep activeTooltipIndex dist/assets/index-*.js` (the kit's approach): if the entry chunk
+// STATICALLY IMPORTS the Recharts chunk (e.g. manualChunks pulls React into it) or index.html modulepreloads it,
+// Recharts still loads on the first page while grep still returns 0 (CLAUDE.md §6). So the gate walks index.html →
+// entry chunk → static import CLOSURE, and recognizes the Recharts chunk by CONTENT, not by file name.
 import { posix } from 'node:path';
 
-/** Chuỗi chỉ Recharts có (không có trong code của app). Chunk chứa MỘT trong số này = chunk Recharts. */
+/** Strings only Recharts has (not present in the app's code). A chunk containing ONE of these = the Recharts chunk. */
 export const RECHARTS_MARKERS = ['activeTooltipIndex', 'recharts-wrapper'];
 
 const isRecharts = (text) => RECHARTS_MARKERS.some((m) => text.includes(m));
 
-/** Đường dẫn trong index.html (vd. '/Demo-project/assets/a.js') → khoá trong `files`. */
+/** Path in index.html (e.g. '/Demo-project/assets/a.js') → key in `files`. */
 function resolveHtmlRef(ref, files) {
   const clean = ref.split(/[?#]/)[0];
   for (const key of files.keys()) if (clean === key || clean.endsWith('/' + key)) return key;
   return null;
 }
 
-/** Import TĨNH của một module ESM đã minify: `import{a}from"./x.js"`, `import"./x.js"`,
- *  `export{a}from"./x.js"`. KHÔNG tính `import("./x.js")` (nạp động). */
+/** STATIC imports of a minified ESM module: `import{a}from"./x.js"`, `import"./x.js"`,
+ *  `export{a}from"./x.js"`. Does NOT count `import("./x.js")` (dynamic loading). */
 export function staticImports(code) {
   const out = [];
   const re = /(?:^|[^\w$.])(?:import|export)\s*(?:[^"'`();]*?\bfrom\s*)?["']([^"']+)["']/g;
@@ -28,7 +28,7 @@ export function staticImports(code) {
   return out;
 }
 
-/** Bao đóng import tĩnh từ `start` (khoá trong files). */
+/** Static import closure from `start` (a key in files). */
 function staticClosure(start, files) {
   const seen = new Set();
   const stack = [start];
@@ -47,61 +47,61 @@ function staticClosure(start, files) {
 const tags = (html, name) => [...html.matchAll(new RegExp(`<${name}\\b[^>]*>`, 'gi'))].map((m) => m[0]);
 const attr = (tag, name) => tag.match(new RegExp(`\\b${name}\\s*=\\s*["']([^"']*)["']`, 'i'))?.[1] ?? null;
 
-/** Cổng Recharts: chunk đầu (+ mọi thứ nó import tĩnh) và mọi modulepreload KHÔNG chạm chunk Recharts. */
+/** Recharts gate: the entry chunk (+ everything it statically imports) and every modulepreload must NOT touch the Recharts chunk. */
 export function checkRecharts({ html, files }) {
   const errors = [];
   const recharts = [...files.keys()].filter((k) => k.endsWith('.js') && isRecharts(files.get(k)));
   if (recharts.length === 0) {
-    errors.push(`không nhận ra chunk Recharts nào (dấu hiệu: ${RECHARTS_MARKERS.join(', ')}) — Recharts đổi nội dung? Cập nhật RECHARTS_MARKERS, đừng để cổng xanh vì mù.`);
+    errors.push(`no Recharts chunk recognized (markers: ${RECHARTS_MARKERS.join(', ')}) — did Recharts change its content? Update RECHARTS_MARKERS; do not let the gate go green by being blind.`);
   }
   const entries = tags(html, 'script')
     .filter((t) => /\btype\s*=\s*["']module["']/i.test(t) && attr(t, 'src'))
     .map((t) => ({ ref: attr(t, 'src'), key: resolveHtmlRef(attr(t, 'src'), files) }));
-  if (entries.length === 0) errors.push('index.html không có <script type="module" src> — không tìm được chunk đầu.');
+  if (entries.length === 0) errors.push('index.html has no <script type="module" src> — cannot find the entry chunk.');
   for (const e of entries) {
     if (!e.key) {
-      errors.push(`chunk đầu ${e.ref} không có trong dist/.`);
+      errors.push(`entry chunk ${e.ref} is not in dist/.`);
       continue;
     }
     for (const k of staticClosure(e.key, files)) {
       if (!isRecharts(files.get(k))) continue;
       errors.push(k === e.key
-        ? `chunk đầu ${k} CHỨA Recharts.`
-        : `chunk đầu ${e.key} import TĨNH ${k}, mà ${k} chứa Recharts ⇒ Recharts nạp ngay trang đầu.`);
+        ? `entry chunk ${k} CONTAINS Recharts.`
+        : `entry chunk ${e.key} STATICALLY imports ${k}, and ${k} contains Recharts ⇒ Recharts loads on the first page.`);
     }
   }
   for (const t of tags(html, 'link').filter((t) => /\brel\s*=\s*["'][^"']*modulepreload/i.test(t))) {
     const key = resolveHtmlRef(attr(t, 'href') ?? '', files);
     if (!key) continue;
     for (const k of staticClosure(key, files)) {
-      if (isRecharts(files.get(k))) errors.push(`index.html modulepreload ${key}${k === key ? '' : ` (kéo theo ${k})`}, mà ${k} chứa Recharts.`);
+      if (isRecharts(files.get(k))) errors.push(`index.html modulepreload ${key}${k === key ? '' : ` (pulls in ${k})`}, and ${k} contains Recharts.`);
     }
   }
   return errors;
 }
 
-/** Cổng CSS (kit 04 bẫy 1 + 3): kính khai ĐÚNG MỘT lần cả 2 dạng, và đường lui dvh còn sống trong bản ship. */
+/** CSS gate (kit 04 pitfalls 1 + 3): glass declared EXACTLY ONCE in both forms, and the dvh fallback survives in the shipped build. */
 export function checkCss({ files }) {
   const css = [...files.entries()].filter(([k]) => k.endsWith('.css')).map(([, v]) => v).join('\n');
   const errors = [];
-  if (!css) return ['dist/ không có file CSS.'];
+  if (!css) return ['dist/ has no CSS file.'];
   const prefixed = css.match(/-webkit-backdrop-filter\s*:/g)?.length ?? 0;
   const plain = css.match(/(?<!-webkit-)backdrop-filter\s*:/g)?.length ?? 0;
-  if (prefixed !== 1 || plain !== 1) errors.push(`backdrop-filter phải khai đúng 1 lần mỗi dạng; bản ship có -webkit-: ${prefixed}, thường: ${plain}.`);
-  if (!/height\s*:\s*100dvh/.test(css)) errors.push('bản ship mất `height:100dvh`.');
+  if (prefixed !== 1 || plain !== 1) errors.push(`backdrop-filter must be declared exactly once per form; the shipped build has -webkit-: ${prefixed}, plain: ${plain}.`);
+  if (!/height\s*:\s*100dvh/.test(css)) errors.push('the shipped build lost `height:100dvh`.');
   if (!/@supports\s+not\s*\(\s*height\s*:\s*100dvh\s*\)\s*\{[^}]*height\s*:\s*100vh/.test(css)) {
-    errors.push('bản ship mất đường lui `@supports not (height:100dvh){…height:100vh}`.');
+    errors.push('the shipped build lost the fallback `@supports not (height:100dvh){…height:100vh}`.');
   }
   return errors;
 }
 
-/** Chuỗi cấm CỐ ĐỊNH (không bí mật): cấu hình DB / SQL / máy dev lọt vào bản ship công khai. */
+/** FIXED deny strings (not secret): DB config / SQL / dev machine leaking into the public shipped build. */
 export const BUILTIN_DENY = ['postgres://', 'postgresql://', 'DATABASE_URL', 'analytics_reader', 'supabase.co', 'localhost', 'from mart.', 'from raw.'];
 const EMAIL = /[A-Za-z0-9._%+-]+@((?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,})/g;
 const TEXT = /\.(js|mjs|css|html|svg|json|txt|map|webmanifest)$/;
 
-/** PRIVACY_DENY: danh sách cấm do người dùng giữ ở secret (phẩy hoặc xuống dòng). Không in lại
- *  chuỗi cấm ra log — chỉ in SỐ THỨ TỰ của mục. */
+/** PRIVACY_DENY: deny list kept by the user in a secret (comma- or newline-separated). Never print the
+ *  denied strings back to the log — only the item's INDEX. */
 export function parseDeny(raw) {
   return (raw ?? '').split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
 }
@@ -110,30 +110,30 @@ export function checkPrivacy({ html, files }, { deny, ci }) {
   const errors = [];
   const warnings = [];
   if (deny == null || deny.length === 0) {
-    const msg = 'PRIVACY_DENY trống — không kiểm được tên tổ chức thật trong bản ship.';
-    if (ci) errors.push(msg + ' Trên CI thì FAIL: đặt secret PRIVACY_DENY.');
-    else warnings.push(msg + ' (ở máy: chỉ cảnh báo)');
+    const msg = 'PRIVACY_DENY is empty — cannot check for real organization names in the shipped build.';
+    if (ci) errors.push(msg + ' On CI this FAILS: set the PRIVACY_DENY secret.');
+    else warnings.push(msg + ' (locally: warning only)');
   }
   const all = [['index.html', html], ...[...files.entries()].filter(([k]) => k !== 'index.html' && TEXT.test(k))];
   for (const [name, text] of all) {
     const low = text.toLowerCase();
-    for (const d of BUILTIN_DENY) if (low.includes(d.toLowerCase())) errors.push(`${name} chứa "${d}".`);
+    for (const d of BUILTIN_DENY) if (low.includes(d.toLowerCase())) errors.push(`${name} contains "${d}".`);
     (deny ?? []).forEach((d, i) => {
-      if (low.includes(d.toLowerCase())) errors.push(`${name} chứa mục #${i + 1} của PRIVACY_DENY.`);
+      if (low.includes(d.toLowerCase())) errors.push(`${name} contains item #${i + 1} of PRIVACY_DENY.`);
     });
     for (const m of text.matchAll(EMAIL)) {
       const domain = m[1].toLowerCase();
-      if (domain !== 'example.com' && !domain.endsWith('.example.com')) errors.push(`${name} chứa email ngoài *.example.com (miền ${domain}).`);
+      if (domain !== 'example.com' && !domain.endsWith('.example.com')) errors.push(`${name} contains an email outside *.example.com (domain ${domain}).`);
     }
   }
   return { errors, warnings };
 }
 
-/** Cổng env (kit 04 bẫy 33): đặt VITE_API_URL lúc build thì chuỗi đó PHẢI nằm trong bundle.
- *  Để trống là hợp lệ (app nói "chưa cấu hình") ⇒ chỉ cảnh báo. */
+/** Env gate (kit 04 pitfall 33): if VITE_API_URL is set at build time, that string MUST be in the bundle.
+ *  Leaving it empty is valid (the app says "not configured") ⇒ warning only. */
 export function checkEnv({ files }, { apiUrl }) {
   const url = (apiUrl ?? '').trim().replace(/\/+$/, '');
-  if (!url) return { errors: [], warnings: ['VITE_API_URL trống — trang sẽ hiện "chưa cấu hình".'] };
+  if (!url) return { errors: [], warnings: ['VITE_API_URL is empty — pages will show "not configured".'] };
   const found = [...files.entries()].some(([k, v]) => k.endsWith('.js') && v.includes(url));
-  return { errors: found ? [] : [`VITE_API_URL đã đặt lúc build nhưng không có trong bundle.`], warnings: [] };
+  return { errors: found ? [] : [`VITE_API_URL was set at build time but is not in the bundle.`], warnings: [] };
 }

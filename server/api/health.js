@@ -1,5 +1,5 @@
-// GET /api/health — kiểm nhanh sau deploy: kết nối được DB chưa, dữ liệu tính tới ngày nào.
-// Không trả chi tiết lỗi ra ngoài (chỉ ghi log).
+// GET /api/health — quick post-deploy check: can we reach the DB, and up to which date is the data computed.
+// Does not return error details to the outside (only logs them).
 import { getQuery } from '../lib/db.js';
 
 export default async function health(_req, res) {

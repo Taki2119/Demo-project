@@ -1,9 +1,9 @@
-// Khoá glossary (src/data/glossary.ts):
-//   · mọi trường chữ có đủ ja + vi (như i18n.test: cùng bộ key, không chuỗi rỗng) — hoặc là TODO;
-//   · mọi nhãn mà glossary TRỎ tới có thật trong migration nhãn (mart.column_labels / mart.labels)
-//     ⇒ ⓘ không bao giờ phải hiện mã cột;
-//   · mọi <StatTile> / <ChartCard> trong src/screens/** có `info=` (quét ĐỆ QUY — kit 04 bẫy 12),
-//     và mọi mục glossary đều đang được dùng.
+// Glossary lock (src/data/glossary.ts):
+//   · every text field has both ja + vi (like i18n.test: same key set, no empty strings) — or is a TODO;
+//   · every label the glossary POINTS to really exists in the labels migration (mart.column_labels / mart.labels)
+//     ⇒ ⓘ never has to show a column code;
+//   · every <StatTile> / <ChartCard> in src/screens/** has `info=` (scanned RECURSIVELY — kit 04 pitfall 12),
+//     and every glossary entry is in use.
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,20 +13,20 @@ import { COMMON_SCOPE, GLOSSARY, GLOSSARY_KEYS, TODO, type Text } from './glossa
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8');
 
-// ── nhãn trong migration ──
+// ── labels in the migration ──
 const migDir = 'supabase/migrations';
 const labelsFile = readdirSync(join(ROOT, migDir)).find((f) => f.endsWith('_labels.sql'));
-if (!labelsFile) throw new Error('thiếu migration *_labels.sql');
+if (!labelsFile) throw new Error('missing migration *_labels.sql');
 const sql = read(`${migDir}/${labelsFile}`);
 function insertBlock(table: string): string {
   const at = sql.indexOf(`insert into ${table} `);
-  if (at < 0) throw new Error(`không thấy insert into ${table}`);
+  if (at < 0) throw new Error(`insert into ${table} not found`);
   return sql.slice(at, sql.indexOf(';', at));
 }
 const COLS = new Set([...insertBlock('mart.column_labels').matchAll(/^\s*\('([a-z0-9_]+)',\s*'/gm)].map((m) => m[1]));
 const LABELS = new Set([...insertBlock('mart.labels').matchAll(/^\s*\('([a-z0-9_]+)',\s*'([a-z0-9_]+)',\s*'/gm)].map((m) => `${m[1]}/${m[2]}`));
 
-// ── mở thẻ JSX: từ `<Tag` tới `>` ở độ sâu ngoặc nhọn 0 (bỏ qua `=>` trong biểu thức) ──
+// ── JSX opening tag: from `<Tag` to `>` at brace depth 0 (skipping `=>` inside expressions) ──
 function openingTags(code: string, tag: string): string[] {
   const out: string[] = [];
   for (const m of code.matchAll(new RegExp(`<${tag}\\b`, 'g'))) {
@@ -47,7 +47,7 @@ const SCREENS = (readdirSync(join(ROOT, 'src/screens'), { recursive: true }) as 
   .map((f) => ({ name: f.replaceAll('\\', '/'), code: read(`src/screens/${f}`) }));
 
 describe('glossary', () => {
-  it('mọi trường chữ: đủ ja + vi, không rỗng (hoặc TODO); source + name không rỗng', () => {
+  it('every text field: both ja + vi, non-empty (or TODO); source + name non-empty', () => {
     for (const k of GLOSSARY_KEYS) {
       const e = GLOSSARY[k];
       expect(e.name.length, k).toBeGreaterThan(0);
@@ -66,14 +66,14 @@ describe('glossary', () => {
     }
   });
 
-  it('đọc được nhãn từ migration (bộ đọc không mù)', () => {
+  it('labels can be read from the migration (the reader is not blind)', () => {
     expect(COLS.size).toBeGreaterThan(30);
     expect(LABELS.size).toBeGreaterThan(30);
     expect(COLS.has('mrr_end')).toBe(true);
     expect(LABELS.has('metric/arpa')).toBe(true);
   });
 
-  it('mọi nhãn glossary trỏ tới có thật trong mart.column_labels / mart.labels', () => {
+  it('every label the glossary points to exists in mart.column_labels / mart.labels', () => {
     const missing: string[] = [];
     for (const k of GLOSSARY_KEYS) {
       for (const r of GLOSSARY[k].name) {
@@ -83,7 +83,7 @@ describe('glossary', () => {
     expect(missing).toEqual([]);
   });
 
-  it('mọi <StatTile> / <ChartCard> trong src/screens/** có info=; mọi mục glossary đang được dùng', () => {
+  it('every <StatTile> / <ChartCard> in src/screens/** has info=; every glossary entry is in use', () => {
     const noInfo: string[] = [];
     const used = new Set<string>();
     let tags = 0;

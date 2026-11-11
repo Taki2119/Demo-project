@@ -1,13 +1,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Bộ lọc THÁNG — phần THUẦN (kit 01 §6, chỉ phần tháng). Không đi qua Date (tránh lệch múi giờ).
+// MONTH filter — the PURE part (kit 01 §6, month part only). Doesn't go through Date (avoids timezone shifts).
 //
-// Luật:
-//   · Tháng viết 'YYYY-MM' (URL) — dòng dữ liệu chở 'YYYY-MM-01'; `ymOf` đọc được cả hai.
-//   · Danh sách tháng + mặc định lấy TỪ DỮ LIỆU, không từ đồng hồ máy người xem.
-//   · Đại lượng LUỒNG (MRR mới, hoá đơn, user mới…) ⇒ CỘNG cả khoảng (`sumFlow`).
-//     Đại lượng TỒN KHO (MRR cuối tháng, công ty trả tiền, user cuối tháng, MAU) ⇒ giá trị THÁNG
-//     CUỐI khoảng (`stockAt`).
-//   · So sánh với khoảng TRƯỚC dài bằng nhau; khoảng đó không nằm trọn trong dữ liệu ⇒ null ("—").
+// Rules:
+//   · Months are written 'YYYY-MM' (URL) — data rows carry 'YYYY-MM-01'; `ymOf` reads both.
+//   · The month list + default come FROM THE DATA, not from the viewer's machine clock.
+//   · FLOW quantities (new MRR, invoices, new users…) ⇒ SUM over the range (`sumFlow`).
+//     STOCK quantities (end-of-month MRR, paying companies, end-of-month users, MAU) ⇒ value of the LAST
+//     MONTH of the range (`stockAt`).
+//   · Compare with the PREVIOUS range of equal length; that range not fully inside the data ⇒ null ("—").
 // ─────────────────────────────────────────────────────────────────────────────
 import type { Row } from './api';
 
@@ -17,19 +17,19 @@ export interface MonthRange {
   to: Ym;
 }
 
-/** Số tháng mặc định của bộ lọc khoảng. */
+/** Default number of months for the range filter. */
 export const DEFAULT_SPAN = 12;
 
 const YM_RE = /^(\d{4})-(0[1-9]|1[0-2])(?:-\d{2})?$/;
 
-/** 'YYYY-MM' hoặc 'YYYY-MM-DD' → 'YYYY-MM'; sai dạng ⇒ null. */
+/** 'YYYY-MM' or 'YYYY-MM-DD' → 'YYYY-MM'; malformed ⇒ null. */
 export function ymOf(v: unknown): Ym | null {
   if (typeof v !== 'string') return null;
   const m = YM_RE.exec(v);
   return m ? `${m[1]}-${m[2]}` : null;
 }
 
-/** Chuỗi có ĐÚNG dạng 'YYYY-MM' (giá trị URL). */
+/** String in EXACTLY the 'YYYY-MM' form (URL value). */
 export const isYm = (v: unknown): v is Ym => typeof v === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
 
 const index = (ym: Ym): number => Number(ym.slice(0, 4)) * 12 + Number(ym.slice(5, 7)) - 1;
@@ -37,7 +37,7 @@ const fromIndex = (i: number): Ym => `${Math.floor(i / 12)}-${String((i % 12) + 
 
 export const addMonths = (ym: Ym, n: number): Ym => fromIndex(index(ym) + n);
 
-/** Số tháng của khoảng (tính cả hai đầu). */
+/** Number of months in the range (both ends inclusive). */
 export const rangeLength = (r: MonthRange): number => index(r.to) - index(r.from) + 1;
 
 export const inRange = (ym: Ym, r: MonthRange): boolean => ym >= r.from && ym <= r.to;
@@ -45,7 +45,7 @@ export const inRange = (ym: Ym, r: MonthRange): boolean => ym >= r.from && ym <=
 export const sameRange = (a: MonthRange | null, b: MonthRange | null): boolean =>
   a === b || (a != null && b != null && a.from === b.from && a.to === b.to);
 
-/** Các tháng có trong dữ liệu (không trùng, tăng dần). Ô sai dạng bị bỏ qua. */
+/** Months present in the data (unique, ascending). Malformed cells are skipped. */
 export function monthsOf(rows: readonly Row[], key = 'month'): Ym[] {
   const s = new Set<Ym>();
   for (const r of rows) {
@@ -55,7 +55,7 @@ export function monthsOf(rows: readonly Row[], key = 'month'): Ym[] {
   return [...s].sort();
 }
 
-/** Mặc định: `span` tháng KẾT THÚC ở tháng mới nhất có trong dữ liệu (ngắn hơn nếu dữ liệu ngắn). */
+/** Default: `span` months ENDING at the latest month in the data (shorter if the data is shorter). */
 export function defaultRange(months: readonly Ym[], span = DEFAULT_SPAN): MonthRange | null {
   const first = months[0];
   const last = months.at(-1);
@@ -64,8 +64,8 @@ export function defaultRange(months: readonly Ym[], span = DEFAULT_SPAN): MonthR
   return { from: from < first ? first : from, to: last };
 }
 
-/** Khoảng từ URL → khoảng dùng được. Thiếu một đầu, sai dạng, đảo ngược, ngoài phạm vi dữ liệu
- *  ⇒ mặc định (không lỗi). Dữ liệu rỗng ⇒ null. */
+/** Range from the URL → a usable range. Missing an end, malformed, reversed, outside the data range
+ *  ⇒ default (no error). Empty data ⇒ null. */
 export function resolveRange(q: { from?: string; to?: string }, months: readonly Ym[], span = DEFAULT_SPAN): MonthRange | null {
   const def = defaultRange(months, span);
   if (!def) return null;
@@ -76,26 +76,26 @@ export function resolveRange(q: { from?: string; to?: string }, months: readonly
   return { from, to };
 }
 
-/** Tháng từ URL → tháng dùng được: phải CÓ trong danh sách; không thì tháng mới nhất. */
+/** Month from the URL → a usable month: must BE in the list; otherwise the latest month. */
 export function resolveMonth(q: string | undefined, months: readonly Ym[]): Ym | null {
   if (isYm(q) && months.includes(q)) return q;
   return months.at(-1) ?? null;
 }
 
-/** Khoảng TRƯỚC, dài bằng nhau, nằm sát ngay trước. */
+/** The PREVIOUS range, of equal length, immediately before. */
 export function prevRange(r: MonthRange): MonthRange {
   const n = rangeLength(r);
   return { from: addMonths(r.from, -n), to: addMonths(r.to, -n) };
 }
 
-/** Khoảng có nằm TRỌN trong phạm vi dữ liệu không. */
+/** Whether the range lies ENTIRELY within the data range. */
 export function covers(months: readonly Ym[], r: MonthRange): boolean {
   const first = months[0];
   const last = months.at(-1);
   return first != null && last != null && r.from >= first && r.to <= last;
 }
 
-/** Các dòng có tháng (hoặc ngày) nằm trong khoảng. */
+/** Rows whose month (or date) falls within the range. */
 export function sliceRows(rows: readonly Row[], r: MonthRange, key = 'month'): Row[] {
   return rows.filter((row) => {
     const ym = ymOf(row[key]);
@@ -105,8 +105,8 @@ export function sliceRows(rows: readonly Row[], r: MonthRange, key = 'month'): R
 
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
-/** LUỒNG: cộng cột `key` qua các dòng trong khoảng. Khoảng có tháng thiếu dòng / thiếu số ⇒ null
- *  (một tổng thiếu tháng trông như số thật mà sai). */
+/** FLOW: sum column `key` over the rows in the range. A range with a month missing a row / missing a number ⇒ null
+ *  (a total missing a month looks like a real number but is wrong). */
 export function sumFlow(rows: readonly Row[], r: MonthRange, key: string): number | null {
   const picked = sliceRows(rows, r);
   if (picked.length !== rangeLength(r)) return null;
@@ -119,18 +119,18 @@ export function sumFlow(rows: readonly Row[], r: MonthRange, key: string): numbe
   return s;
 }
 
-/** TỒN KHO: giá trị cột `key` ở tháng `ym` (thường = tháng cuối khoảng). Thiếu ⇒ null. */
+/** STOCK: value of column `key` in month `ym` (usually = the last month of the range). Missing ⇒ null. */
 export function stockAt(rows: readonly Row[], ym: Ym, key: string): number | null {
   const row = rows.find((x) => ymOf(x.month) === ym);
   return row ? num(row[key]) : null;
 }
 
-/** Dòng của đúng tháng `ym` (để tính tỉ lệ tháng cuối: ARPA, DAU/MAU…). */
+/** Row of exactly month `ym` (for last-month ratios: ARPA, DAU/MAU…). */
 export function rowAt(rows: readonly Row[], ym: Ym): Row | null {
   return rows.find((x) => ymOf(x.month) === ym) ?? null;
 }
 
-// ── Tham số URL ──
+// ── URL parameters ──
 
 export interface FilterQuery {
   from?: string;
@@ -138,7 +138,7 @@ export interface FilterQuery {
   month?: string;
 }
 
-/** Khoảng → query. Bằng mặc định ⇒ {} (URL sạch; "khác mặc định" ⇔ URL có query). */
+/** Range → query. Equal to default ⇒ {} (clean URL; "differs from default" ⇔ URL has a query). */
 export function rangeQuery(r: MonthRange | null, def: MonthRange | null): FilterQuery {
   return r == null || sameRange(r, def) ? {} : { from: r.from, to: r.to };
 }

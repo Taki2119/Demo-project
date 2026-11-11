@@ -1,6 +1,6 @@
-// Home = các thẻ xem trước: mỗi bảng (ở mức "tất cả gói") + dự án cảnh báo huỷ sớm.
-// Thẻ chỉ bày ĐÚNG con số chính của bảng; chưa có dữ liệu thì bày chip "đang chuẩn bị" —
-// không có số mẫu nào.
+// Home = preview cards: each board (at the "all plans" level) + the early-churn-warning project.
+// A card shows ONLY the board's headline number; with no data yet it shows a "preparing" chip —
+// no sample numbers at all.
 import { apiConfigured, useSource } from '../data/api';
 import { oldestDate } from '../data/freshness';
 import { useColumnLabel, useLabel } from '../data/labels';
@@ -45,7 +45,7 @@ function ChurnHeadline() {
 export function HomeScreen() {
   const t = useT();
   const lang = useLangStore((s) => s.lang);
-  // Home đọc 3 nguồn (2 thẻ tháng + thẻ dự án) ⇒ ngày CŨ NHẤT trong 3 nguồn đó.
+  // Home reads 3 sources (2 monthly cards + the project card) ⇒ the OLDEST date among those 3.
   const sources = [useSource('revenue-monthly'), useSource('users-monthly'), useSource('churn-watchlist')];
   const asOf = oldestDate(sources.map((x) => x.data?.updatedAt));
   return (
@@ -59,8 +59,8 @@ export function HomeScreen() {
             <span className="card-title">{pick(b.name, lang)}</span>
             {!apiConfigured ? <Chip>{t('preparing')}</Chip> : null}
             <span className="card-desc">{pick(b.desc, lang)}</span>
-            {/* Chỉ 2 bảng theo tháng có con số chính nhẹ; bảng theo user / công ty là nguồn lớn,
-                không tải chỉ để vẽ một thẻ. */}
+            {/* Only the 2 monthly boards have a light headline number; the by-user / by-company boards are large sources,
+                not loaded just to draw a card. */}
             {b.key === 'revenue' || b.key === 'users' ? <Headline board={b} /> : null}
           </button>
         ))}
