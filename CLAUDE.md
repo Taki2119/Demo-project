@@ -17,7 +17,8 @@ tảng dashboard nội bộ mà người dùng từng làm ở công ty). Có:
   Theo người dùng · Theo công ty);
 - MỘT trang dự án tăng doanh thu: **cảnh báo huỷ sớm** (khách giảm dùng, bỏ ghế, bỏ tính năng
   chính, hẹn huỷ);
-- sắp tới: **AI hỏi đáp dữ liệu qua Claude CLI**.
+- **Hỏi AI (bản demo)**: cửa sổ chat mở từ nút góc trên bên phải ở mọi màn, trả lời từ bộ câu hỏi
+  mẫu bằng số của API. KHÔNG gọi AI thật.
 
 Kiến trúc: **Supabase (Postgres)** `raw → mart` · **Vercel** (`server/`, project riêng) ·
 **GitHub Pages** (web app Vite + React). Repo: `Taki2119/Demo-project`, nhánh `main`.
@@ -70,15 +71,17 @@ Kiến trúc: **Supabase (Postgres)** `raw → mart` · **Vercel** (`server/`, p
 | `scripts/ci/` | cổng soi `dist/`: `bundle-checks.mjs` (luật, hàm thuần) · `check-bundle.mjs` (đọc `dist/` + env) · test |
 | `server/` | project Vercel: `api/board-data.js` · `api/health.js` · `lib/{sources,handler,db}.js` · `test/` |
 | `src/nav/` | `catalog.ts` (MỘT nguồn cho cây trang) · `route.ts` (hash router) |
-| `src/data/` | `api.ts` (đường đọc duy nhất + cache) · `labels.ts` · `metrics.ts` · `rollup.ts` · `churn.ts` · `glossary.ts` (giải thích chỉ số; tên TRỎ tới nhãn DB) · `freshness.ts` |
+| `src/ask/` | Hỏi AI bản demo (thuần): `match.ts` · `kit.ts` · `q/*.ts` (37 câu) · `questions.ts` (`resolve`, `autocomplete`) · `chat.ts` (store hội thoại) |
+| `src/data/` | `api.ts` (đường đọc duy nhất + cache, `loadSource`) · `labels.ts` · `metrics.ts` · `rollup.ts` · `churn.ts` · `glossary.ts` (giải thích chỉ số; tên TRỎ tới nhãn DB) · `freshness.ts` |
 | `src/screens/` | Sidebar · Home · Board (chung cho 4×4) · Churn · About (`#/about`) |
+| `src/ui/ask/` | `ChatDock` (nút, chunk đầu) · `ChatPanel` (cửa sổ, nạp động) · `AnswerView` · `AskLine` |
 | `.github/workflows/deploy.yml` | MỘT job `checks` cho cả PR lẫn `main`: typecheck → test → db:test → api:test → check:test → build → check:bundle → deploy Pages (chỉ `main`) |
 
 ## 4. Lệnh + con số đã đo (2026-11-11)
 
 ```bash
 npm install
-npm run typecheck && npm test && npm run build   # web: 14 file / 74 test
+npm run typecheck && npm test && npm run build   # web: 17 file / 543 test (2026-11-12)
 npm run check:test  # 10 test (luật cổng, bundle giả)
 npm run check:bundle  # sau build: recharts · css · privacy · env (PRIVACY_DENY thiếu: máy ⇒ cảnh báo, CI=true ⇒ FAIL)
 npm run db:test     # 16 test, ~90s (PGlite)
@@ -122,17 +125,69 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
    production của Vercel (`https://<tên>.vercel.app`, không `/` cuối).
 
 **Việc tiếp theo (theo thứ tự đã bàn):**
-1. Hỗ trợ người dùng qua các bước deploy trên. Đọc câu lỗi họ gửi; đừng xin mật khẩu.
-2. **AI hỏi đáp dữ liệu bằng Claude CLI.** Claude CLI chỉ chạy được trên máy có cài CLI, không
-   chạy trên Vercel. Hướng đã bàn:
-   - một **cầu nối nhỏ chạy ở máy** (Node, `127.0.0.1`), chỉ nhận Origin của trang, gọi
-     `claude -p --output-format json` không có tool;
-   - Claude trả JSON `{content, tool_calls}`, và **APP** mới là bên chạy tool;
-   - tool tra số = endpoint MỚI trên Vercel (vd. `api/query`): SQL do AI viết, nhưng chạy trong
-     giao dịch READ ONLY bằng `analytics_reader`, `EXPLAIN` trước, giới hạn số dòng/dung lượng;
-   - AI đọc `mart.column_labels` / `mart.labels` để hiểu cột và trả lời ja/vi;
-   - người xem không có CLI thì AI không dùng được. Có thể thêm engine dự phòng Claude API qua
-     Vercel (cần API key ở env Vercel), nhưng phải hỏi người dùng trước.
+1. ~~Hỗ trợ deploy~~ XONG (Pages + Vercel + Supabase chạy; `/` của Vercel trả 404 là đúng — chỉ có `api/`).
+2. **Hỏi AI — BẢN DEMO, KHÔNG gọi AI thật. XONG D1–D3, người dùng đã duyệt từng giai đoạn (2026-11-12).
+   Nhánh `ai-qa-demo`, ĐÃ MERGE vào `main` ở máy (2026-11-12, `--no-ff`).**
+   Thay hẳn kế hoạch Claude CLI. Đã bỏ: cầu nối ở máy, `api/query` công khai, Cloudflare Tunnel,
+   `setup-token`. Lý do: không tốn hạn mức, không mở endpoint nhận SQL, máy nào cũng dùng được. Dừng
+   cho người dùng xem sau mỗi giai đoạn.
+   - Cửa sổ chat, với một bộ câu hỏi mẫu (37 câu, đủ ja + vi).
+   - Gõ tự do thì so GẦN ĐÚNG, không cần khớp 100%:
+     - đủ gần ⇒ trả lời câu mẫu gần nhất, kèm gợi ý vài câu liên quan;
+     - không đủ gần ⇒ chỉ gợi ý câu hỏi.
+   - Ghi rõ trong cửa sổ "bản demo, chưa nối AI thật" (chip "Demo" + ghi chú lúc mở).
+   - **Số lấy từ các nguồn SẴN CÓ của `board-data`:**
+     - KHÔNG thêm SQL, KHÔNG sửa `server/`, KHÔNG deploy lại Vercel;
+     - câu trả lời = mẫu câu ja/vi điền số; tỉ lệ tính ở client (`metrics.ts`);
+     - KHÔNG có số nào trong bundle (§2.1);
+     - mỗi câu trả lời ghi "dữ liệu dùng: nguồn + cách tính". KHÔNG giả vờ hiện SQL đã chạy.
+   - **Đổi 2026-11-12 (người dùng):** KHÔNG làm trang riêng. Thay bằng cửa sổ chat mở từ nút góc trên
+     bên phải ở MỌI màn; ẩn danh sách câu mẫu, chỉ gợi ý 2–3 câu + tự gợi ý khi gõ. Không còn route
+     `#/ask`, không sửa `Sidebar.tsx`.
+   - So khớp:
+     - chuẩn hoá NFKC + chữ thường;
+     - tiếng Việt bỏ dấu, nên gõ không dấu vẫn khớp;
+     - tiếng Nhật so bigram ký tự, tách theo loại chữ (kanji/katakana riêng, hiragana riêng) để
+       bigram không vắt qua trợ từ;
+     - KHÔNG đưa từ phủ định ("không", "chưa") vào danh sách từ bỏ qua;
+     - trích tham số đơn giản: gói (mã + nhãn DB), top N.
+   - Giai đoạn:
+     - **D1 XONG, đã duyệt** — lõi `src/ask/`:
+       - `match.ts`: chuẩn hoá, đặc trưng, IDF, `ANSWER_MIN`;
+       - `kit.ts`: kiểu + hàm phụ trợ;
+       - `q/{revenue,users,companies,churn}.ts`: 37 câu (13 · 7 · 8 · 9);
+       - `questions.ts`: `resolve` / `resolveId` / `STARTERS`;
+       - test: `match.test.ts` (mọi cách hỏi tự khớp + 77 câu diễn đạt khác + câu lạc đề) ·
+         `questions.test.ts` (dữ liệu giả tính tay);
+       - đã chạy thử cả 37 câu × ja/vi × (mọi gói / growth) trên DB demo qua handler API thật (test
+         tạm, không giữ trong repo vì ~50s).
+       - Muốn thêm câu thì thêm vào `q/*.ts`. Câu diễn đạt khác bị trượt ⇒ thêm cách hỏi / từ khoá,
+         ĐỪNG hạ `ANSWER_MIN`.
+     - **D2 XONG (làm lại 2026-11-12 thành cửa sổ chat), đã duyệt** — cửa sổ chat:
+       - `src/ui/ask/ChatDock.tsx`: nút `.ask-fab` fixed góc trên phải, gắn trong `App.tsx` NGOÀI
+         `.main` (main dựng lại theo route) ⇒ cửa sổ + hội thoại giữ khi chuyển trang. Nút nằm trong
+         chunk đầu (209 → 214 kB); `ChatPanel.tsx` (bộ câu hỏi, ~80 kB) nạp ĐỘNG lần mở đầu, sau đó
+         chỉ ẩn bằng `hidden` (giữ chữ đang gõ + vị trí cuộn);
+       - `ChatPanel.tsx`: portal ra body; desktop cửa sổ nổi KHÔNG chặn trang; ≤640px phủ toàn màn,
+         `.main`/`.side`/`.side-bar` inert. Ô chat là combobox: `autocomplete()` (≤ 3 câu; câu mẫu
+         CHỨA chữ đang gõ lên trước) · ↑↓ chọn · Enter hỏi · Tab điền · Esc lần 1 đóng gợi ý, lần 2 thu
+         cửa sổ (focus về nút). Ô trống ⇒ 3 câu `WELCOME`;
+       - `AnswerView.tsx` (ô số · HBars · bảng · "dữ liệu dùng") + `AskLine.tsx` (SoloLine, nạp động);
+       - `src/ask/chat.ts`: hội thoại lưu MÃ câu + dữ liệu thô ⇒ đổi ja/vi dựng lại cả hội thoại;
+       - `loadSource()` trong `src/data/api.ts`: nạp ngoài React, dùng chung cache với `useSource`;
+       - `src/styles/ask.css`: kit KHÔNG có mẫu chat ⇒ ghép từ mảnh có sẵn. Cửa sổ là kính (bảng kính
+         menu/popover/dialog); mọi khối bên trong là thân đục, ô số/bảng tắt kính bằng
+         `--glass-blur: 0px` (không lồng kính, không khai thêm `backdrop-filter`). `hover.css` hạ
+         z-index `.btn` khi hover ⇒ `.btn.ask-fab` giữ z 30;
+       - `PAGE_ASK` trong catalog chỉ còn là tên nút + dòng ở trang Giới thiệu;
+       - kiểm trình duyệt `Demo-project-shots/tools/ask.mjs` 86/86 (ảnh ở `Demo-project-shots/out/ask/`).
+         404 `/favicon.ico` ở gốc server preview là của trình duyệt, tool bỏ qua riêng URL đó.
+     - **D3 XONG 2026-11-12** — README (mục Hỏi AI + cách thêm câu hỏi) · `docs/API.md` (không endpoint
+       mới) · §1/§2.2/§3/§4/§5. Kiểm cuối: typecheck sạch · 17 file / 543 test · build · check:test 10/10 ·
+       check:bundle 4/4. Không đụng SQL / `server/` ⇒ không chạy db:test / api:test.
+   - Ghi lại để khỏi dò lại, nếu sau này muốn nối AI thật: Claude CLI v2.1.322 có cờ
+     `-p --tools "" --system-prompt --output-format json --model --no-session-persistence --json-schema`.
+     `--bare` chỉ nhận API key. Máy hiện tại chưa cài `claude` trong PATH.
 3. **Biểu đồ** cho từng bảng: chỗ cắm là `<section className="viz">` trong BoardScreen / ChurnScreen.
    Thư viện: **Recharts 2.x, nạp động** theo `docs/ui-kit/03-CHARTS-TABLES.md`. Làm chung với mục 4.
 4. **Thiết kế + biểu đồ (gộp 3 vào đây):** đã được phép (§2.2), kế hoạch ĐÃ DUYỆT 2026-11-11, làm

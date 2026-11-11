@@ -3,7 +3,7 @@
 // tên trang + câu hỏi lấy từ catalog; tên chỉ số lấy từ nhãn DB.
 import { COMMON_SCOPE, GLOSSARY, GLOSSARY_KEYS, textOf, type Text } from '../data/glossary';
 import { useNameRefs } from '../data/labels';
-import { BOARDS, pick, PROJECT_CHURN } from '../nav/catalog';
+import { BOARDS, PAGE_ASK, pick, PROJECT_CHURN } from '../nav/catalog';
 import { NO_VALUE } from '../ui/format';
 import { useLangStore, useT } from '../ui/i18n';
 import { PageMeta } from '../ui/parts';
@@ -41,7 +41,7 @@ export function AboutScreen() {
       <section className="ui-glass about-block">
         <h2>{t('aboutPagesTitle')}</h2>
         <dl className="about-pages">
-          {[...BOARDS, PROJECT_CHURN].map((p) => (
+          {[...BOARDS, PROJECT_CHURN, PAGE_ASK].map((p) => (
             <div key={pick(p.name, 'ja')}>
               <dt>{pick(p.name, lang)}</dt>
               <dd>{pick(p.question, lang)}</dd>

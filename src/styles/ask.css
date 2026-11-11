@@ -1,0 +1,195 @@
+/* Hỏi AI (bản demo) — nút nổi góc trên bên phải + cửa sổ chat, có ở mọi màn.
+   Kit KHÔNG có mẫu chat ⇒ ghép từ mảnh có sẵn: nút phẳng (.btn) · cửa sổ là panel kính theo bảng
+   kính của kit cho menu/popover/dialog (26px · 180% · --glass-fill-panel) · mọi khối BÊN TRONG cửa
+   sổ là thân đục (kit 02 §3: không lồng kính). Màu chỉ lấy từ token.
+   (tự chọn, kit không ghi): vị trí/kích thước cửa sổ; bong bóng bo 14px với góc "đuôi" 4px; bong
+   bóng người hỏi tô --accent-fill + chữ --on-accent (cặp màu của nút đang chọn). */
+
+/* ── Nút mở ── */
+.ask-fab {
+  position: fixed;
+  top: 1rem;
+  right: 1.5rem;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  height: 2.25rem;
+  padding: 0 .95rem;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+/* hover.css hạ z-index của .btn khi hover (2) ⇒ nút nổi phải giữ lớp của mình. */
+.btn.ask-fab:not(:disabled):hover, .btn.ask-fab:not(:disabled):active { z-index: 30; }
+.ask-fab[aria-expanded='true'] { background: var(--surface); color: var(--accent-text); }
+
+/* ── Cửa sổ ── */
+.ask-dock {
+  --glass-blur: 26px;
+  --glass-sat: 180%;
+  background: var(--glass-fill-panel);
+  position: fixed;
+  z-index: 45;
+  top: 3.9rem;
+  right: 1.5rem;
+  width: min(28rem, calc(100vw - 3rem));
+  height: min(44rem, calc(100dvh - 5rem));
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  overflow: hidden;
+  animation: ask-dock-in .2s cubic-bezier(.2,.9,.3,1) backwards;
+}
+.ask-dock[hidden] { display: none; }
+@keyframes ask-dock-in { from { opacity: 0; transform: translateY(-8px) scale(.98); } }
+
+.ask-dock-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: .65rem .75rem .6rem 1rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+.ask-dock-head h2 { margin: 0; font-size: 1rem; }
+.ask-dock-grow { flex: 1; }
+.ask-dock-close { display: inline-grid; place-items: center; width: 2rem; padding: 0; }
+
+.ask-dock-body { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: .9rem 1rem; }
+
+/* Lúc chưa hỏi gì: ghi chú demo + 3 câu gợi ý. */
+.ask-welcome h3 { margin: 14px 0 8px; font-size: .78rem; color: var(--ink-3); font-weight: 600; }
+.ask-note {
+  margin: 0;
+  padding: .6rem .8rem;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--btn-ring);
+  color: var(--ink-2);
+  font-size: .82rem;
+  line-height: 1.55;
+}
+
+/* Câu hỏi bấm được: nút phẳng, chữ được xuống dòng. */
+.ask-qs { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.ask-q { height: auto; min-height: 2rem; padding: .35rem .8rem; text-align: left; white-space: normal; line-height: 1.4; font-size: .8rem; }
+
+/* ── Hội thoại ── */
+.ask-log { display: flex; flex-direction: column; gap: .8rem; }
+.ask-msg { min-width: 0; scroll-margin-top: .5rem; }
+.ask-who { display: block; margin: 0 0 4px; font-size: .7rem; font-weight: 600; color: var(--ink-3); }
+
+.ask-user {
+  align-self: flex-end;
+  max-width: 88%;
+  padding: .5rem .85rem;
+  border-radius: 14px 14px 4px 14px;
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+.ask-user p { margin: 0; font-size: .88rem; line-height: 1.5; overflow-wrap: anywhere; }
+/* Nhãn "Bạn" chỉ cho trình đọc màn hình (bong bóng bên phải đã nói ai hỏi). */
+.ask-user .ask-who { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Bong bóng trợ lý: thân ĐỤC (nằm trong cửa sổ kính). */
+.ask-bot {
+  padding: .8rem .9rem;
+  border-radius: 4px 14px 14px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  animation: ask-in .22s cubic-bezier(.2,.9,.3,1) backwards;
+}
+@keyframes ask-in { from { opacity: 0; transform: translateY(6px); } }
+
+/* Ô số / bảng / NoData bên trong: tắt kính bằng núm biến (backdrop-filter chỉ được khai ở base.css
+   — cssSource.test) + nền trong suốt trên thân đục của bong bóng. */
+.ask-bot .tile, .ask-bot .table-wrap, .ask-bot .state {
+  --glass-blur: 0px;
+  --glass-sat: 100%;
+  background: transparent;
+  border-color: var(--line-soft);
+  box-shadow: none;
+}
+
+.ask-matched { margin: 0 0 .45rem; font-size: .74rem; color: var(--ink-3); }
+.ask-matched span { font-weight: 600; }
+.ask-text { margin: 0 0 .7rem; font-size: .88rem; line-height: 1.6; overflow-wrap: anywhere; }
+.ask-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 .7rem; }
+
+.ask-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: .5rem; margin: 0 0 .8rem; }
+.ask-figs .tile { padding: .55rem .7rem; border-radius: 10px; }
+.ask-figs .tile-label { font-size: .74rem; }
+.ask-figs .tile-value { font-size: 1.15rem; }
+
+.ask-chart-unit { margin: 0 0 2px; font-size: .74rem; color: var(--ink-3); }
+.ask-chart { height: 12rem; margin: 0 0 .8rem; }
+.ask-chart-dom { margin: 0 0 .8rem; font-size: .8rem; }
+.ask-table { margin: 0 0 .8rem; border-radius: 10px; }
+.ask-table table { font-size: .78rem; }
+
+.ask-basis { margin: 0 0 .3rem; font-size: .78rem; color: var(--ink-2); }
+.ask-basis summary { cursor: pointer; color: var(--accent-text); font-weight: 600; }
+.ask-basis dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0 4px; }
+.ask-basis dt { color: var(--ink-3); }
+.ask-basis dd { margin: 0; }
+.ask-basis p { margin: 0; line-height: 1.6; }
+
+.ask-more { margin-top: .8rem; padding-top: .7rem; border-top: 1px solid var(--line-soft); }
+.ask-more h3 { margin: 0 0 6px; font-size: .74rem; color: var(--ink-3); font-weight: 600; }
+
+/* Đang phân tích: 3 chấm nhịp nhàng. */
+.ask-thinking { display: flex; align-items: center; gap: .6rem; margin: 0; font-size: .84rem; color: var(--ink-2); }
+.ask-dots { display: inline-flex; gap: 4px; }
+.ask-dots i { width: 6px; height: 6px; border-radius: 999px; background: var(--accent-fill); animation: ask-dot 1s ease-in-out infinite; }
+.ask-dots i:nth-child(2) { animation-delay: .15s; }
+.ask-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes ask-dot { 0%, 80%, 100% { opacity: .3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
+/* ── Khung gõ + gợi ý theo chữ đang gõ (mọc LÊN trên ô nhập) ── */
+.ask-composer { flex: none; display: flex; flex-direction: column; gap: 6px; padding: .6rem .7rem .7rem; border-top: 1px solid var(--line-soft); }
+.ask-auto {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--btn-ring);
+}
+.ask-auto [role='option'] { padding: .45rem .7rem; border-radius: 8px; font-size: .84rem; line-height: 1.4; cursor: pointer; }
+.ask-auto [role='option']:hover, .ask-auto [role='option'][aria-selected='true'] { background: var(--toggle-track); }
+.ask-auto [role='option'][aria-selected='true'] { color: var(--accent-text); font-weight: 600; }
+.ask-auto-hint { padding: .25rem .7rem .15rem; font-size: .7rem; color: var(--ink-3); }
+@media (pointer: coarse) { .ask-auto-hint { display: none; } }
+
+.ask-compose-row { display: flex; gap: 8px; }
+.ask-compose-row input {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 2.4rem;
+  padding: 0 .9rem;
+  border: 1px solid var(--field-line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: .9rem;
+}
+.ask-compose-row input::placeholder { color: var(--ink-3); }
+.ask-compose-row input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.ask-send { height: 2.4rem; padding: 0 1.1rem; background: var(--accent-fill); color: var(--on-accent); font-weight: 600; }
+.ask-send:disabled { background: var(--surface); color: var(--ink-3); }
+
+/* ── ≤640px: nút nằm trên thanh trên cùng; cửa sổ phủ toàn màn (hộp thoại). ── */
+@media (max-width: 640px) {
+  .ask-fab { top: .5rem; right: var(--screen-pad); height: 2rem; padding: 0 .8rem; }
+  .ask-dock { inset: 0; width: auto; height: auto; border-radius: 0; border-width: 0; }
+  .ask-dock-body { padding: .8rem; }
+  :root[data-chat-open] .main { overflow: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-dock, .ask-bot { animation: none; }
+  .ask-dots i { animation: none; opacity: .7; }
+  .btn.ask-fab:not(:disabled):hover, .btn.ask-fab:not(:disabled):active { transform: none; }
+}
