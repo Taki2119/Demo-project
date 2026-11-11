@@ -97,10 +97,12 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
 - workflow Pages.
 
 **Đang chờ người dùng làm (ngoài repo):** theo [`server/README.md`](server/README.md).
-1. Tạo project Supabase (region Tokyo), chạy 4 migration theo thứ tự, đặt mật khẩu cho
-   `analytics_reader`, rồi `npm run data:load` với `DATABASE_URL` (user `postgres`, Session
-   pooler 5432) trong `.env`.
-2. Tạo project Vercel (gói Hobby) với **Root Directory = `server`**. Env:
+1. ~~Supabase~~ **XONG 2026-11-11:** project `Demo` (ref `tozsokrpjfrpdokvoydo`, Tokyo).
+   Đã chạy 4 migration, đặt mật khẩu `analytics_reader`, `data:load` (dq_checks 5/5 = 0,
+   116,8s). `.env` ở máy đã có `DATABASE_URL` (Session pooler).
+2. ~~Vercel~~ **XONG 2026-11-11:** `https://demo-project-server.vercel.app`, `/api/health`
+   trả `{"ok":true,"asOf":"2026-11-10"}`. Cấu hình đã dùng (để tra lại):
+   Root Directory = `server`. Env:
    - `DATABASE_URL` = Transaction pooler 6543 với user **`analytics_reader.<ref>`**, không
      phải `postgres`;
    - `ALLOWED_ORIGINS=https://taki2119.github.io`.
@@ -153,6 +155,13 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
   - `gh` chưa đăng nhập (không xem được CI từ máy).
 - **Trình duyệt preview của app desktop chỉ tới được origin đang preview**, nên gọi `localhost:3001`
   bị refused. Dùng proxy `/api` của Vite.
+- **Supabase đặt `statement_timeout` (~2 phút) cho `postgres`**: `mart.refresh()` trên gói
+  Free vượt mức này. `load.mjs` chạy `analyze` raw rồi refresh trong giao dịch có
+  `set local statement_timeout = 0`.
+- **Supabase đổi giao diện Connect:** Session / Transaction pooler nằm trong tab **Direct**
+  (*Connection string*) → ô chọn Method.
+- **Connector Supabase của phiên Claude** đăng nhập tài khoản khác (org công ty), không thấy
+  project `Demo`: migration / SQL thì người dùng tự chạy ở SQL Editor.
 - **Hobby plan Vercel:** chỉ dùng domain production (`<tên>.vercel.app`). URL của từng deployment
   bị Vercel Authentication chặn. Region đặt `hnd1` trong `server/vercel.json`, phải cùng vùng
   Supabase.

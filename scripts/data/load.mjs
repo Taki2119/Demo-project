@@ -38,7 +38,14 @@ try {
       console.log(`  raw.${t.padEnd(22)} ${String(n).padStart(9)}`);
     }
   });
-  await sql`select mart.refresh()`;
+  // Bảng vừa COPY chưa có thống kê ⇒ planner chọn kế hoạch tồi. Supabase còn đặt
+  // statement_timeout (~2 phút) cho `postgres`; refresh MV trên gói Free có thể lâu hơn,
+  // nên bỏ giới hạn CHỈ trong giao dịch này.
+  await sql.unsafe(`analyze ${Object.keys(TABLES).map((t) => `raw.${t}`).join(', ')}`);
+  await sql.begin(async (tx) => {
+    await tx`set local statement_timeout = 0`;
+    await tx`select mart.refresh()`;
+  });
   const dq = await sql`select check_name, failed_rows::int as failed_rows from mart.dq_checks`;
   const bad = dq.filter((r) => r.failed_rows !== 0);
   console.log(`Nạp xong trong ${((Date.now() - t0) / 1000).toFixed(1)}s.`);
