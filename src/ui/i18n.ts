@@ -31,6 +31,11 @@ const ja = {
   pageSize: '表示件数',
   prevPage: '前のページ',
   nextPage: '次のページ',
+  userCount: 'ユーザー数',
+  top10: '上位10社',
+  axisX: '横軸',
+  axisY: '縦軸',
+  atRiskOnly: '「低」を除く',
 } as const;
 
 export type DictKey = keyof typeof ja;
@@ -57,6 +62,11 @@ const vi: Record<DictKey, string> = {
   pageSize: 'Số dòng mỗi trang',
   prevPage: 'Trang trước',
   nextPage: 'Trang sau',
+  userCount: 'Số người dùng',
+  top10: '10 công ty dẫn đầu',
+  axisX: 'Trục ngang',
+  axisY: 'Trục dọc',
+  atRiskOnly: 'Không tính mức "Thấp"',
 };
 
 export const DICT: Record<Lang, Record<DictKey, string>> = { ja, vi };

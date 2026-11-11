@@ -1,12 +1,15 @@
 // Một bảng của một gói. KHUNG: vỏ trang + trạng thái dữ liệu + ô số chính + bảng số.
-// Biểu đồ của từng bảng sẽ cắm vào chỗ `<section className="viz">` ở bước thiết kế.
-import { useSource, type Params } from '../data/api';
+// Biểu đồ của từng bảng cắm vào `<section className="viz">` (nạp động, xem CHARTS).
+import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 'react';
+import { useSource, type Params, type Row } from '../data/api';
 import { useColumnLabel, useLabel } from '../data/labels';
 import { arpa, deltaRate, seatUsage, stickiness } from '../data/metrics';
 import { numericRows, rollupByMonth } from '../data/rollup';
 import { boardOf, pick, type BoardKey, type PlanKey } from '../nav/catalog';
 import { count, monthLabel, pct, yen } from '../ui/format';
 import { useLangStore, useT } from '../ui/i18n';
+import { boardChunk } from '../ui/chunk';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { DataTable, StatTile, StateBox } from '../ui/parts';
 
 const TABLE_COLUMNS: Record<BoardKey, readonly string[]> = {
@@ -17,6 +20,20 @@ const TABLE_COLUMNS: Record<BoardKey, readonly string[]> = {
 };
 
 const num = (v: unknown) => (typeof v === 'number' ? v : null);
+
+// Biểu đồ nạp ĐỘNG (Recharts không được vào chunk đầu). Mỗi bảng một chunk; Recharts tách chunk chung.
+type ChartsProps = { rows: readonly Row[] };
+const CHARTS: Record<BoardKey, LazyExoticComponent<ComponentType<ChartsProps>>> = {
+  revenue: lazy(boardChunk('revenue', () => import('./charts/RevenueCharts'))),
+  users: lazy(boardChunk('users', () => import('./charts/UsersCharts'))),
+  'by-user': lazy(boardChunk('by-user', () => import('./charts/ByUserCharts'))),
+  'by-company': lazy(boardChunk('by-company', () => import('./charts/ByCompanyCharts'))),
+};
+
+function Charts({ board, rows }: { board: BoardKey; rows: readonly Row[] }) {
+  const C = CHARTS[board];
+  return <C rows={rows} />;
+}
 
 export function BoardScreen({ plan, board }: { plan: PlanKey; board: BoardKey }) {
   const t = useT();
@@ -56,7 +73,15 @@ export function BoardScreen({ plan, board }: { plan: PlanKey; board: BoardKey })
         </div>
       ) : null}
 
-      <section className="viz" aria-hidden="true" />
+      <section className="viz">
+        {shown.length > 0 ? (
+          <ErrorBoundary fallback={<StateBox phase="failed" />}>
+            <Suspense fallback={<div className="ui-charts-wait" />}>
+              <Charts board={board} rows={shown} />
+            </Suspense>
+          </ErrorBoundary>
+        ) : null}
+      </section>
       {shown.length > 0 ? <DataTable rows={monthly ? [...shown].reverse() : shown} columns={TABLE_COLUMNS[board]} /> : null}
     </section>
   );

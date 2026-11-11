@@ -1,5 +1,6 @@
 // Dự án "cảnh báo huỷ sớm": danh sách cần chăm sóc (ảnh chụp mới nhất) + độ chính xác của điểm
-// (band rủi ro có huỷ thật trong 90 ngày không) + chỗ cắm biểu đồ.
+// (band rủi ro có huỷ thật trong 90 ngày không) + biểu đồ (nạp động).
+import { lazy, Suspense } from 'react';
 import { useSource } from '../data/api';
 import { BAND_ORDER, precisionByBand, watchOrder } from '../data/churn';
 import { useLabel } from '../data/labels';
@@ -7,7 +8,12 @@ import { numericRows } from '../data/rollup';
 import { pick, PROJECT_CHURN } from '../nav/catalog';
 import { count, pct } from '../ui/format';
 import { useLangStore } from '../ui/i18n';
+import { boardChunk } from '../ui/chunk';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { DataTable, StatTile, StateBox } from '../ui/parts';
+
+// Biểu đồ nạp ĐỘNG (Recharts không được vào chunk đầu).
+const ChurnCharts = lazy(boardChunk('churn', () => import('./charts/ChurnCharts')));
 
 const WATCH_COLUMNS = ['company_name', 'plan_id', 'risk_band', 'risk_score', 'top_reason', 'mrr', 'activity_trend', 'seat_utilization', 'owner_name', 'last_intervention_outcome'];
 
@@ -42,7 +48,15 @@ export function ChurnScreen() {
         </div>
       ) : null}
 
-      <section className="viz" aria-hidden="true" />
+      <section className="viz">
+        {rows.length > 0 ? (
+          <ErrorBoundary fallback={<StateBox phase="failed" />}>
+            <Suspense fallback={<div className="ui-charts-wait" />}>
+              <ChurnCharts watch={rows} history={history.data?.rows ?? []} />
+            </Suspense>
+          </ErrorBoundary>
+        ) : null}
+      </section>
       {sorted.length > 0 ? <DataTable rows={sorted} columns={WATCH_COLUMNS} /> : null}
     </section>
   );

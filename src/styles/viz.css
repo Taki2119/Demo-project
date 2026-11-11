@@ -75,6 +75,87 @@
 .sort-ico { width: .7rem; height: .7rem; flex: none; opacity: .45; }
 th[aria-sort='ascending'] .sort-ico, th[aria-sort='descending'] .sort-ico { opacity: 1; color: var(--accent-text); }
 
+/* ── Thẻ biểu đồ (kit 01 §2, 03 §7) ── */
+.ui-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+  gap: var(--blk-in);
+  margin-bottom: var(--blk-out);
+}
+.ui-charts-wait { min-height: 15rem; margin-bottom: var(--blk-out); }
+.ui-card { min-width: 0; margin: 0; padding: 1rem 1.15rem .85rem; border-radius: 16px; display: flex; flex-direction: column; gap: .5rem; }
+.ui-card--wide { grid-column: 1 / -1; }
+.ui-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; }
+.ui-card-head h2 { margin: 0; font-size: 1.02rem; font-weight: 600; line-height: 1.35; }
+.ui-card-unit, .ui-card-note { font-size: .82rem; color: var(--ink-3); }
+.ui-card-note { margin: 0; }
+.ui-chart { height: 15rem; min-width: 0; }
+.ui-chart-dom { min-width: 0; }
+/* <svg> mặc định overflow:hidden — mở ra để quầng hover / pill ở mép không bị cắt. */
+.ui-chart .recharts-surface { overflow: visible; }
+.ui-chart .recharts-wrapper:focus, .ui-chart .recharts-surface:focus { outline: none; }
+
+/* Chú giải: chữ dùng token CHỮ; ô màu 11×11 bo 30% mô phỏng hình của mark. */
+.ui-legend { display: flex; flex-wrap: wrap; gap: .2rem .9rem; margin: 0; padding: 0; list-style: none; font-size: .82rem; color: var(--ink-2); }
+.ui-legend li { display: inline-flex; align-items: center; gap: .4rem; }
+.ui-swatch { display: inline-block; flex: none; width: 11px; height: 11px; border-radius: 30%; }
+.ui-swatch--bar { background-color: var(--sw); background-image: var(--mark-shade-grad); }
+.ui-swatch--dot { border-radius: 50%; background-color: var(--sw); box-shadow: inset 0 0 0 2px var(--node-ring); }
+.ui-swatch--line { border-radius: 0; background: linear-gradient(var(--sw), var(--sw)) center / 100% 2px no-repeat; }
+.ui-swatch--dash { border-radius: 0; background: repeating-linear-gradient(90deg, var(--sw) 0 4px, transparent 4px 6px) center / 100% 2px no-repeat; }
+
+/* Tooltip: thân ĐỤC (nằm trong thẻ kính — kính lồng kính chỉ nhoè được nền rỗng). */
+.ui-tip {
+  min-width: 9.5rem;
+  padding: .5rem .7rem;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--btn-ring), var(--glass-shadow);
+  font-size: .84rem;
+  color: var(--ink);
+}
+.ui-tip-title { font-weight: 600; margin-bottom: .2rem; }
+.ui-tip-row { display: flex; align-items: center; gap: .45rem; color: var(--ink-2); }
+.ui-tip-row b { margin-left: auto; padding-left: .9rem; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Thanh ngang DOM (HBars). Mép tự do (phải) bo BAR_R 6px; vùng hàng ≥ 24px. */
+.ui-hbars { list-style: none; margin: 0; padding: .25rem 0 .5rem; display: grid; gap: .5rem; }
+.ui-hbar {
+  display: grid;
+  grid-template-columns: var(--hb-label) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .65rem;
+  min-height: 24px;
+  font-size: .82rem;
+}
+.ui-hbar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
+.ui-hbar-track { position: relative; height: .75rem; }
+.ui-hbar-fill {
+  position: relative;
+  z-index: 0;
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 0 6px 6px 0;
+  background-color: var(--hb);
+  background-image: var(--mark-shade-grad-x);
+  transform-origin: left center;
+  animation: ui-hbar-grow var(--x-anim, 1000ms) ease-out backwards;
+  /* 2 lớp quầng ở trạng thái nghỉ, alpha 0 — không để `none` (Chrome nội suy ra quầng đen). */
+  box-shadow: 0 0 3px color-mix(in srgb, var(--hb) 0%, transparent), 0 0 10px color-mix(in srgb, var(--hb) 0%, transparent);
+  transition: box-shadow .2s ease, z-index 0s linear .2s;
+}
+.ui-hbar:hover .ui-hbar-fill {
+  z-index: 2;
+  box-shadow: 0 0 3px var(--hb), 0 0 10px color-mix(in srgb, var(--hb) 70%, transparent);
+}
+.ui-hbar-text { min-width: 3.4rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+.ui-hbar-text small { margin-left: .4rem; color: var(--ink-3); font-size: .75rem; }
+@keyframes ui-hbar-grow { from { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .ui-hbar-fill { animation: none; transition: none; }
+}
+
 /* ── Phân trang ── */
 .pager {
   display: flex;

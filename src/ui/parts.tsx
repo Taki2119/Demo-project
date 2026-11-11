@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import type { Phase, Row } from '../data/api';
 import { useColumnLabel, useColumnUnit, useLabel } from '../data/labels';
-import { count, NO_VALUE, pct, yen } from './format';
+import { count, monthLabel, NO_VALUE, pct, yen } from './format';
 import { LANGS, useLangStore, useT } from './i18n';
 import { SortHead } from './SortHead';
 import { TablePager } from './TablePager';
@@ -84,6 +84,8 @@ export function DataTable({ rows, columns }: { rows: readonly Row[]; columns: re
   const cell = (k: string, v: Row[string]) => {
     if (v == null) return NO_VALUE;
     if (typeof v === 'boolean') return v ? '✓' : '–';
+    // Cột tháng: nhãn tháng thay cho ngày đầu tháng ISO. Sort vẫn theo chuỗi ISO gốc.
+    if (k === 'month' && typeof v === 'string') return monthLabel(v, lang);
     const domain = CODE_DOMAIN[k];
     if (domain && typeof v === 'string') return label(domain, v);
     if (typeof v === 'number') {

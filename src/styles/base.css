@@ -24,8 +24,8 @@ a:focus-visible, button:focus-visible { border-radius: 6px; }
 
 /* ── Kính: backdrop-filter khai ở ĐÚNG MỘT chỗ (cssSource.test.ts khoá). ──
    Bề mặt dùng kính: .side (side panel) · .side-bar (thanh trên ≤640px) · .card .tile .table-wrap
-   (thẻ dữ liệu) · .state (NoData). Rule vặn núm đứng SAU rule này (cùng specificity ⇒ rule sau thắng). */
-.ui-glass, .side, .side-bar, .card, .tile, .table-wrap, .state {
+   .ui-card (thẻ dữ liệu) · .state (NoData). Rule vặn núm đứng SAU rule này (cùng specificity ⇒ rule sau thắng). */
+.ui-glass, .side, .side-bar, .card, .tile, .table-wrap, .ui-card, .state {
   --glass-blur: 16px;
   --glass-sat: 180%;
   background: var(--glass-fill);
@@ -35,7 +35,7 @@ a:focus-visible, button:focus-visible { border-radius: 6px; }
   box-shadow: inset 0 1px 0 var(--glass-spec), inset 0 -1px 0 var(--glass-spec-lo), var(--glass-shadow);
 }
 /* Thẻ dữ liệu: saturate thấp để nền không tranh màu với mark. */
-.card, .tile, .table-wrap { --glass-blur: 20px; --glass-sat: 120%; background: var(--glass-fill-viz); }
+.card, .tile, .table-wrap, .ui-card { --glass-blur: 20px; --glass-sat: 120%; background: var(--glass-fill-viz); }
 /* Side panel / NoData. */
 .side, .state { --glass-blur: 28px; --glass-sat: 150%; }
 /* Header. */

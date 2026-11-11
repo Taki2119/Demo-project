@@ -145,10 +145,11 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
      đọc danh sách cấm từ `PRIVACY_DENY`: thiếu khi `CI=true` ⇒ FAIL, ở máy ⇒ cảnh báo.
 
    Giai đoạn: (1) cài Recharts → (2) CSS + parts.tsx + prePaint → (3) viz + chart từng trang →
-   (4) cổng CI. **(1), (2) đã duyệt; (2b) ngăn kéo ≤640px — chờ duyệt.** Ảnh + công cụ chụp ở
-   NGOÀI repo: `Desktop/Claude Workspace/Demo-project-shots/` (`tools/shoot.mjs`, `fontcheck.mjs`).
-   Giai đoạn 3 làm thêm: dấu trừ U+2212 cho số âm (`¥-2,400` hiện sai) và nhãn tháng cho cột
-   `month` (đang hiện `2026-11-01`).
+   (4) cổng CI. **(1), (2), (2b) đã duyệt; (3) biểu đồ 5 trang + U+2212 + nhãn tháng — chờ duyệt.**
+   Ảnh + công cụ chụp ở NGOÀI repo: `Desktop/Claude Workspace/Demo-project-shots/`
+   (`tools/shoot.mjs`, `fontcheck.mjs`, `drawer-check.mjs`, `hover.mjs`, `table-check.mjs`).
+   Giai đoạn 4 (cổng CI) phải kiểm cả IMPORT TĨNH của chunk đầu + modulepreload, không chỉ grep
+   `activeTooltipIndex` trong `index-*.js` (xem bẫy ở §6).
 5. Vặt:
    - nền ambient lớp nét SVG (`ribbon.svg`), đèn theo con trỏ (`reveal.ts`), phóng ra lần lượt
      (`staggerIn.ts`) — cần sửa `App.tsx`, chưa làm (người dùng hoãn 2026-11-11);
@@ -197,6 +198,10 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
 - **Chụp ảnh 430px bằng `chrome --headless --screenshot --window-size=430,…` SAI trên Windows**:
   cửa sổ có bề rộng tối thiểu ~500px nên trang dựng ở ~500 rồi bị cắt ⇒ trông như cuộn ngang. Dùng
   puppeteer `setViewport` và in `innerWidth`/`scrollWidth`.
+- **`manualChunks: { recharts: ['recharts'] }` kéo cả React vào chunk `recharts-*.js`** ⇒ chunk đầu
+  `import` tĩnh chunk đó + `index.html` preload nó: Recharts (573 kB) nạp ngay trang đầu, mà
+  `grep -c activeTooltipIndex dist/assets/index-*.js` VẪN ra 0. Đã bỏ; để Rollup tự tách (chunk
+  Recharts mang tên một module của mình, vd. `nodes-*.js`). Nhận chunk Recharts theo NỘI DUNG.
 - **`--font-display` (Outfit) không có bộ chữ tiếng Việt** (Google Fonts chỉ có latin/latin-ext):
   đo thật thì ạ ữ ỗ rơi sang Segoe UI. Chỉ dùng cho logo + số; `i18n.test.ts` khoá logo không có
   chữ Latin có dấu.
