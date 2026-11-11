@@ -4,7 +4,8 @@
 > một phiên mới (kể cả phiên online đọc repo từ GitHub) làm tiếp mà không phải dò lại.
 > Chi tiết kỹ thuật nằm ở: [`docs/SCHEMA.md`](docs/SCHEMA.md) (dữ liệu, công thức, điểm rủi ro) ·
 > [`docs/API.md`](docs/API.md) (hợp đồng API) · [`server/README.md`](server/README.md) (deploy) ·
-> [`README.md`](README.md) (lệnh chạy). Đừng chép lại nội dung các file đó vào đây.
+> [`README.md`](README.md) (lệnh chạy) · [`docs/ui-kit/`](docs/ui-kit/README.md) (hệ thiết kế +
+> luật vẽ biểu đồ/bảng). Đừng chép lại nội dung các file đó vào đây.
 > Người dùng giao tiếp bằng **tiếng Việt**. Cập nhật mục §5 TRẠNG THÁI mỗi khi xong một bước.
 
 ## 1. Dự án là gì
@@ -26,11 +27,15 @@ Kiến trúc: **Supabase (Postgres)** `raw → mart` · **Vercel** (`server/`, p
 1. **Không dữ liệu thật, không dữ liệu của tổ chức nào.** Mọi tên công ty / người / email do bộ
    sinh tạo (`scripts/data/names.mjs` ghép mảnh, email chỉ ở `*.example.com`). Không có số mẫu
    nào trong bundle web: chưa có API thì mọi trang nói "chưa cấu hình".
-2. **Không chép code / thiết kế / icon / animation từ repo của công ty cũ** cho tới khi người
-   dùng xác nhận đã có **sự đồng ý của công ty**. Chưa có xác nhận đó. Lớp giao diện hiện tại
-   (`src/ui/parts.tsx` + `src/index.css`) là bản TẠM do Claude tự viết. Khi được phép, bước
-   "thiết kế" chỉ thay 2 file đó (giữ props + tên class), không dựng lại trang. Không ghi tên
-   công ty cũ vào repo này.
+2. **Code / thiết kế:. Nguồn duy nhất là bộ kit ở [`docs/ui-kit/`](docs/ui-kit/README.md); bắt đầu đọc
+   từ `README.md` (bản đồ file) và `00-HUONG-DAN-VSCODE.md`. Lớp giao diện hiện tại
+   (`src/ui/parts.tsx` + `src/index.css`) là bản TẠM do Claude tự viết. Bước "thiết kế" thay
+   2 file đó (giữ props + tên class) và thêm module mới dưới `src/ui/`; KHÔNG dựng lại trang,
+   KHÔNG chạy P2 (dựng khung) của kit vì khung đã có. Vẫn giữ:
+   - **không ghi tên công ty cũ vào repo này** — kể cả đường dẫn máy tới repo nguồn (đường dẫn
+     đó chứa tên). Đường dẫn chỉ nằm ở `.claude/settings.local.json` hoặc `/add-dir`, không commit;
+   - **không mang icon / logo / wordmark** của công ty cũ (kit không kèm cái nào);
+   - chép từ repo nguồn thì đổi tiền tố class `jw-` → `ui-`, và grep tên công ty trước khi commit (§7).
 3. **Tiền tệ: yên Nhật**, `numeric(14,0)`, số nguyên.
 4. **Song ngữ ja / vi**, nút đổi ở side panel. Hai nguồn chữ, đừng trộn:
    - chữ GIAO DIỆN → `src/ui/i18n.ts` (test khoá 2 bộ key bằng nhau);
@@ -124,8 +129,9 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
    - người xem không có CLI thì AI không dùng được. Có thể thêm engine dự phòng Claude API qua
      Vercel (cần API key ở env Vercel), nhưng phải hỏi người dùng trước.
 3. **Biểu đồ** cho từng bảng: chỗ cắm là `<section className="viz">` trong BoardScreen / ChurnScreen.
-   Thư viện chưa chọn (bản gốc dùng Recharts 2.x); hỏi người dùng nếu cần.
-4. **Thiết kế:** chỉ khi người dùng xác nhận đã có sự đồng ý của công ty (§2.2).
+   Thư viện: **Recharts 2.x, nạp động** theo `docs/ui-kit/03-CHARTS-TABLES.md`.
+4. **Thiết kế:** đã được phép (§2.2). Làm theo `docs/ui-kit/` trên nhánh `feat/ui-kit`; repo còn
+   thiếu Tailwind v4 + Recharts so với stack của kit. Lập kế hoạch, chờ người dùng duyệt rồi mới sửa.
 5. Vặt: ngăn kéo side panel trên mobile (hiện panel xếp chồng trên nội dung); tên gói hiện MÃ
    khi API chưa trả nhãn (đúng thiết kế, nhưng có thể cân nhắc).
 
