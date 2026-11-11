@@ -4,13 +4,13 @@ import { parseHash, toHash } from './route';
 
 describe('route', () => {
   it('điểm bất động: toHash(parseHash(h)) === h cho mọi trang hợp lệ', () => {
-    const hashes = ['#/', '#/project/churn', ...PLAN_KEYS.flatMap((p) => BOARD_KEYS.map((b) => `#/plans/${p}/${b}`))];
+    const hashes = ['#/', '#/project/churn', '#/about', ...PLAN_KEYS.flatMap((p) => BOARD_KEYS.map((b) => `#/plans/${p}/${b}`))];
     for (const h of hashes) expect(toHash(parseHash(h))).toBe(h);
-    expect(hashes).toHaveLength(2 + 16);
+    expect(hashes).toHaveLength(3 + 16);
   });
 
   it('hash lạ hoặc thiếu đoạn ⇒ Home', () => {
-    for (const h of ['', '#', '#/nope', '#/plans/gold/revenue', '#/plans/all', '#/plans/all/revenue/extra', '#/project']) {
+    for (const h of ['', '#', '#/nope', '#/plans/gold/revenue', '#/plans/all', '#/plans/all/revenue/extra', '#/project', '#/about/x']) {
       expect(parseHash(h)).toEqual({ kind: 'home' });
     }
   });

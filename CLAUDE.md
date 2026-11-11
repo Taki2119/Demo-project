@@ -4,7 +4,8 @@
 > một phiên mới (kể cả phiên online đọc repo từ GitHub) làm tiếp mà không phải dò lại.
 > Chi tiết kỹ thuật nằm ở: [`docs/SCHEMA.md`](docs/SCHEMA.md) (dữ liệu, công thức, điểm rủi ro) ·
 > [`docs/API.md`](docs/API.md) (hợp đồng API) · [`server/README.md`](server/README.md) (deploy) ·
-> [`README.md`](README.md) (lệnh chạy). Đừng chép lại nội dung các file đó vào đây.
+> [`README.md`](README.md) (lệnh chạy) · [`docs/ui-kit/`](docs/ui-kit/README.md) (hệ thiết kế +
+> luật vẽ biểu đồ/bảng). Đừng chép lại nội dung các file đó vào đây.
 > Người dùng giao tiếp bằng **tiếng Việt**. Cập nhật mục §5 TRẠNG THÁI mỗi khi xong một bước.
 
 ## 1. Dự án là gì
@@ -26,11 +27,17 @@ Kiến trúc: **Supabase (Postgres)** `raw → mart` · **Vercel** (`server/`, p
 1. **Không dữ liệu thật, không dữ liệu của tổ chức nào.** Mọi tên công ty / người / email do bộ
    sinh tạo (`scripts/data/names.mjs` ghép mảnh, email chỉ ở `*.example.com`). Không có số mẫu
    nào trong bundle web: chưa có API thì mọi trang nói "chưa cấu hình".
-2. **Không chép code / thiết kế / icon / animation từ repo của công ty cũ** cho tới khi người
-   dùng xác nhận đã có **sự đồng ý của công ty**. Chưa có xác nhận đó. Lớp giao diện hiện tại
-   (`src/ui/parts.tsx` + `src/index.css`) là bản TẠM do Claude tự viết. Khi được phép, bước
-   "thiết kế" chỉ thay 2 file đó (giữ props + tên class), không dựng lại trang. Không ghi tên
-   công ty cũ vào repo này.
+2. **Code / thiết kế:. Nguồn duy nhất là bộ kit ở [`docs/ui-kit/`](docs/ui-kit/README.md); bắt đầu đọc
+   từ `README.md` (bản đồ file) và `00-HUONG-DAN-VSCODE.md`. Lớp giao diện hiện tại
+   (`src/ui/parts.tsx` + `src/index.css`) là bản TẠM do Claude tự viết. Bước "thiết kế" thay
+   2 file đó (giữ props + tên class) và thêm module mới dưới `src/ui/`. Ngoại lệ (người dùng cho
+   phép 2026-11-11): được sửa `src/screens/Sidebar.tsx` CHỈ để (a) làm ngăn kéo ≤640px và (b) thêm ĐÚNG
+   1 link "Giới thiệu" (`#/about`) ở cuối danh sách (cho phép 2026-11-11, giai đoạn 5); giữ props. KHÔNG dựng lại trang,
+   KHÔNG chạy P2 (dựng khung) của kit vì khung đã có. Vẫn giữ:
+   - **không ghi tên công ty cũ vào repo này** — kể cả đường dẫn máy tới repo nguồn (đường dẫn
+     đó chứa tên). Đường dẫn chỉ nằm ở `.claude/settings.local.json` hoặc `/add-dir`, không commit;
+   - **không mang icon / logo / wordmark** của công ty thật (kit không kèm cái nào);
+   - chép từ repo nguồn thì đổi tiền tố class `jw-` → `ui-`, và grep tên công ty trước khi commit (§7).
 3. **Tiền tệ: yên Nhật**, `numeric(14,0)`, số nguyên.
 4. **Song ngữ ja / vi**, nút đổi ở side panel. Hai nguồn chữ, đừng trộn:
    - chữ GIAO DIỆN → `src/ui/i18n.ts` (test khoá 2 bộ key bằng nhau);
@@ -60,17 +67,20 @@ Kiến trúc: **Supabase (Postgres)** `raw → mart` · **Vercel** (`server/`, p
 | `supabase/tests/` | `schema.test.mjs` (kịch bản tính tay) · `generate.test.mjs` (bộ sinh → DB) |
 | `scripts/data/` | bộ sinh có seed (`generate.mjs` thuần) · `generate-cli.mjs` → `data/out/*.csv` · `load.mjs` (COPY vào Supabase) |
 | `scripts/dev/` | `demo-db.mjs` (PGlite + migration + dữ liệu) · `api-dev.mjs` (API cục bộ) |
+| `scripts/ci/` | cổng soi `dist/`: `bundle-checks.mjs` (luật, hàm thuần) · `check-bundle.mjs` (đọc `dist/` + env) · test |
 | `server/` | project Vercel: `api/board-data.js` · `api/health.js` · `lib/{sources,handler,db}.js` · `test/` |
 | `src/nav/` | `catalog.ts` (MỘT nguồn cho cây trang) · `route.ts` (hash router) |
-| `src/data/` | `api.ts` (đường đọc duy nhất + cache) · `labels.ts` · `metrics.ts` · `rollup.ts` · `churn.ts` |
-| `src/screens/` | Sidebar · Home · Board (chung cho 4×4) · Churn |
-| `.github/workflows/deploy.yml` | typecheck → test → db:test → api:test → build → deploy Pages (chỉ `main`) |
+| `src/data/` | `api.ts` (đường đọc duy nhất + cache) · `labels.ts` · `metrics.ts` · `rollup.ts` · `churn.ts` · `glossary.ts` (giải thích chỉ số; tên TRỎ tới nhãn DB) · `freshness.ts` |
+| `src/screens/` | Sidebar · Home · Board (chung cho 4×4) · Churn · About (`#/about`) |
+| `.github/workflows/deploy.yml` | MỘT job `checks` cho cả PR lẫn `main`: typecheck → test → db:test → api:test → check:test → build → check:bundle → deploy Pages (chỉ `main`) |
 
 ## 4. Lệnh + con số đã đo (2026-11-11)
 
 ```bash
 npm install
-npm run typecheck && npm test && npm run build   # web: 15 test
+npm run typecheck && npm test && npm run build   # web: 14 file / 74 test
+npm run check:test  # 10 test (luật cổng, bundle giả)
+npm run check:bundle  # sau build: recharts · css · privacy · env (PRIVACY_DENY thiếu: máy ⇒ cảnh báo, CI=true ⇒ FAIL)
 npm run db:test     # 16 test, ~90s (PGlite)
 npm run api:test    # 7 test, ~10s, chạy bằng role analytics_reader
 npm run data:generate                            # 261 công ty · 5.103 user · ~835k dòng hoạt động · ~26 MB CSV
@@ -124,10 +134,44 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
    - người xem không có CLI thì AI không dùng được. Có thể thêm engine dự phòng Claude API qua
      Vercel (cần API key ở env Vercel), nhưng phải hỏi người dùng trước.
 3. **Biểu đồ** cho từng bảng: chỗ cắm là `<section className="viz">` trong BoardScreen / ChurnScreen.
-   Thư viện chưa chọn (bản gốc dùng Recharts 2.x); hỏi người dùng nếu cần.
-4. **Thiết kế:** chỉ khi người dùng xác nhận đã có sự đồng ý của công ty (§2.2).
-5. Vặt: ngăn kéo side panel trên mobile (hiện panel xếp chồng trên nội dung); tên gói hiện MÃ
-   khi API chưa trả nhãn (đúng thiết kế, nhưng có thể cân nhắc).
+   Thư viện: **Recharts 2.x, nạp động** theo `docs/ui-kit/03-CHARTS-TABLES.md`. Làm chung với mục 4.
+4. **Thiết kế + biểu đồ (gộp 3 vào đây):** đã được phép (§2.2), kế hoạch ĐÃ DUYỆT 2026-11-11, làm
+   trên nhánh `feat/ui-kit`, dừng cho người dùng xem sau mỗi giai đoạn (kèm ảnh 1440/430 × sáng/tối).
+   Quyết định đã chốt:
+   - **Cách 2**: KHÔNG đọc repo nguồn, dựng lại từ đặc tả `docs/ui-kit/`. Hằng số lấy đúng số kit
+     ghi; chỗ kit không ghi thì nói ra, không tự đặt rồi coi là luật;
+   - chỉ bộ màu **Ember**, sáng/tối theo hệ thống (`data-theme` qua prePaint), chưa có nút đổi;
+   - Google Fonts như kit; kiểm chữ Việt có dấu không rơi sang font dự phòng;
+   - **không cài Tailwind**; cài Recharts 2.x;
+   - giữ props + tên class của `parts.tsx` / `index.css`; CSS chia vào `src/styles/*`;
+   - MRR 1 chuỗi = biểu đồ đường 1 chuỗi tự viết, đúng MỘT pill ở mốc tốt nhất (không dùng MultiLines);
+   - cổng mới thêm vào `deploy.yml` (không thay file): `npm run check:bundle`. `bundle-privacy`
+     đọc danh sách cấm từ `PRIVACY_DENY`: thiếu khi `CI=true` ⇒ FAIL, ở máy ⇒ cảnh báo.
+
+   Giai đoạn: (1) cài Recharts → (2) CSS + parts.tsx + prePaint → (3) viz + chart từng trang →
+   (4) cổng CI. **(1), (2), (2b), (3) đã duyệt; (3b) tooltip trị tuyệt đối + tháng chưa trọn và (4) cổng CI — chờ duyệt.**
+   Việc của người dùng sau (4): GitHub → Settings → Secrets → Actions → **`PRIVACY_DENY`** (tên cấm,
+   phẩy / xuống dòng). Thiếu secret này thì job `checks` ĐỎ ở `check:bundle`.
+   Tháng chưa trọn (trang Theo người dùng): ngày X = `updatedAt` mà API trả kèm mỗi nguồn
+   (= `mart.as_of()`), KHÔNG lấy đồng hồ máy người xem. Nguồn đã có ngày này nên không cần dự phòng
+   "hôm nay"; `updatedAt` thiếu ⇒ không ghi gì (`monthProgress` trả null).
+   Ảnh + công cụ chụp ở NGOÀI repo: `Desktop/Claude Workspace/Demo-project-shots/`
+   (`tools/shoot.mjs`, `fontcheck.mjs`, `drawer-check.mjs`, `hover.mjs`, `table-check.mjs`).
+   Cổng Recharts (`bundle-recharts`) đi index.html → chunk đầu → bao đóng IMPORT TĨNH + mọi
+   modulepreload, nhận chunk Recharts theo NỘI DUNG (`RECHARTS_MARKERS`); đã thử lại ca manualChunks ⇒ đỏ.
+5. **Giai đoạn 5 (nhánh `feat/about-glossary`, tách từ `feat/ui-kit`) — chờ duyệt:** glossary + ⓘ
+   (`src/ui/InfoTip.tsx`, popover portal ra body, kính dùng chung rule duy nhất) · trang Giới thiệu ·
+   chip "có số tới ngày …" (từ `updatedAt`; trang nhiều nguồn ⇒ ngày CŨ NHẤT, `oldestDate`) · nhãn
+   "Dữ liệu mẫu" trong luồng. `glossary.test.ts` khoá: đủ ja/vi, nhãn trỏ tới có thật trong
+   migration nhãn, mọi `StatTile`/`ChartCard` ở `src/screens/**` có `info=`.
+6. **TODO riêng — `loaded_at` (KHÔNG làm ở `feat/about-glossary`):** chip mới chỉ ghi "có số tới ngày"
+   vì DB không lưu GIỜ nạp. Muốn có "cập nhật lúc …": `scripts/data/load.mjs` ghi `loaded_at` vào
+   `raw.dataset_meta` → `mart` đưa ra (hàm SECURITY DEFINER như `as_of`) → `server/` trả kèm
+   `updatedAt`; người dùng nạp lại Supabase + deploy lại Vercel.
+7. Vặt:
+   - nền ambient lớp nét SVG (`ribbon.svg`), đèn theo con trỏ (`reveal.ts`), phóng ra lần lượt
+     (`staggerIn.ts`) — cần sửa `App.tsx`, chưa làm (người dùng hoãn 2026-11-11);
+   - tên gói hiện MÃ khi API chưa trả nhãn (đúng thiết kế, nhưng có thể cân nhắc).
 
 ## 6. BẪY đã gặp — đừng dẫm lại
 
@@ -165,6 +209,23 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
 - **Hobby plan Vercel:** chỉ dùng domain production (`<tên>.vercel.app`). URL của từng deployment
   bị Vercel Authentication chặn. Region đặt `hnd1` trong `server/vercel.json`, phải cùng vùng
   Supabase.
+- **API cục bộ chặn Origin lạ (`403 forbidden_origin`)**: chỉ nhận `localhost:5180` / `5173`
+  (`server/lib/handler.js`). Chạy `vite preview` để chụp ảnh thì dùng `--port 5180` và build với
+  `VITE_API_URL=http://localhost:5180`, vào thư mục NGOÀI `dist/`. curl không gửi Origin nên vẫn qua
+  — đừng lấy curl làm bằng chứng trình duyệt gọi được.
+- **Chụp ảnh 430px bằng `chrome --headless --screenshot --window-size=430,…` SAI trên Windows**:
+  cửa sổ có bề rộng tối thiểu ~500px nên trang dựng ở ~500 rồi bị cắt ⇒ trông như cuộn ngang. Dùng
+  puppeteer `setViewport` và in `innerWidth`/`scrollWidth`.
+- **`manualChunks: { recharts: ['recharts'] }` kéo cả React vào chunk `recharts-*.js`** ⇒ chunk đầu
+  `import` tĩnh chunk đó + `index.html` preload nó: Recharts (573 kB) nạp ngay trang đầu, mà
+  `grep -c activeTooltipIndex dist/assets/index-*.js` VẪN ra 0. Đã bỏ; để Rollup tự tách (chunk
+  Recharts mang tên một module của mình, vd. `nodes-*.js`). Nhận chunk Recharts theo NỘI DUNG.
+- **`--font-display` (Outfit) không có bộ chữ tiếng Việt** (Google Fonts chỉ có latin/latin-ext):
+  đo thật thì ạ ữ ỗ rơi sang Segoe UI. Chỉ dùng cho logo + số; `i18n.test.ts` khoá logo không có
+  chữ Latin có dấu.
+- **Sàn tương phản (`markContrast.test.ts`):** sàn "nền kính tệ nhất" (#e8dbd0 / #543a25) CHỈ áp cho
+  MARK (≥2:1). CHỮ đo ≥4.5:1 trên nền THẬT của chữ đó (`--surface`, `--pill-flat`…) — `--ink-3`
+  trên nền tệ nhất chỉ ~3,5:1, đó không phải lỗi (người dùng chốt 2026-11-11).
 
 ## 7. Quy trình
 
@@ -172,5 +233,5 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
   kết thúc bằng dòng `Co-Authored-By` theo hướng dẫn của phiên.
 - Trước khi báo "xong": chạy `npm run typecheck`, `npm test`, `npm run build`, và `db:test` /
   `api:test` nếu đụng SQL hoặc server. Báo CON SỐ test, không chỉ chữ "pass".
-- Quét trước khi push: không có chuỗi tên công ty cũ, không có email/số điện thoại thật, không
+- Quét trước khi push: không có chuỗi tên công ty thật, không có email/số điện thoại thật, không
   có `.env`.

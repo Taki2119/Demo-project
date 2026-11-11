@@ -1,0 +1,179 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   TOKEN — bộ màu Ember (mặc định của kit: :root + [data-theme='dark']).
+   Nguồn số: docs/ui-kit/02-DESIGN-SYSTEM.md §2. Số nào kit KHÔNG ghi thì đánh dấu
+   "(tự chọn)" — đó là lựa chọn tạm, không phải luật của kit.
+
+   Thang chữ (kit §2): H1 1.62rem · H2 thẻ 1.02rem · phụ đề .82rem · số KPI 1.9rem ·
+   tooltip .84rem · bảng .86rem.
+   Bán kính (kit §2): nút 999px · thẻ 16 · panel 20 · menu 16 · dialog 14 · ô nhập 8.
+
+   Luật 3 của kit: khối sáng và khối tối khai CÙNG một tập token — cssSource.test.ts khoá.
+   `data-theme` do script prePaint trong index.html ghi (luôn là giá trị đã giải: light | dark).
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Token chung — không đổi theo theme. */
+:root {
+  --font-text: 'Space Grotesk', 'Zen Kaku Gothic New', 'Noto Sans JP', system-ui, sans-serif;
+  --font-display: 'Outfit', 'Zen Kaku Gothic New', system-ui, sans-serif;
+
+  --field-fill: color-mix(in srgb, var(--surface) 62%, transparent);
+  --field-line: color-mix(in srgb, var(--ink) 16%, transparent);
+  --toggle-track: color-mix(in srgb, var(--ink) 6.5%, transparent);
+  --scroll-thumb: color-mix(in srgb, var(--ink) 26%, transparent);
+  --scroll-thumb-hi: color-mix(in srgb, var(--ink) 42%, transparent);
+  --btn-ring: color-mix(in srgb, var(--ink) 11%, transparent);
+  --btn-danger: #dc2626;
+  --btn-danger-hover: #c81e1e;
+
+  /* Nền ambient (kit §7 nêu --bloom-1/2/3 nhưng không ghi giá trị) — (tự chọn). */
+  --bloom-1: color-mix(in srgb, var(--accent) 20%, transparent);
+  --bloom-2: color-mix(in srgb, var(--net-line) 12%, transparent);
+  --bloom-3: color-mix(in srgb, var(--ink-3) 14%, transparent);
+
+  /* Nhịp menu (kit §2). Ngăn kéo dùng lại nhịp này — kit không ghi nhịp riêng cho ngăn kéo. */
+  --menu-open-dur: .32s;
+  --menu-open-ease: cubic-bezier(.25, .46, .45, .94);
+  --menu-close-dur: .2s;
+  --menu-close-ease: cubic-bezier(.4, 0, 1, 1);
+
+  --screen-pad: 1.25rem;
+  --sidenav-w: 16.25rem;
+  --blk-in: 12px;
+  --blk-out: 24px;
+}
+
+/* Ember sáng. */
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  --ground: #e7e3db;
+  --surface: #fdfcfa;
+  --surface-2: #dcd6cb;
+  --line: #cdc5b8;
+  --line-soft: #ded7cc;
+  --ink: #1c1917;
+  --ink-2: #4d453f;
+  --ink-3: #7c716a;
+  --accent: #c2571a;
+  --accent-text: #9c400c;
+  --accent-hover: #a44712;
+  --accent-fill: #bd5417;
+  --on-accent: #fff;
+  --net-line: #a8480f;
+  --ok: #15803d;
+  --warn: #b45309;
+  --crit: #b91c1c;
+
+  --glass-fill: rgba(255, 255, 255, .32);
+  --glass-fill-panel: rgba(253, 252, 250, .55);
+  /* Kit ghi "α .42" — màu gốc lấy theo --surface như --glass-fill-panel (suy ra). */
+  --glass-fill-viz: rgba(253, 252, 250, .42);
+  /* Kit ghi edge .78 · spec .95 · spec-lo .22 — màu gốc trắng (suy ra từ --glass-fill). */
+  --glass-edge: rgba(255, 255, 255, .78);
+  --glass-spec: rgba(255, 255, 255, .95);
+  --glass-spec-lo: rgba(255, 255, 255, .22);
+  --glass-shadow: 0 10px 34px -12px rgba(28, 25, 23, .30);
+
+  /* Kit dùng --focus nhưng không ghi giá trị — (tự chọn) = --accent (lớp tương tác). */
+  --focus: var(--accent);
+  /* Hover nút, theme sáng: "bóng đổ xuống, không quầng" — số (tự chọn). */
+  --btn-hover-shadow: 0 6px 14px -6px rgba(28, 25, 23, .35);
+
+  /* ── Mark dữ liệu (kit 03 §5). markContrast.test.ts đọc hex ở đây. ── */
+  --series-1: #a49c26;
+  --series-2: #8a6e4d;
+  --series-3: #892d0a;
+  --series-4: #741337;
+  --series-5: #a15598;
+  --series-6: #472678;
+  /* Thứ bậc (tự chọn — kit không ghi số): ord-1 đậm nhất. */
+  --ord-1: #3d2f22;
+  --ord-2: #5c4733;
+  --ord-3: #7a6046;
+  --ord-4: #9a7b5a;
+  --ord-5: #b4956f;
+  /* Cột phân cực (tự chọn — kit nêu tên --ok-fill/--crit-fill, không ghi số; -2 là lớp thứ hai). */
+  --ok-fill: #15803d;
+  --ok-fill-2: #5a9e6f;
+  --crit-fill: #b91c1c;
+  --crit-fill-2: #d9675a;
+  /* Đường đơn + chấm nóng của nó, thanh ngang một màu (tự chọn). */
+  --line-solo: #9a4a17;
+  --line-solo-hot: #5c2a0b;
+  --bar-fill: #8a6e4d;
+  --node-ring: #f8f6f1;
+  --pill-flat: #3f3733;
+  --on-pill-flat: #faf7f3;
+  --grid: #e6e1d8;
+  /* Lớp phủ gradient của cột: sáng = tối ở chân (0 → .2). */
+  --mark-shade: #000;
+  --mark-shade-top: 0;
+  --mark-shade-bot: .2;
+  --mark-shade-grad: linear-gradient(180deg, rgb(0 0 0 / 0), rgb(0 0 0 / .2));
+  --mark-shade-grad-x: linear-gradient(90deg, rgb(0 0 0 / .2), rgb(0 0 0 / 0));
+}
+
+/* Ember tối. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ground: #252220;
+  --surface: #302b28;
+  --surface-2: #3a3430;
+  --line: #453e39;
+  --line-soft: #372f2b;
+  --ink: #ede8e4;
+  --ink-2: #c3b8b0;
+  --ink-3: #a2958c;
+  --accent: #ff943d;
+  --accent-text: #ffb370;
+  --accent-hover: #ffab3d;
+  --accent-fill: #ff9a1f;
+  --on-accent: #2a1c0e;
+  --net-line: #ffb370;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --crit: #fca5a5;
+
+  --glass-fill: rgba(255, 255, 255, .10);
+  --glass-fill-panel: rgba(48, 43, 40, .48);
+  --glass-fill-viz: rgba(48, 43, 40, .28);
+  --glass-edge: rgba(255, 255, 255, .20);
+  --glass-spec: rgba(255, 255, 255, .34);
+  --glass-spec-lo: rgba(255, 255, 255, .07);
+  /* Kit chỉ ghi màu rgba(0,0,0,.6); hình học giữ như theme sáng (suy ra). */
+  --glass-shadow: 0 10px 34px -12px rgba(0, 0, 0, .6);
+
+  --focus: var(--accent);
+  /* Hover nút, theme tối: "nhấc 1px + quầng 18px --accent-fill" — độ đậm 45% (tự chọn). */
+  --btn-hover-shadow: 0 0 18px color-mix(in srgb, var(--accent-fill) 45%, transparent);
+
+  --series-1: #fcf264;
+  --series-2: #cfab7f;
+  --series-3: #da623b;
+  --series-4: #c1466c;
+  --series-5: #f08de4;
+  --series-6: #845dc8;
+  /* Theme tối: ord-1 SÁNG nhất (nổi nhất trên nền tối). */
+  --ord-1: #f3dcc0;
+  --ord-2: #dcbc97;
+  --ord-3: #c49d72;
+  --ord-4: #a98058;
+  --ord-5: #8c6646;
+  --ok-fill: #4ade80;
+  --ok-fill-2: #2f9e5a;
+  --crit-fill: #f87171;
+  --crit-fill-2: #c2504a;
+  --line-solo: #f0a35e;
+  --line-solo-hot: #ffd2a8;
+  --bar-fill: #cfab7f;
+  --node-ring: #453427;
+  --pill-flat: #e8ded4;
+  --on-pill-flat: #2b2521;
+  --grid: #3a332f;
+  /* Tối = sáng ở đỉnh (.2 → 0). */
+  --mark-shade: #fff;
+  --mark-shade-top: .2;
+  --mark-shade-bot: 0;
+  --mark-shade-grad: linear-gradient(180deg, rgb(255 255 255 / .2), rgb(255 255 255 / 0));
+  --mark-shade-grad-x: linear-gradient(90deg, rgb(255 255 255 / 0), rgb(255 255 255 / .2));
+}

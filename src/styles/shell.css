@@ -1,0 +1,145 @@
+/* Vỏ app (kit 02 §4). Giữ tên class cũ: .app .side .main .page.
+   .main là ô cuộn DUY NHẤT; document không cuộn. */
+
+.app {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+  position: relative;
+}
+/* Đường lui riêng — KHÔNG viết `height:100vh; height:100dvh` liền nhau (minifier gộp mất). */
+@supports not (height: 100dvh) {
+  .app { height: 100vh; }
+}
+
+.side {
+  flex: none;
+  width: var(--sidenav-w);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 1rem .75rem;
+  overflow-y: auto;
+  border-width: 0 1px 0 0;
+  border-radius: 0;
+}
+.brand { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; padding: 4px 10px 12px; }
+.side a {
+  display: block;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color .16s ease, color .16s ease;
+}
+.side a:hover { background: var(--toggle-track); }
+.side a[aria-current='page'] {
+  background: color-mix(in srgb, var(--accent-fill) 14%, transparent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.side details > a { padding-left: 22px; }
+.side summary { cursor: pointer; padding: 6px 10px; color: var(--ink-2); border-radius: 8px; }
+.side summary:hover { background: var(--toggle-track); }
+.side-section { margin-top: 14px; padding: 4px 10px; font-size: .72rem; font-weight: 600; letter-spacing: .03em; color: var(--ink-3); }
+.side-foot { margin-top: auto; padding-top: 16px; }
+
+.main {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+}
+/* max-width đặt ở màn, KHÔNG đặt ở ô cuộn (thanh cuộn sẽ mọc giữa màn hình). */
+.page { max-width: 84rem; margin: 0 auto; padding: 1.5rem var(--screen-pad) 3rem; }
+.page h1 { margin: 0 0 6px; font-size: 1.62rem; line-height: 1.25; }
+.crumb { margin: 0 0 4px; color: var(--ink-3); font-size: .82rem; }
+.lead { margin: 0 0 var(--blk-out); color: var(--ink-2); font-size: .82rem; }
+
+/* ── ≤640px (breakpoint của kit): side panel thành NGĂN KÉO ──
+   Thanh trên (.side-bar, z 10) có nút mở · lớp phủ (.side-scrim) z 39 · ngăn kéo z 40, rộng
+   min(--sidenav-w, 100vw − 2.5rem). Kit có dải icon (rail) — repo không có bộ icon nên dùng
+   thanh trên thay rail. Mở ⇒ Sidebar.tsx đặt [data-drawer-open] trên <html> + .main inert. */
+.side-bar, .side-scrim { display: none; }
+@media (max-width: 640px) {
+  .app { flex-direction: column; }
+  .side-bar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: .6rem;
+    padding: .5rem var(--screen-pad);
+    position: relative;
+    z-index: 10;
+    border-width: 0 0 1px 0;
+    border-radius: 0;
+  }
+  .side-bar .brand { padding: 0; }
+  .side {
+    position: fixed;
+    z-index: 40;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(var(--sidenav-w), 100vw - 2.5rem);
+    overscroll-behavior: contain;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform var(--menu-close-dur) var(--menu-close-ease), visibility 0s linear var(--menu-close-dur);
+  }
+  .side[data-open='true'] {
+    transform: none;
+    visibility: visible;
+    transition: transform var(--menu-open-dur) var(--menu-open-ease), visibility 0s;
+  }
+  .side-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgba(12, 10, 8, .28);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--menu-close-dur) ease, visibility 0s linear var(--menu-close-dur);
+  }
+  .side-scrim[data-open='true'] {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity var(--menu-open-dur) ease, visibility 0s;
+  }
+  /* Ngăn kéo mở ⇒ nội dung phía sau không cuộn. */
+  :root[data-drawer-open] .main { overflow: hidden; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .side, .side[data-open='true'], .side-scrim, .side-scrim[data-open='true'] { transition: none; }
+}
+
+/* ── Trang Giới thiệu ── */
+.about-block { margin: 0 0 var(--blk-in); padding: 1rem 1.15rem; border-radius: 16px; }
+.about-block h2 { margin: 0 0 8px; font-size: 1rem; }
+.about-block h3 { margin: 14px 0 4px; font-size: .9rem; }
+.about-block p, .about-block li, .about-block dd { font-size: .86rem; line-height: 1.6; }
+.about-block p { margin: 0; }
+.about-block ul { margin: 0; padding-left: 1.2em; }
+.about-pages { margin: 0; display: grid; gap: 8px; }
+.about-pages dt { font-weight: 600; font-size: .86rem; }
+.about-pages dd { margin: 0; color: var(--ink-2); }
+.about-read { list-style: none; padding: 0 !important; display: grid; gap: 6px; }
+.about-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: 0; }
+.about-dot + .about-dot { margin-right: 8px; }
+.gloss-wrap { overflow-x: auto; }
+.gloss { width: 100%; border-collapse: collapse; font-size: .8rem; line-height: 1.5; }
+.gloss th, .gloss td { text-align: left; vertical-align: top; padding: 8px 10px 8px 0; border-bottom: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); }
+.gloss thead th { color: var(--ink-3); font-weight: 600; white-space: nowrap; }
+.gloss tbody th { font-weight: 600; min-width: 8rem; }
+.gloss code { font-size: .74rem; overflow-wrap: anywhere; }
+/* ≤640px: mỗi chỉ số thành một khối dọc (không cuộn ngang); nhãn cột lấy từ data-h. */
+@media (max-width: 640px) {
+  .gloss thead { display: none; }
+  .gloss, .gloss tbody, .gloss tr, .gloss th, .gloss td { display: block; width: auto; }
+  .gloss tr { padding: 10px 0; border-bottom: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); }
+  .gloss th, .gloss td { border: 0; padding: 2px 0; }
+  .gloss td::before { content: attr(data-h); display: block; color: var(--ink-3); font-size: .72rem; }
+}

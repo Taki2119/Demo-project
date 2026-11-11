@@ -14,12 +14,15 @@
     "data:generate": "node scripts/data/generate-cli.mjs",
     "data:load": "node --env-file-if-exists=.env scripts/data/load.mjs",
     "api:test": "node --test server/test/*.test.mjs",
-    "api:dev": "node --env-file-if-exists=.env scripts/dev/api-dev.mjs"
+    "api:dev": "node --env-file-if-exists=.env scripts/dev/api-dev.mjs",
+    "check:test": "node --test scripts/ci/*.test.mjs",
+    "check:bundle": "node scripts/ci/check-bundle.mjs"
   },
   "dependencies": {
     "postgres": "^3.4.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "recharts": "^2.15.4",
     "zustand": "^5.0.2"
   },
   "devDependencies": {

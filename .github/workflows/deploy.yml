@@ -18,6 +18,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # MỘT job cổng cho cả PR lẫn main ⇒ bộ cổng + thứ tự giống hệt nhau theo cấu tạo (kit 04: PR và
+  # deploy phải cùng bộ cổng, cùng thứ tự). Thêm cổng thì thêm Ở ĐÂY, đừng tách job / file riêng.
+  # Secret PRIVACY_DENY (danh sách tên cấm, phẩy hoặc xuống dòng): thiếu ⇒ check:bundle FAIL.
   checks:
     runs-on: ubuntu-latest
     steps:
@@ -31,9 +34,14 @@ jobs:
       - run: npm test
       - run: npm run db:test
       - run: npm run api:test
+      - run: npm run check:test
       - run: npm run build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
+      - run: npm run check:bundle
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          PRIVACY_DENY: ${{ secrets.PRIVACY_DENY }}
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:

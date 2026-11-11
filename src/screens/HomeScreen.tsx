@@ -2,13 +2,14 @@
 // Thẻ chỉ bày ĐÚNG con số chính của bảng; chưa có dữ liệu thì bày chip "đang chuẩn bị" —
 // không có số mẫu nào.
 import { apiConfigured, useSource } from '../data/api';
+import { oldestDate } from '../data/freshness';
 import { useColumnLabel, useLabel } from '../data/labels';
 import { numericRows, rollupByMonth } from '../data/rollup';
 import { BOARDS, pick, PROJECT_CHURN, type BoardDef } from '../nav/catalog';
 import { navigate } from '../nav/route';
 import { count, monthLabel, yen } from '../ui/format';
 import { useLangStore, useT } from '../ui/i18n';
-import { Chip } from '../ui/parts';
+import { Chip, PageMeta } from '../ui/parts';
 
 function Headline({ board }: { board: BoardDef }) {
   const lang = useLangStore((s) => s.lang);
@@ -44,8 +45,12 @@ function ChurnHeadline() {
 export function HomeScreen() {
   const t = useT();
   const lang = useLangStore((s) => s.lang);
+  // Home đọc 3 nguồn (2 thẻ tháng + thẻ dự án) ⇒ ngày CŨ NHẤT trong 3 nguồn đó.
+  const sources = [useSource('revenue-monthly'), useSource('users-monthly'), useSource('churn-watchlist')];
+  const asOf = oldestDate(sources.map((x) => x.data?.updatedAt));
   return (
     <section className="page">
+      <PageMeta asOf={asOf} />
       <h1>{t('home')}</h1>
       <p className="lead">{t('homeLead')}</p>
       <div className="cards">

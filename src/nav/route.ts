@@ -2,6 +2,7 @@
 //   #/                          Home
 //   #/plans/<gói>/<bảng>        một bảng của một gói (gói = all | starter | growth | scale)
 //   #/project/churn             dự án cảnh báo huỷ sớm
+//   #/about                     trang Giới thiệu
 // Hash lạ ⇒ Home. parse/ghép là phép THUẦN trên chuỗi; bất biến: toHash(parseHash(h)) === h
 // với mọi h hợp lệ (route.test.ts).
 import { create } from 'zustand';
@@ -10,7 +11,8 @@ import { BOARD_KEYS, PLAN_KEYS, type BoardKey, type PlanKey } from './catalog';
 export type Route =
   | { kind: 'home' }
   | { kind: 'board'; plan: PlanKey; board: BoardKey }
-  | { kind: 'churn' };
+  | { kind: 'churn' }
+  | { kind: 'about' };
 
 export const HOME: Route = { kind: 'home' };
 
@@ -23,6 +25,7 @@ export function parseHash(hash: string): Route {
     return { kind: 'board', plan: parts[1], board: parts[2] };
   }
   if (parts[0] === 'project' && parts[1] === 'churn' && parts.length === 2) return { kind: 'churn' };
+  if (parts[0] === 'about' && parts.length === 1) return { kind: 'about' };
   return HOME;
 }
 
@@ -34,6 +37,8 @@ export function toHash(route: Route): string {
       return `#/plans/${route.plan}/${route.board}`;
     case 'churn':
       return '#/project/churn';
+    case 'about':
+      return '#/about';
   }
 }
 

@@ -1,0 +1,107 @@
+/* Nút + nhóm chọn (kit 02 §5). Mọi nút là nút PHẲNG, thân đục — kính chỉ dành cho thẻ/panel.
+   Hover/nhấn ở hover.css. */
+
+/* Nhóm chọn (đổi ngôn ngữ, cỡ trang): rãnh đục + nấc đang chọn tô --accent-fill. */
+.lang, .seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--btn-ring);
+}
+.lang button, .seg button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  padding: 4px 12px;
+  font-size: .82rem;
+  cursor: pointer;
+  transition: background-color .16s ease, color .16s ease;
+}
+.lang button:hover, .seg button:hover { background: var(--toggle-track); color: var(--ink); }
+.lang button[aria-pressed='true'], .seg button[aria-pressed='true'] { background: var(--accent-fill); color: var(--on-accent); }
+
+/* Nút phẳng (phân trang). */
+.btn {
+  position: relative;
+  z-index: 0;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 .65rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  /* 2 lớp bóng ở trạng thái nghỉ (lớp 2 trong suốt) để hover nội suy đúng số lớp. */
+  box-shadow: 0 0 0 1px var(--btn-ring), 0 0 0 0 transparent;
+}
+.btn[aria-current='page'] { background: var(--accent-fill); color: var(--on-accent); }
+.btn:disabled { color: var(--ink-3); cursor: default; }
+
+.chip {
+  display: inline-block;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--btn-ring);
+  color: var(--accent-text);
+  font-size: .72rem;
+  font-weight: 600;
+}
+
+/* ── Nút ⓘ (InfoTip) — nút phẳng, không kính (kit 02: kính chỉ cho thẻ / panel / popover). ── */
+.ui-info {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-3);
+  vertical-align: -3px;
+  cursor: pointer;
+  position: relative;
+}
+.ui-info:hover, .ui-info[aria-expanded='true'] { color: var(--accent-text); }
+/* Vùng bấm ≥ 24px dưới con trỏ thô (kit 02 §4). */
+@media (pointer: coarse) { .ui-info::after { content: ''; position: absolute; inset: -6px; } }
+
+/* ── Popover ⓘ: portal ra body, position: fixed (vị trí do popoverPlace.ts tính). ── */
+.ui-pop {
+  position: fixed;
+  z-index: 50;
+  width: min(22rem, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: var(--ink);
+  font-size: .8rem;
+  line-height: 1.5;
+  animation: ui-pop-in .16s cubic-bezier(.2,.9,.3,1) backwards;
+}
+.ui-pop:focus { outline: none; }
+.ui-pop:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.ui-pop h3 { margin: 0 0 4px; font-size: .86rem; }
+.ui-pop p { margin: 0 0 6px; }
+.ui-pop dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; }
+.ui-pop dt { color: var(--ink-3); white-space: nowrap; }
+.ui-pop dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.ui-pop code { font-size: .74rem; }
+.ui-pop-entry + .ui-pop-entry { margin-top: 10px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); }
+.ui-pop-common { margin: 10px 0 0; padding: 8px 0 0 1.1em; border-top: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); color: var(--ink-2); }
+@keyframes ui-pop-in { from { opacity: 0; transform: scale(.96) translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .ui-pop { animation: none; } }
+
+/* ── Đầu trang: nhãn "Dữ liệu mẫu" + chip ngày dữ liệu. Nằm TRONG LUỒNG, tự xuống dòng ở 430px. ── */
+.page-meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.chip-sample { background: var(--accent-fill); box-shadow: none; color: var(--on-accent); }
+.chip-asof { color: var(--ink-2); font-weight: 500; font-variant-numeric: tabular-nums; }
