@@ -1,0 +1,62 @@
+/* Bộ lọc tháng (kit 01 §6). Nút lọc = nút PHẲNG thân đục (kit 02: kính chỉ cho thẻ/panel/popover).
+   Panel dùng lại .ui-pop (kính popover khai ở base.css — KHÔNG khai backdrop-filter ở đây);
+   ô tháng trong panel là thân đục (không lồng kính). */
+
+.ui-filterbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.ui-filter {
+  position: relative;
+  z-index: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  max-width: 100%;
+  min-height: 2.25rem;
+  padding: 0 .85rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: .84rem;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--btn-ring), 0 0 0 0 transparent;
+}
+.ui-filter[aria-expanded='true'] { box-shadow: 0 0 0 1.5px var(--accent), 0 0 0 0 transparent; }
+.ui-filter-k { color: var(--ink-2); font-size: .76rem; }
+.ui-filter-v { font-weight: 600; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-filter-chev { flex: none; color: var(--ink-2); }
+.ui-filter[aria-expanded='true'] .ui-filter-chev { transform: rotate(180deg); }
+
+.ui-filter-reset { display: inline-flex; align-items: center; gap: .35rem; height: 2.25rem; color: var(--ink-2); }
+
+/* Panel: vặn rộng sau .ui-pop (cùng specificity, file này nạp sau controls.css). */
+.ui-fpanel { width: min(18rem, calc(100vw - 16px)); padding: 12px; }
+.ui-fpanel-hint { margin: 0 0 6px; color: var(--ink-2); font-size: .78rem; }
+
+.ui-mgrid-year + .ui-mgrid-year { margin-top: 10px; }
+.ui-mgrid-year h3 { margin: 0 0 4px; color: var(--ink-2); font-size: .76rem; font-weight: 600; }
+.ui-mgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+
+.ui-mcell {
+  height: 2rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--btn-ring);
+}
+.ui-mcell:not(:disabled):hover { box-shadow: 0 0 0 1.5px var(--accent); }
+.ui-mcell[data-in='true'] { background: color-mix(in srgb, var(--accent-fill) 16%, var(--surface)); }
+.ui-mcell[aria-pressed='true'] { background: var(--accent-fill); color: var(--on-accent); }
+.ui-mcell:disabled { background: transparent; box-shadow: none; color: var(--ink-3); cursor: default; }
+/* Vùng bấm ≥ 24px đã đủ (2rem); con trỏ thô thì cao hơn chút. */
+@media (pointer: coarse) { .ui-mcell { height: 2.5rem; } }

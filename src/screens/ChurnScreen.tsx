@@ -5,12 +5,14 @@ import { useSource } from '../data/api';
 import { oldestDate } from '../data/freshness';
 import { BAND_ORDER, precisionByBand, watchOrder } from '../data/churn';
 import { useLabel } from '../data/labels';
+import { monthsOf, sliceRows } from '../data/period';
 import { numericRows } from '../data/rollup';
 import { pick, PROJECT_CHURN } from '../nav/catalog';
 import { count, pct } from '../ui/format';
-import { useLangStore } from '../ui/i18n';
+import { useLangStore, useT } from '../ui/i18n';
 import { boardChunk } from '../ui/chunk';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
+import { FilterBar, MonthRangeFilter, usePeriodText, useRangeFilter } from '../ui/filters';
 import { DataTable, PageMeta, StatTile, StateBox } from '../ui/parts';
 
 // Biểu đồ nạp ĐỘNG (Recharts không được vào chunk đầu).
@@ -19,6 +21,7 @@ const ChurnCharts = lazy(boardChunk('churn', () => import('./charts/ChurnCharts'
 const WATCH_COLUMNS = ['company_name', 'plan_id', 'risk_band', 'risk_score', 'top_reason', 'mrr', 'activity_trend', 'seat_utilization', 'owner_name', 'last_intervention_outcome'];
 
 export function ChurnScreen() {
+  const t = useT();
   const lang = useLangStore((s) => s.lang);
   const label = useLabel();
   const watch = useSource('churn-watchlist');
@@ -29,12 +32,23 @@ export function ChurnScreen() {
   const rows = watch.data ? numericRows(watch.data.rows) : [];
   const sorted = watchOrder(rows);
   const precision = history.data ? precisionByBand(history.data.rows) : null;
+  // Khoảng tháng CHỈ áp cho 2 biểu đồ lịch sử (ảnh chụp tuần ⇒ lọc theo tháng chứa nó; kết quả
+  // chăm sóc theo tháng). Danh sách theo dõi + độ chính xác theo band KHÔNG đổi theo bộ lọc.
+  const months = history.data ? monthsOf(history.data.rows, 'snapshot_date') : null;
+  const f = useRangeFilter(months);
+  const text = usePeriodText(asOf);
+  const historyShown = history.data && f.range ? sliceRows(history.data.rows, f.range, 'snapshot_date') : [];
 
   return (
     <section className="page">
       <PageMeta asOf={asOf} />
       <h1>{pick(PROJECT_CHURN.name, lang)}</h1>
       <p className="lead">{pick(PROJECT_CHURN.desc, lang)}</p>
+      {f.range && months ? (
+        <FilterBar dirty={f.dirty} onReset={f.reset}>
+          <MonthRangeFilter value={f.range} onChange={f.set} months={months} label={t('period')} text={text.range(f.range)} />
+        </FilterBar>
+      ) : null}
       <StateBox phase={watch.phase} empty={watch.phase === 'ready' && rows.length === 0} />
 
       {rows.length > 0 ? (
@@ -57,7 +71,7 @@ export function ChurnScreen() {
         {rows.length > 0 ? (
           <ErrorBoundary fallback={<StateBox phase="failed" />}>
             <Suspense fallback={<div className="ui-charts-wait" />}>
-              <ChurnCharts watch={rows} history={history.data?.rows ?? []} />
+              <ChurnCharts watch={rows} history={historyShown} range={f.range} />
             </Suspense>
           </ErrorBoundary>
         ) : null}

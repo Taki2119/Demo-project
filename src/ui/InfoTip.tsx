@@ -2,13 +2,13 @@
 // (kit 02 §6 InfoTip + popoverFocus). Luật:
 //   · popover PORTAL ra body (kit 02 §3 bẫy 1–2: không lồng kính, không bị containing block);
 //   · mở ⇒ focus vào popover; Esc ⇒ đóng + focus về nút ⓘ; bấm ra ngoài (pointerdown) ⇒ đóng;
-//   · vị trí position: fixed, kẹp trong khung (popoverPlace.ts), đặt lại khi cuộn (capture) / đổi cỡ.
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+//   · vị trí position: fixed, kẹp trong khung, đặt lại khi cuộn / đổi cỡ;
+//   · chung luật "một panel mở mỗi lúc" với bộ lọc — tất cả ở usePopover.ts.
 import { createPortal } from 'react-dom';
 import { COMMON_SCOPE, GLOSSARY, textOf, type GlossaryKey, type Text } from '../data/glossary';
 import { useNameRefs } from '../data/labels';
 import { useLangStore, useT } from './i18n';
-import { placePopover } from './popoverPlace';
+import { usePopover } from './usePopover';
 
 const asList = (keys: GlossaryKey | readonly GlossaryKey[]): readonly GlossaryKey[] => (typeof keys === 'string' ? [keys] : keys);
 
@@ -27,57 +27,13 @@ export function InfoTip({ keys }: { keys: GlossaryKey | readonly GlossaryKey[] }
   const lang = useLangStore((s) => s.lang);
   const nameOf = useNameRefs();
   const list = asList(keys);
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const btn = useRef<HTMLButtonElement>(null);
-  const pop = useRef<HTMLDivElement>(null);
-  const id = useId();
+  // Mở/đóng, focus, Esc, bấm ra ngoài, vị trí, "một panel mở mỗi lúc": usePopover.ts.
+  const { id, open, toggle, btn, pop, style } = usePopover();
   const names = list.map((k) => nameOf(GLOSSARY[k].name));
   const label = names.every((n) => n != null) ? `${t('info')}: ${names.join(' · ')}` : t('info');
 
-  const place = useCallback(() => {
-    const a = btn.current?.getBoundingClientRect();
-    const p = pop.current;
-    if (!a || !p) return;
-    setPos(placePopover(a, { width: p.offsetWidth, height: p.offsetHeight }, { width: window.innerWidth, height: window.innerHeight }));
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!open) return setPos(null);
-    place();
-    pop.current?.focus({ preventScroll: true });
-  }, [open, place]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      e.stopPropagation();
-      setOpen(false);
-      btn.current?.focus();
-    };
-    const onDown = (e: PointerEvent) => {
-      const target = e.target as Node;
-      if (pop.current?.contains(target) || btn.current?.contains(target)) return;
-      setOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    document.addEventListener('pointerdown', onDown);
-    window.addEventListener('scroll', place, true); // scroll của .main không nổi bọt ⇒ capture
-    window.addEventListener('resize', place);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      document.removeEventListener('pointerdown', onDown);
-      window.removeEventListener('scroll', place, true);
-      window.removeEventListener('resize', place);
-    };
-  }, [open, place]);
-
   const txt = (v: Text) => textOf(v, lang) ?? t('unconfirmed');
   const partial = list.some((k) => GLOSSARY[k].partialMonth);
-  // Vị trí tính trong useLayoutEffect (trước khi vẽ) ⇒ không nháy. KHÔNG dùng visibility: hidden
-  // lúc chờ: phần tử ẩn không nhận focus, và focus phải vào popover ngay khi mở.
-  const style: CSSProperties = pos ? { top: pos.top, left: pos.left } : { top: 0, left: 0 };
 
   return (
     <>
@@ -88,7 +44,7 @@ export function InfoTip({ keys }: { keys: GlossaryKey | readonly GlossaryKey[] }
         aria-label={label}
         aria-expanded={open}
         aria-controls={open ? id : undefined}
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
       >
         <InfoGlyph />
       </button>

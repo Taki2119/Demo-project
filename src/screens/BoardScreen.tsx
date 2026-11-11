@@ -1,15 +1,18 @@
-// Một bảng của một gói. KHUNG: vỏ trang + trạng thái dữ liệu + ô số chính + bảng số.
+// Một bảng của một gói. KHUNG: vỏ trang + bộ lọc tháng + trạng thái dữ liệu + ô số chính + bảng số.
 // Biểu đồ của từng bảng cắm vào `<section className="viz">` (nạp động, xem CHARTS).
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 'react';
 import { useSource, type Params, type Row } from '../data/api';
 import { useColumnLabel, useLabel } from '../data/labels';
 import { arpa, deltaRate, seatUsage, stickiness } from '../data/metrics';
+import { covers, monthsOf, prevRange, rowAt, sliceRows, stockAt, sumFlow } from '../data/period';
 import { numericRows, rollupByMonth } from '../data/rollup';
 import { boardOf, pick, type BoardKey, type PlanKey } from '../nav/catalog';
-import { count, monthLabel, pct, yen } from '../ui/format';
+import { useQuery } from '../nav/route';
+import { count, pct, yen } from '../ui/format';
 import { useLangStore, useT } from '../ui/i18n';
 import { boardChunk } from '../ui/chunk';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
+import { FilterBar, MonthPickFilter, MonthRangeFilter, useMonthFilter, usePeriodText, useRangeFilter } from '../ui/filters';
 import { DataTable, PageMeta, StatTile, StateBox } from '../ui/parts';
 
 const TABLE_COLUMNS: Record<BoardKey, readonly string[]> = {
@@ -31,60 +34,137 @@ const CHARTS: Record<BoardKey, LazyExoticComponent<ComponentType<ChartsProps>>> 
   'by-company': lazy(boardChunk('by-company', () => import('./charts/ByCompanyCharts'))),
 };
 
-function Charts({ board, rows, asOf }: { board: BoardKey } & ChartsProps) {
+function ChartsSlot({ board, rows, asOf }: { board: BoardKey } & ChartsProps) {
   const C = CHARTS[board];
-  return <C rows={rows} asOf={asOf} />;
+  return (
+    <section className="viz">
+      {rows.length > 0 ? (
+        <ErrorBoundary fallback={<StateBox phase="failed" />}>
+          <Suspense fallback={<div className="ui-charts-wait" />}>
+            <C rows={rows} asOf={asOf} />
+          </Suspense>
+        </ErrorBoundary>
+      ) : null}
+    </section>
+  );
+}
+
+function Head({ plan, board, asOf }: { plan: PlanKey; board: BoardKey; asOf: string | null }) {
+  const t = useT();
+  const lang = useLangStore((s) => s.lang);
+  const label = useLabel();
+  const def = boardOf(board);
+  return (
+    <>
+      <PageMeta asOf={asOf} />
+      <p className="crumb">{plan === 'all' ? t('allPlans') : label('plan', plan)}</p>
+      <h1>{pick(def.name, lang)}</h1>
+      <p className="lead">{pick(def.desc, lang)}</p>
+    </>
+  );
 }
 
 export function BoardScreen({ plan, board }: { plan: PlanKey; board: BoardKey }) {
+  return board === 'revenue' || board === 'users' ? <MonthlyBoard plan={plan} board={board} /> : <SnapshotBoard plan={plan} board={board} />;
+}
+
+/** Doanh thu · Người dùng: API trả MỌI tháng ⇒ lọc KHOẢNG tháng ở trình duyệt.
+ *  Ô số: tồn kho = tháng CUỐI khoảng · luồng = CỘNG cả khoảng · so với khoảng trước dài bằng nhau
+ *  (khoảng đó không nằm trọn trong dữ liệu ⇒ "—"). Tỉ lệ (ARPA, DAU/MAU, dùng ghế) = tháng cuối. */
+function MonthlyBoard({ plan, board }: { plan: PlanKey; board: BoardKey }) {
   const t = useT();
   const lang = useLangStore((s) => s.lang);
   const label = useLabel();
   const col = useColumnLabel();
-  const def = boardOf(board);
-  const monthly = board === 'revenue' || board === 'users';
-  // Bảng theo user / công ty: lọc gói ở phía API (nhiều dòng); bảng tháng: lấy đủ rồi gộp ở client.
-  const params: Params = !monthly && plan !== 'all' ? { plan } : {};
-  const { phase, data } = useSource(def.source, params);
-  const rows = data ? numericRows(data.rows) : [];
-  const shown = monthly ? rollupByMonth(rows, plan) : rows;
-  const last = monthly ? shown.at(-1) : undefined;
-  const prev = monthly ? shown.at(-2) : undefined;
+  const { phase, data } = useSource(boardOf(board).source);
+  const asOf = data?.updatedAt ?? null;
+  const all = data ? rollupByMonth(numericRows(data.rows), plan) : [];
+  const months = data ? monthsOf(all) : null;
+  const f = useRangeFilter(months);
+  const text = usePeriodText(asOf);
+  const r = f.range;
+  const shown = r ? sliceRows(all, r) : [];
+  const prev = r && months && covers(months, prevRange(r)) ? prevRange(r) : null;
+  const end = r ? rowAt(all, r.to) : null;
+  const v = (key: string) => (end ? num(end[key]) : null);
+
+  // Số phụ: "[kỳ · ]±x% so với …". Không có kỳ trước ⇒ "—".
+  const stockSub = (key: string, withMonth: boolean) => {
+    if (!r) return undefined;
+    const d = pct(deltaRate(stockAt(all, r.to, key), prev ? stockAt(all, prev.to, key) : null), lang);
+    return `${withMonth ? `${text.month(r.to)} · ` : ''}${d} ${text.vs(r)}`;
+  };
+  const flowSub = (key: string) => {
+    if (!r) return undefined;
+    const d = pct(deltaRate(sumFlow(all, r, key), prev ? sumFlow(all, prev, key) : null), lang);
+    return `${text.range(r)} · ${d} ${text.vs(r)}`;
+  };
 
   return (
     <section className="page">
-      <PageMeta asOf={data?.updatedAt ?? null} />
-      <p className="crumb">{plan === 'all' ? t('allPlans') : label('plan', plan)}</p>
-      <h1>{pick(def.name, lang)}</h1>
-      <p className="lead">{pick(def.desc, lang)}</p>
+      <Head plan={plan} board={board} asOf={asOf} />
+      {r && months ? (
+        <FilterBar dirty={f.dirty} onReset={f.reset}>
+          <MonthRangeFilter value={r} onChange={f.set} months={months} label={t('period')} text={text.range(r)} />
+        </FilterBar>
+      ) : null}
       <StateBox phase={phase} empty={phase === 'ready' && shown.length === 0} />
 
-      {last && board === 'revenue' ? (
+      {r && end && board === 'revenue' ? (
         <div className="tiles">
-          <StatTile info="mrr_end" label={col('mrr_end')} value={yen(num(last.mrr_end), lang)} sub={`${monthLabel(String(last.month), lang)} · ${pct(deltaRate(num(last.mrr_end), num(prev?.mrr_end)), lang)}`} />
-          <StatTile info="paying_companies" label={col('paying_companies')} value={count(num(last.paying_companies), lang)} />
-          <StatTile info="arpa" label={label('metric', 'arpa')} value={yen(arpa(num(last.mrr_end) ?? 0, num(last.paying_companies) ?? 0), lang)} />
+          <StatTile info="mrr_end" label={col('mrr_end')} value={yen(v('mrr_end'), lang)} sub={stockSub('mrr_end', true)} />
+          <StatTile info="paying_companies" label={col('paying_companies')} value={count(v('paying_companies'), lang)} sub={stockSub('paying_companies', false)} />
+          <StatTile info="arpa" label={label('metric', 'arpa')} value={yen(arpa(v('mrr_end') ?? 0, v('paying_companies') ?? 0), lang)} />
+          <StatTile info="new_mrr" label={col('new_mrr')} value={yen(sumFlow(all, r, 'new_mrr'), lang)} sub={flowSub('new_mrr')} />
+          <StatTile info="invoiced_amount" label={col('invoiced_amount')} value={yen(sumFlow(all, r, 'invoiced_amount'), lang)} sub={flowSub('invoiced_amount')} />
         </div>
       ) : null}
-      {last && board === 'users' ? (
+      {r && end && board === 'users' ? (
         <div className="tiles">
-          <StatTile info="seat_users_end" label={col('seat_users_end')} value={count(num(last.seat_users_end), lang)} sub={monthLabel(String(last.month), lang)} />
-          <StatTile info="mau" label={col('mau')} value={count(num(last.mau), lang)} />
-          <StatTile info="stickiness" label={label('metric', 'stickiness')} value={pct(stickiness(num(last.active_user_days) ?? 0, num(last.days_in_period) ?? 0, num(last.mau) ?? 0), lang)} />
-          <StatTile info="seat_usage_rate" label={label('metric', 'seat_usage_rate')} value={pct(seatUsage(num(last.mau) ?? 0, num(last.seat_users_end) ?? 0), lang)} />
+          <StatTile info="seat_users_end" label={col('seat_users_end')} value={count(v('seat_users_end'), lang)} sub={stockSub('seat_users_end', true)} />
+          <StatTile info="mau" label={col('mau')} value={count(v('mau'), lang)} sub={stockSub('mau', false)} />
+          <StatTile info="stickiness" label={label('metric', 'stickiness')} value={pct(stickiness(v('active_user_days') ?? 0, v('days_in_period') ?? 0, v('mau') ?? 0), lang)} />
+          <StatTile info="seat_usage_rate" label={label('metric', 'seat_usage_rate')} value={pct(seatUsage(v('mau') ?? 0, v('seat_users_end') ?? 0), lang)} />
+          <StatTile info="new_users" label={col('new_users')} value={count(sumFlow(all, r, 'new_users'), lang)} sub={flowSub('new_users')} />
         </div>
       ) : null}
 
-      <section className="viz">
-        {shown.length > 0 ? (
-          <ErrorBoundary fallback={<StateBox phase="failed" />}>
-            <Suspense fallback={<div className="ui-charts-wait" />}>
-              <Charts board={board} rows={shown} asOf={data?.updatedAt ?? null} />
-            </Suspense>
-          </ErrorBoundary>
-        ) : null}
-      </section>
-      {shown.length > 0 ? <DataTable rows={monthly ? [...shown].reverse() : shown} columns={TABLE_COLUMNS[board]} /> : null}
+      <ChartsSlot board={board} rows={shown} asOf={asOf} />
+      {shown.length > 0 ? <DataTable rows={[...shown].reverse()} columns={TABLE_COLUMNS[board]} /> : null}
+    </section>
+  );
+}
+
+/** Theo người dùng · Theo công ty: mỗi lần MỘT tháng, truyền tham số `month` SẴN CÓ của API.
+ *  Danh sách tháng lấy từ dữ liệu (nguồn revenue-monthly — mọi tháng của mart), không từ đồng hồ.
+ *  Link có `?month=` ⇒ chờ danh sách tháng rồi mới nạp (khỏi nạp nhầm tháng mới nhất trước). */
+function SnapshotBoard({ plan, board }: { plan: PlanKey; board: BoardKey }) {
+  const t = useT();
+  const list = useSource('revenue-monthly');
+  const months = list.data ? monthsOf(list.data.rows) : null;
+  const f = useMonthFilter(months);
+  const q = useQuery();
+  const params: Params = {};
+  if (plan !== 'all') params.plan = plan;
+  if (f.dirty && f.month) params.month = f.month;
+  // Chỉ chờ khi URL có `month` mà danh sách tháng chưa về (lỗi / chưa cấu hình ⇒ thôi chờ).
+  const ready = q.month == null || months != null || list.phase === 'failed' || list.phase === 'off';
+  const { phase, data } = useSource(boardOf(board).source, params, ready);
+  const asOf = data?.updatedAt ?? null;
+  const text = usePeriodText(asOf);
+  const shown = data ? numericRows(data.rows) : [];
+
+  return (
+    <section className="page">
+      <Head plan={plan} board={board} asOf={asOf} />
+      {f.month && months ? (
+        <FilterBar dirty={f.dirty} onReset={f.reset}>
+          <MonthPickFilter value={f.month} onChange={f.set} months={months} label={t('month')} text={text.month(f.month)} />
+        </FilterBar>
+      ) : null}
+      <StateBox phase={phase} empty={phase === 'ready' && shown.length === 0} />
+      <ChartsSlot board={board} rows={shown} asOf={asOf} />
+      {shown.length > 0 ? <DataTable rows={shown} columns={TABLE_COLUMNS[board]} /> : null}
     </section>
   );
 }
