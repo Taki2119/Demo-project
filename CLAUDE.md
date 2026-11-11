@@ -107,7 +107,29 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (sam
 - schema + data generator;
 - web shell;
 - Vercel API (code + tests);
-- Pages workflow.
+- Pages workflow;
+- UI kit design + charts + glossary/About + month filter (items 4–6 below);
+- Ask AI demo chat window + chat scroll fix (item 2 below);
+- repo docs / comments / test titles in English (item 9 below).
+
+**Change history (newest first; `main` merge commits):**
+
+| Date | Commit | Change |
+|---|---|---|
+| 2026-11-12 | `379cae4` | Repo translated to English (docs, code comments, test titles, dev messages); kit `00-HUONG-DAN-VSCODE.md` → `00-VSCODE-GUIDE.md`; §7 repo-language rule |
+| 2026-11-12 | `186628e` | Ask AI: composer pinned to the bottom of the window (`scrollIntoView` trap, §6) |
+| 2026-11-12 | `2ef56cf` | Ask AI demo chat window (D1–D3) |
+| 2026-11-11 | `9c4e184` | Phase 6: month filter |
+| 2026-11-11 | `6f9b864` | PR #1: UI kit phases 1–4 + phase 5 (glossary, About, freshness chip) |
+
+**Next plan (PROPOSED 2026-11-12, NOT yet approved by the user — confirm the order before starting):**
+1. Check that the `checks` job on GitHub Actions is green after the `379cae4` push (`gh` not logged in ⇒ the user
+   looks at the Actions tab); confirm the `PRIVACY_DENY` secret exists, otherwise `check:bundle` goes red.
+2. Fix the 2 wrong kit cross-references found during translation (item 9) — small, docs only.
+3. Phase 5 review points (item 5): reconcile churn-by-band rates `docs/SCHEMA.md` ↔ §4; the MRR chart ⓘ showing the
+   tile's secondary-number line; optionally shrink the initial chunk by loading glossary text on ⓘ open.
+4. `loaded_at` (item 7) — touches `scripts/data`, `supabase/`, `server/` ⇒ the user reloads Supabase + redeploys Vercel.
+5. Odds and ends (item 8): ambient background / reveal / stagger (needs `App.tsx`), plan-name fallback.
 
 **Waiting on the user (outside the repo):** per [`server/README.md`](server/README.md).
 1. ~~Supabase~~ **DONE 2026-11-11:** project `Demo` (ref `tozsokrpjfrpdokvoydo`, Tokyo).
@@ -127,7 +149,7 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (sam
 **Next work (in the agreed order):**
 1. ~~Deploy support~~ DONE (Pages + Vercel + Supabase running; Vercel's `/` returning 404 is correct — there is only `api/`).
 2. **Ask AI — DEMO VERSION, does NOT call a real AI. D1–D3 DONE, the user approved each phase (2026-11-12).
-   Branch `ai-qa-demo`, MERGED into `main` locally (2026-11-12, `--no-ff`).**
+   Branch `ai-qa-demo`, MERGED into `main` (`2ef56cf`, `--no-ff`) and PUSHED (2026-11-12); scroll fix `186628e`.**
    Fully replaces the Claude CLI plan. Dropped: the local bridge, the public `api/query`, Cloudflare Tunnel,
    `setup-token`. Reasons: no quota usage, no endpoint accepting SQL, works on any machine. Stop
    for the user to review after each phase.
@@ -269,6 +291,15 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (sam
    - ambient background of SVG stroke layers (`ribbon.svg`), cursor-following light (`reveal.ts`), staggered reveal
      (`staggerIn.ts`) — requires editing `App.tsx`, not done (the user postponed 2026-11-11);
    - plan names show the CODE when the API hasn't returned labels yet (by design, but could be reconsidered).
+9. **Repo in English — DONE, pushed (`379cae4`, 2026-11-12, branch `docs/english`).** Scope chosen by the user:
+   docs + code comments + test titles + developer-facing messages; kit guide renamed to `00-VSCODE-GUIDE.md` (all
+   references updated). Product content untouched (rule in §7); verified with a comment-stripping diff (TypeScript
+   printer) that no non-comment code changed except dev-facing strings (e.g. `catalog.ts` "unknown board").
+   Code comments citing kit sections now say "pitfall" to match the translated `04-PITFALLS-CHECKLIST.md`.
+   Final check: typecheck clean · 17 files / 543 tests · db:test 16/16 · api:test 7/7 · check:test 10/10 · build ·
+   check:bundle 4/4. Left UNFIXED (wrong in the original kit, reported to the user):
+   - `docs/ui-kit/01-ARCHITECTURE.md` §2 points to `03-CHARTS-TABLES.md` §6 for tables — should be §8;
+   - prompt P6 in `05-PROMPTS.md` names a column that does not exist in the table in `03-CHARTS-TABLES.md` §3.
 
 ## 6. TRAPS already hit — don't step on them again
 
