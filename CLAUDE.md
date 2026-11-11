@@ -329,6 +329,11 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
 - **`--font-display` (Outfit) không có bộ chữ tiếng Việt** (Google Fonts chỉ có latin/latin-ext):
   đo thật thì ạ ữ ỗ rơi sang Segoe UI. Chỉ dùng cho logo + số; `i18n.test.ts` khoá logo không có
   chữ Latin có dấu.
+- **`scrollIntoView` cuộn MỌI tổ tiên cuộn được, kể cả khung `overflow: hidden`** (người dùng không
+  cuộn được nhưng code thì được). Lỗi đã gặp ở cửa sổ Hỏi AI: sau vài câu hỏi cả `.ask-dock` trượt lên,
+  tiêu đề mất, khung chat bị đẩy lên giữa, nửa dưới trống. Sửa: cuộn đúng `.ask-dock-body` bằng
+  `scrollTo` + `.ask-dock { overflow: clip }`. Tool `ask.mjs` đo tiêu đề / khung chat dính cạnh sau
+  MỖI câu trả lời. Bài học kèm theo: xem ảnh thì soi cả đầu cửa sổ, ảnh cũ đã có lỗi mà bị bỏ sót.
 - **Sàn tương phản (`markContrast.test.ts`):** sàn "nền kính tệ nhất" (#e8dbd0 / #543a25) CHỈ áp cho
   MARK (≥2:1). CHỮ đo ≥4.5:1 trên nền THẬT của chữ đó (`--surface`, `--pill-flat`…) — `--ink-3`
   trên nền tệ nhất chỉ ~3,5:1, đó không phải lỗi (người dùng chốt 2026-11-11).
