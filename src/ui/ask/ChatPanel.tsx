@@ -43,6 +43,7 @@ export default function ChatPanel({ open, onClose }: { open: boolean; onClose: (
   const [dismissed, setDismissed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastUserRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const listId = useId();
 
@@ -69,7 +70,14 @@ export default function ChatPanel({ open, onClose }: { open: boolean; onClose: (
   // Lượt hỏi mới ⇒ câu hỏi vừa gửi lên đầu vùng cuộn, câu trả lời mọc ngay dưới.
   const userCount = messages.filter((m) => m.role === 'user').length;
   useEffect(() => {
-    if (userCount > 0) lastUserRef.current?.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+    // ⚠ KHÔNG dùng scrollIntoView: nó cuộn MỌI tổ tiên cuộn được, kể cả .ask-dock (overflow ẩn
+    // vẫn cuộn được bằng code) ⇒ cả cửa sổ trượt lên, khung chat bị đẩy lên giữa, nửa dưới trống.
+    // Chỉ cuộn đúng vùng hội thoại.
+    const body = bodyRef.current;
+    const el = lastUserRef.current;
+    if (userCount === 0 || !body || !el) return;
+    const top = el.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - 8;
+    body.scrollTo({ top: Math.max(0, top), behavior: reduce ? 'auto' : 'smooth' });
   }, [userCount, reduce]);
   const lastUserId = [...messages].reverse().find((m) => m.role === 'user')?.id;
 
@@ -141,7 +149,7 @@ export default function ChatPanel({ open, onClose }: { open: boolean; onClose: (
         </button>
       </header>
 
-      <div className="ask-dock-body">
+      <div ref={bodyRef} className="ask-dock-body">
         {messages.length === 0 ? (
           <div className="ask-welcome">
             <p className="ask-note">{t('askDemoNote')}</p>

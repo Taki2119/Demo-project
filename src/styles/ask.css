@@ -42,6 +42,12 @@
   animation: ask-dock-in .2s cubic-bezier(.2,.9,.3,1) backwards;
 }
 .ask-dock[hidden] { display: none; }
+/* overflow: hidden vẫn là khung CUỘN ĐƯỢC bằng code (scrollIntoView, focus) ⇒ cửa sổ có thể trượt
+   lên, khung chat bị đẩy khỏi cạnh dưới. `clip` thì không cuộn được ⇒ chỉ .ask-dock-body cuộn.
+   Đặt trong @supports, không viết 2 khai báo overflow liền nhau (minifier gộp mất). */
+@supports (overflow: clip) {
+  .ask-dock { overflow: clip; }
+}
 @keyframes ask-dock-in { from { opacity: 0; transform: translateY(-8px) scale(.98); } }
 
 .ask-dock-head {
