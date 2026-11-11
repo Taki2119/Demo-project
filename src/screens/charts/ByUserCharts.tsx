@@ -1,6 +1,6 @@
-// Biểu đồ trang Theo người dùng (nạp động): phân bố số ngày dùng của người đang giữ ghế, ở tháng
-// mà API trả về (tháng mới nhất — có thể là tháng đang chạy). Tháng chưa trọn ⇒ đầu thẻ ghi
-// "tính đến ngày X" (X = ngày dữ liệu asOf của nguồn) + ghi chú dưới thẻ.
+// Charts for the By user page (lazy-loaded): distribution of days active among seat holders, in the month
+// the API returns (the latest month — possibly the running month). Partial month ⇒ the card header says
+// "tính đến ngày X" (as of day X; X = the source's asOf data date) + a note under the card.
 import type { Row } from '../../data/api';
 import { histogram, monthProgress, num } from '../../data/chartData';
 import { useColumnLabel } from '../../data/labels';
@@ -10,7 +10,7 @@ import { ChartCard } from '../../ui/viz/ChartCard';
 import type { ChartFormat, Point } from '../../ui/viz/charts/common';
 import { StackedBarLineChart, type BarSpec } from '../../ui/viz/charts/StackedBarLineChart';
 
-// Cận dưới của từng nhóm số ngày (tự chọn). Nhãn là khoảng số — không cần dịch.
+// Lower bound of each day-count bucket (hand-picked). Labels are numeric ranges — no translation needed.
 const EDGES = [0, 1, 5, 10, 20];
 const bucketLabel = (i: number) => {
   const lo = EDGES[i] as number;

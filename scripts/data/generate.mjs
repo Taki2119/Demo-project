@@ -1,19 +1,19 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// BỘ SINH DỮ LIỆU TỔNG HỢP cho tầng `raw` — hàm THUẦN: cùng tham số ⇒ cùng bảng, từng dòng.
+// SYNTHETIC DATA GENERATOR for the `raw` layer — a PURE function: same parameters ⇒ same tables, row for row.
 //
-// Mô phỏng theo CÂU CHUYỆN, không rải số đều (docs/SCHEMA.md §8):
-//   1. Công ty tới theo tháng (tăng trưởng + mùa vụ kiểu Nhật: tháng 4 cao, tháng 12/3 thấp).
-//   2. Mỗi công ty có SỨC KHOẺ ẩn `h` trôi theo tháng. Nó quyết định mức dùng, khả năng
-//      tăng ghế / nâng gói, xác suất trả chậm, và NGUY CƠ HUỶ.
-//   3. Khi một công ty "quyết định đi", nó GIẢM DÙNG trước 35–90 ngày (tính năng chính giảm
-//      mạnh hơn), thường hẹn huỷ trước 10–35 ngày, và có thể được chăm sóc giữ lại.
-//      ⇒ trang dự án chống huỷ có tín hiệu THẬT để phát hiện.
-//   4. Có nhiễu: công ty khoẻ cũng có đợt giảm ngắn, kỳ nghỉ dài làm hoạt động lõm xuống, có
-//      người dùng mua ghế mà gần như không vào ⇒ điểm rủi ro không đúng 100%, như ngoài đời.
-//   5. Một phần khách đã huỷ quay lại sau 2–8 tháng (subscription MỚI ⇒ `reactivation`).
+// Simulates a STORY rather than spreading numbers evenly (docs/SCHEMA.md §8):
+//   1. Companies arrive monthly (growth + Japanese-style seasonality: April high, December/March low).
+//   2. Each company has a hidden HEALTH `h` that drifts month to month. It drives usage, the likelihood
+//      of adding seats / upgrading, the probability of paying late, and CHURN RISK.
+//   3. When a company "decides to leave", it REDUCES USAGE 35–90 days ahead (key features drop
+//      harder), usually schedules a cancellation 10–35 days ahead, and may be retained through care.
+//      ⇒ the churn prevention project page has a REAL signal to detect.
+//   4. There is noise: healthy companies also have short dips, long holidays dent activity, and some
+//      users buy seats but almost never log in ⇒ the risk score is not 100% right, as in real life.
+//   5. Some churned customers come back after 2–8 months (a NEW subscription ⇒ `reactivation`).
 //
-// ⚠ Không có ngày nào sau `asOf`: tương lai chưa biết. Huỷ hẹn sau `asOf` ⇒ subscription
-//   vẫn còn hiệu lực, chỉ có yêu cầu hẹn huỷ đang mở.
+// ⚠ No date after `asOf`: the future is unknown. A cancellation scheduled after `asOf` ⇒ the subscription
+//   is still active, with only an open cancel scheduled request.
 // ─────────────────────────────────────────────────────────────────────────────
 import { clamp, makeRng } from './rng.mjs';
 import { dayOf, dow, isHoliday, isoOf, monthEndOf, monthStartOf, ymOf } from './days.mjs';
@@ -29,7 +29,7 @@ export const DEFAULTS = {
   monthlyGrowth: 0.03,
 };
 
-// Giá tính bằng YÊN (số nguyên). MRR = phí cơ bản + ghế vượt mức × đơn giá ghế.
+// Prices in YEN (integers). MRR = base fee + extra seats × seat price.
 export const PLANS = [
   { plan_id: 'starter', name: 'Starter', tier: 1, base_price: 9800, seat_price: 1200, included_seats: 3, currency: 'JPY', is_active: true },
   { plan_id: 'growth', name: 'Growth', tier: 2, base_price: 29800, seat_price: 1800, included_seats: 10, currency: 'JPY', is_active: true },
@@ -38,7 +38,7 @@ export const PLANS = [
 const PLAN = Object.fromEntries(PLANS.map((p) => [p.plan_id, p]));
 const PLAN_BY_TIER = Object.fromEntries(PLANS.map((p) => [p.tier, p]));
 
-// `adoption` = tỉ lệ người dùng đang hoạt động có dùng tính năng; `rate` = lượt / người / ngày.
+// `adoption` = share of active users who use the feature; `rate` = events / person / day.
 export const FEATURES = [
   { feature_id: 'dashboard', name: 'Dashboard', is_key: false, min_tier: 1, adoption: 0.95, rate: 4 },
   { feature_id: 'reports', name: 'Reports', is_key: true, min_tier: 1, adoption: 0.6, rate: 2 },
@@ -110,7 +110,7 @@ export function generate(options = {}) {
   for (const p of PLANS) rows.plans.push(TABLES.plans.map((c) => p[c]));
   for (const f of FEATURES) rows.features.push(TABLES.features.map((c) => f[c]));
 
-  // Nhân viên phụ trách: 3 sales · 4 CS · 1 support.
+  // Owner staff: 3 sales · 4 CS · 1 support.
   const sr = root.fork('staff');
   const staff = ['sales', 'sales', 'sales', 'cs', 'cs', 'cs', 'cs', 'support'].map((team, i) => ({
     staff_id: `ST${pad(i + 1, 2)}`, full_name: personName(sr).fullName, team,
@@ -118,7 +118,7 @@ export function generate(options = {}) {
   for (const s of staff) rows.staff.push([s.staff_id, s.full_name, s.team]);
   const csStaff = staff.filter((s) => s.team === 'cs');
 
-  // Ngày công ty tới.
+  // Company arrival dates.
   const ar = root.fork('arrivals');
   const arrivals = [];
   for (let i = 0; i < cfg.months; i++) {
@@ -158,7 +158,7 @@ function simulateCompany(ctx, companyId, created, rng) {
   for (let life = 0; lifeStart <= ctx.asOf - 3; life++) {
     const res = simulateLife(ctx, company, lifeStart, health, firstLife, rng.fork(`life${life}`));
     if (res.canceledAt == null || res.closed || res.trialLost) break;
-    if (!rng.chance(0.15)) break;                       // 15% khách đã huỷ quay lại
+    if (!rng.chance(0.15)) break;                       // 15% of churned customers come back
     lifeStart = res.canceledAt + rng.int(60, 240);
     health = clamp(rng.normal(0.6, 0.12), 0.2, 0.95);
     firstLife = false;
@@ -174,7 +174,7 @@ function simulateLife(ctx, company, lifeStart, health0, firstLife, rng) {
   const monthHealth = new Map();
   const periods = [];
   const users = [];
-  const episodes = [];      // đợt "muốn đi": { start, end, saved, savedAt }
+  const episodes = [];      // "wants to leave" episodes: { start, end, saved, savedAt }
   let canceledAt = null;
   let trialEnds = null;
   let closed = false;
@@ -193,7 +193,7 @@ function simulateLife(ctx, company, lifeStart, health0, firstLife, rng) {
       user_id: `U${pad(n, 6)}`, full_name: p.fullName,
       email: `${p.local}.${n}@${company.company_id.toLowerCase()}.example.com`,
       role, created: day, deactivated: null,
-      propensity: rng.chance(0.12) ? 0.06 : clamp(rng.normal(1, 0.28), 0.25, 1.5),   // 12% "ghế ma"
+      propensity: rng.chance(0.12) ? 0.06 : clamp(rng.normal(1, 0.28), 0.25, 1.5),   // 12% "ghost seats"
     });
   };
   const deactivate = (u, day) => {
@@ -205,7 +205,7 @@ function simulateLife(ctx, company, lifeStart, health0, firstLife, rng) {
   const nInit = Math.max(1, Math.round(seats * rng.uniform(0.7, 1)));
   for (let i = 0; i < nInit; i++) addUser(lifeStart + (i === 0 ? 0 : rng.int(0, 7)), i === 0 ? 'owner' : i < 3 ? 'admin' : 'member');
 
-  // ── Dùng thử 14 ngày (chỉ lần đầu, kênh tự phục vụ) ──
+  // ── 14-day trial (first life only, self-service channels) ──
   let paidFrom = lifeStart;
   const hasTrial = firstLife && (company.acquisition_channel === 'self_serve' || company.acquisition_channel === 'inbound') && rng.chance(0.75);
   if (hasTrial) {
@@ -219,13 +219,13 @@ function simulateLife(ctx, company, lifeStart, health0, firstLife, rng) {
         trialLost = true;
       }
     } else {
-      paidFrom = null;     // vẫn đang dùng thử ở ngày as_of
+      paidFrom = null;     // still on trial at as_of
     }
   }
   if (paidFrom != null && !trialLost) newPeriod(paidFrom, plan0, seats, mrrOf(plan0, seats, discount));
 
-  // ── Từng tháng sau tháng bắt đầu trả tiền ──
-  let pendingUntil = null;   // trong đợt "muốn đi" đang mở: không đổi gói / ghế
+  // ── Each month after the month paying starts ──
+  let pendingUntil = null;   // during an open "wants to leave" episode: no plan / seat changes
   let bump = 0;
   if (paidFrom != null && !trialLost) {
     for (let M = monthStartOf(paidFrom, 1); M <= asOf; M = monthStartOf(M, 1)) {
@@ -233,7 +233,7 @@ function simulateLife(ctx, company, lifeStart, health0, firstLife, rng) {
       bump = 0;
       monthHealth.set(M, h);
 
-      // Người dùng rời / được thay mỗi tháng.
+      // Users leave / get replaced each month.
       for (const u of activeUsersAt(M)) {
         if (u.role !== 'owner' && rng.chance(0.012)) {
           const out = M + rng.int(1, 27);
@@ -246,17 +246,17 @@ function simulateLife(ctx, company, lifeStart, health0, firstLife, rng) {
       if (pendingUntil != null && M <= pendingUntil) continue;
       pendingUntil = null;
 
-      // Chăm sóc chủ động ngẫu nhiên (khách không có vấn đề gì) — nhiễu cho bảng hiệu quả.
+      // Random proactive care (customer has no problem) — noise for the effectiveness table.
       if (rng.chance(0.01)) {
         const T = M + rng.int(0, 20);
         if (T <= asOf) pushIntervention(ctx, company, T, 'manual', rng.weighted([['call', 50], ['email', 40], ['meeting', 10]]), 'saved', T + rng.int(3, 10));
       }
 
       const monthsPaid = (ymOf(M).y - ymOf(paidFrom).y) * 12 + ymOf(M).m - ymOf(paidFrom).m;
-      const hazard = 0.006 + 0.25 * (1 - h) ** 3;          // h=0,66 ⇒ ~1,6%/tháng · h=0,4 ⇒ ~6%
+      const hazard = 0.006 + 0.25 * (1 - h) ** 3;          // h=0.66 ⇒ ~1.6%/month · h=0.4 ⇒ ~6%
       const closing = rng.chance(0.0015);
       if (monthsPaid >= 2 && (closing || rng.chance(hazard))) {
-        const D = monthStartOf(M, rng.int(1, 2));                       // huỷ có hiệu lực vào ngày 1
+        const D = monthStartOf(M, rng.int(1, 2));                       // churn effective on day 1
         const start = Math.max(paidFrom + 14, D - (closing ? rng.int(20, 40) : rng.int(35, 90)));
         const ep = runEpisode(ctx, company, subId, rng, start, D, closing);
         episodes.push(ep);
@@ -269,10 +269,10 @@ function simulateLife(ctx, company, lifeStart, health0, firstLife, rng) {
           canceledAt = D;
           closed = closing;
         }
-        break;   // huỷ (hoặc sẽ huỷ sau as_of): không còn biến động nào nữa
+        break;   // churned (or will churn after as_of): no further movements
       }
 
-      // Tăng / giảm ghế, nâng / hạ gói — hiệu lực ngày 1 của tháng.
+      // Add / remove seats, upgrade / downgrade plan — effective on day 1 of the month.
       const cur = periods[periods.length - 1];
       let nextSeats = cur.seats;
       let nextPlan = cur.plan;
@@ -296,8 +296,8 @@ function simulateLife(ctx, company, lifeStart, health0, firstLife, rng) {
     }
   }
 
-  // ── Chốt vòng đời ──
-  const end = canceledAt;   // null = còn hiệu lực ở as_of
+  // ── Close out the lifecycle ──
+  const end = canceledAt;   // null = still active at as_of
   if (end != null) {
     if (periods.length) periods[periods.length - 1].to = end;
     for (const u of users) if (u.created < end) deactivate(u, end);
@@ -316,7 +316,7 @@ function simulateLife(ctx, company, lifeStart, health0, firstLife, rng) {
   return { canceledAt: end, closed, trialLost };
 }
 
-// Một đợt "muốn đi": hẹn huỷ (có thể), chăm sóc (có thể), giữ được hay không.
+// One "wants to leave" episode: cancel scheduled (maybe), care (maybe), retained or not.
 function runEpisode(ctx, company, subId, rng, start, D, closing) {
   const { asOf } = ctx;
   const ep = { start, end: D, saved: false, savedAt: null };
@@ -350,7 +350,7 @@ function runEpisode(ctx, company, subId, rng, start, D, closing) {
       O = D;
     }
     if (O > asOf) {
-      outcome = 'pending';   // kết quả chưa biết ở as_of
+      outcome = 'pending';   // outcome unknown at as_of
       O = null;
     }
     if (outcome === 'saved') {
@@ -358,7 +358,7 @@ function runEpisode(ctx, company, subId, rng, start, D, closing) {
       ep.savedAt = O;
       ep.end = O;
       if (request && O >= request.R) request.withdrawn = O;
-      else request = null;   // được giữ trước khi kịp bấm huỷ
+      else request = null;   // retained before getting to click cancel
     }
     pushIntervention(ctx, company, iv.T, iv.trigger, channel, outcome, O);
   }
@@ -397,7 +397,7 @@ function emitInvoices(ctx, company, subId, periods, paidFrom, end, monthHealth, 
     if (issued > asOf || (end != null && issued >= end)) break;
     const p = periodAt(periods, issued);
     if (!p || p.mrr <= 0) continue;
-    const due = monthEndOf(monthStartOf(issued, 1));          // hạn: cuối tháng sau
+    const due = monthEndOf(monthStartOf(issued, 1));          // due: end of the following month
     const h = monthHealth.get(M) ?? health0;
     const pLate = 0.03 + 0.2 * (1 - h) ** 2;
     const r = rng.float();
@@ -417,8 +417,8 @@ function emitInvoices(ctx, company, subId, periods, paidFrom, end, monthHealth, 
   }
 }
 
-// Hệ số "muốn đi" tại một ngày: 1 bình thường → giảm dần về ~0,12 khi tới ngày huỷ; được giữ
-// thì hồi lại trong 21 ngày.
+// "Wants to leave" factor on a given day: 1 normally → gradually falls to ~0.12 by the churn date; if retained,
+// it recovers over 21 days.
 function episodeFactor(episodes, day) {
   let f = 1;
   for (const ep of episodes) {
@@ -440,7 +440,7 @@ function emitActivity(ctx, company, users, periods, episodes, lifeStart, end, mo
   if (last < lifeStart) return;
   const days = last - lifeStart + 1;
 
-  // Đợt giảm ngắn của công ty khoẻ (nhiễu): mỗi tháng 4% có một đợt 14–28 ngày.
+  // Short dips of healthy companies (noise): each month a 4% chance of a 14–28 day dip.
   const dips = [];
   for (let M = monthStartOf(lifeStart); M <= last; M = monthStartOf(M, 1)) {
     if (rng.chance(0.04)) {
@@ -477,7 +477,7 @@ function emitActivity(ctx, company, users, periods, episodes, lifeStart, end, mo
     }
   }
 
-  // Mức dùng tính năng của công ty: tính năng chính phụ thuộc sức khoẻ ban đầu.
+  // The company's feature usage level: key features depend on the initial health.
   const adoption = FEATURES.map((f) => clamp(f.adoption * (f.is_key ? 0.5 + 0.7 * health0 : 1) * rng.uniform(0.8, 1.2), 0.05, 0.98));
   for (let i = 0; i < days; i++) {
     const n = activeCount[i];
@@ -488,7 +488,7 @@ function emitActivity(ctx, company, users, periods, episodes, lifeStart, end, mo
     const tier = PLAN[p.plan].tier;
     FEATURES.forEach((f, k) => {
       if (f.min_tier > tier) return;
-      // Đang "muốn đi": tính năng chính rơi NHANH hơn số người vào (thêm một lần √ hệ số).
+      // While "wanting to leave": key features fall FASTER than logins (one extra √ of the factor).
       const keyDrop = f.is_key ? Math.sqrt(epf[i]) : 1;
       const used = Math.min(n, Math.round(n * adoption[k] * keyDrop * rng.uniform(0.8, 1.2)));
       if (used < 1) return;

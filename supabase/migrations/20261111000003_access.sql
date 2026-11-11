@@ -1,15 +1,15 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- QUYỀN ĐỌC — một role CHỈ ĐỌC cho Vercel (board-data + công cụ truy vấn của AI).
+-- READ ACCESS — a READ-ONLY role for Vercel (board-data + the AI's query tool).
 --
--- Hàng rào là QUYỀN CỦA POSTGRES, không phải regex trong code:
---   · `analytics_reader` chỉ có SELECT trên schema `mart`, không đụng được `raw`;
---   · mọi giao dịch mặc định READ ONLY + giới hạn thời gian chạy ⇒ câu SQL do AI viết có
---     sai cũng không ghi được gì và không treo được DB.
+-- The guardrail is POSTGRES PERMISSIONS, not a regex in code:
+--   · `analytics_reader` has only SELECT on schema `mart`, and cannot touch `raw`;
+--   · every transaction is READ ONLY by default + a run-time limit ⇒ SQL written by the AI, even
+--     if wrong, can write nothing and cannot hang the DB.
 --
--- ⚠ Mật khẩu KHÔNG nằm trong repo. Sau khi chạy migration, đặt nó bằng tay trong SQL editor
---   của Supabase (xem docs/SCHEMA.md §6):
---     alter role analytics_reader with login password '<mật khẩu mạnh>';
---   rồi chỉ lưu chuỗi kết nối ở biến môi trường của Vercel.
+-- ⚠ The password is NOT in the repo. After running the migration, set it by hand in Supabase's
+--   SQL editor (see docs/SCHEMA.md §6):
+--     alter role analytics_reader with login password '<strong password>';
+--   then store the connection string only in Vercel's environment variables.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 do $$
@@ -27,14 +27,14 @@ alter role analytics_reader set search_path = mart;
 
 revoke all on schema raw from analytics_reader;
 grant usage on schema mart to analytics_reader;
-grant select on all tables in schema mart to analytics_reader;   -- gồm cả view + materialized view
+grant select on all tables in schema mart to analytics_reader;   -- includes views + materialized views
 grant execute on function mart.as_of() to analytics_reader;
 alter default privileges in schema mart grant select on tables to analytics_reader;
 revoke execute on function mart.refresh() from public;
 
--- Các role của API Supabase (anon / authenticated) không được thấy 2 schema này. Chúng
--- vốn không được mở qua REST, đây là lớp thứ hai. Bọc trong kiểm tra tồn tại để migration
--- chạy được cả trên Postgres trơn (bộ test cục bộ).
+-- Supabase's API roles (anon / authenticated) must not see these 2 schemas. They are not
+-- exposed via REST anyway; this is a second layer. Wrapped in an existence check so the migration
+-- also runs on plain Postgres (the local test suite).
 do $$
 declare r text;
 begin
@@ -47,8 +47,8 @@ begin
 end
 $$;
 
--- Bật RLS cho mọi bảng raw (không policy nào ⇒ role API không đọc được dù có lỡ cấp quyền).
--- Role sở hữu (postgres) và service_role vẫn ghi được để nạp dữ liệu.
+-- Enable RLS on every raw table (no policies ⇒ API roles cannot read even if privileges are granted by mistake).
+-- The owner role (postgres) and service_role can still write to load data.
 do $$
 declare t text;
 begin

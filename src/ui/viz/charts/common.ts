@@ -1,11 +1,11 @@
-// Kiểu dùng chung của các khuôn chart.
+// Types shared by the chart templates.
 
-/** Một mốc: khoá trục x là chuỗi; mọi số đã là number | null (null ⇒ đứt nét / "—", không bao giờ 0). */
+/** One point: the x-axis key is a string; every number is already number | null (null ⇒ gap / "—", never 0). */
 export type Point = Record<string, string | number | null>;
 
 export const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
-/** Hàm định dạng dùng chung: giá trị đầy đủ (tooltip/pill), nhãn trục, nhãn trục x, tiêu đề tooltip. */
+/** Shared formatters: full value (tooltip/pill), axis label, x-axis label, tooltip title. */
 export interface ChartFormat {
   value: (v: number) => string;
   tick: (v: number) => string;
@@ -13,8 +13,8 @@ export interface ChartFormat {
   xTitle: (x: string) => string;
 }
 
-/** Định dạng số trong tooltip theo từng chuỗi. `tipAbs` = chuỗi chỉ đổi dấu để VẼ dưới mốc 0
- *  (vd. người dùng bị tắt): vị trí đã nói chiều giảm ⇒ tooltip hiện số tuyệt đối. */
+/** Per-series number format in the tooltip. `tipAbs` = series whose sign is flipped only to DRAW below the 0 line
+ *  (e.g. deactivated users): the position already says it's a decrease ⇒ the tooltip shows the absolute value. */
 export function tipFormat(specs: readonly { key: string; tipAbs?: boolean }[], value: (v: number) => string): (key: string, v: number) => string {
   const abs = new Set(specs.filter((s) => s.tipAbs).map((s) => s.key));
   return (key, v) => value(abs.has(key) ? Math.abs(v) : v);

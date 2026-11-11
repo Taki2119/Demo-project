@@ -1,6 +1,6 @@
-/* Điểm vào CSS — chỉ import. Thứ tự có nghĩa: rule vặn núm / hover đứng SAU rule gốc.
-   Tên class giữ như khung cũ (.app .side .main .page .cards .card .tiles .tile .table-wrap
-   .state .chip .lang .viz); component mới thêm .seg .btn .sort .pager. */
+/* CSS entry point — imports only. Order matters: knob-tuning / hover rules come AFTER the base rules.
+   Class names kept from the old shell (.app .side .main .page .cards .card .tiles .tile .table-wrap
+   .state .chip .lang .viz); new components add .seg .btn .sort .pager. */
 @import './styles/tokens.css';
 @import './styles/base.css';
 @import './styles/shell.css';

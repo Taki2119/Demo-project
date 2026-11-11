@@ -1,7 +1,7 @@
-// Sắp xếp bảng — hàm THUẦN (kit 03 §8).
-//   · sort ỔN ĐỊNH; ô null LUÔN nằm cuối ở cả hai chiều;
-//   · chuỗi so bằng Intl.Collator('ja');
-//   · bấm lần đầu: cột số ⇒ desc, cột chữ ⇒ asc.
+// Table sorting — PURE functions (kit 03 §8).
+//   · STABLE sort; null cells ALWAYS last in both directions;
+//   · strings compared with Intl.Collator('ja');
+//   · first click: numeric column ⇒ desc, text column ⇒ asc.
 
 export type SortDir = 'asc' | 'desc';
 export interface SortState {
@@ -28,7 +28,7 @@ export function sortRows<T>(rows: readonly T[], valueFn: (row: T) => SortValue, 
     .map((x) => x.row);
 }
 
-/** Cùng cột ⇒ đảo chiều; cột khác ⇒ chiều đầu tiên `first`. */
+/** Same column ⇒ flip direction; different column ⇒ the initial direction `first`. */
 export function toggleSort(cur: SortState | null, key: string, first: SortDir): SortState {
   if (cur && cur.key === key) return { key, dir: cur.dir === 'asc' ? 'desc' : 'asc' };
   return { key, dir: first };

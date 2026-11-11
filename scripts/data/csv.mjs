@@ -1,5 +1,5 @@
-// CSV theo đúng thứ COPY của Postgres đọc: `null` ⇒ ô TRỐNG không nháy (= NULL); chuỗi có
-// dấu phẩy / nháy / xuống dòng thì bọc nháy kép. Boolean ra `true` / `false`.
+// CSV exactly as Postgres COPY reads it: `null` ⇒ an EMPTY unquoted cell (= NULL); strings with
+// commas / quotes / newlines are wrapped in double quotes. Booleans come out as `true` / `false`.
 
 function cell(v) {
   if (v == null) return '';

@@ -9,7 +9,7 @@ initRouter();
 document.documentElement.lang = useLangStore.getState().lang;
 
 const root = document.getElementById('root');
-if (!root) throw new Error('#root không tồn tại');
+if (!root) throw new Error('#root does not exist');
 createRoot(root).render(
   <StrictMode>
     <App />

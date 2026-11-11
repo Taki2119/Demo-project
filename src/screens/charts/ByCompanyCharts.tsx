@@ -1,4 +1,4 @@
-// Biểu đồ trang Theo công ty (nạp động): ghế dùng vs MAU theo gói (scatter, ≤3 nhóm) + top 10 MRR.
+// Charts for the By company page (lazy-loaded): seats used vs MAU by plan (scatter, ≤3 groups) + top 10 MRR.
 import type { Row } from '../../data/api';
 import { num } from '../../data/chartData';
 import { useColumnLabel, useLabel } from '../../data/labels';
@@ -17,7 +17,7 @@ export default function ByCompanyCharts({ rows }: { rows: readonly Row[] }) {
   const col = useColumnLabel();
   const label = useLabel();
 
-  // Nhóm = gói có mặt trong dữ liệu (lọc gói ⇒ 1 nhóm). Thứ tự theo catalog.
+  // Group = plan present in the data (plan filter ⇒ 1 group). Order follows the catalog.
   const plans = PLAN_KEYS.filter((p) => p !== 'all' && rows.some((r) => r.plan_id === p));
   const colors = seriesColors(plans.length);
   const groups: LegendItem[] = plans.map((p, i) => ({ key: p, label: label('plan', p), color: colors[i] as string, kind: 'dot' }));

@@ -1,5 +1,5 @@
-// PRNG có SEED (mulberry32) + các phép rút hay dùng. Cùng seed ⇒ cùng bộ dữ liệu, từng byte.
-// ⚠ Không dùng Math.random() ở bất cứ đâu trong bộ sinh — một lần gọi là mất tính tái lập.
+// SEEDED PRNG (mulberry32) + commonly used draws. Same seed ⇒ same dataset, byte for byte.
+// ⚠ Never use Math.random() anywhere in the generator — a single call breaks reproducibility.
 
 export function makeRng(seed) {
   let a = hashSeed(seed) >>> 0;
@@ -12,12 +12,12 @@ export function makeRng(seed) {
   };
   const rng = {
     float: next,
-    /** số nguyên trong [lo, hi] (cả hai đầu) */
+    /** integer in [lo, hi] (both ends inclusive) */
     int: (lo, hi) => lo + Math.floor(next() * (hi - lo + 1)),
     uniform: (lo, hi) => lo + next() * (hi - lo),
     chance: (p) => next() < p,
     pick: (arr) => arr[Math.floor(next() * arr.length)],
-    /** chọn theo trọng số: [[giá trị, trọng số], …] */
+    /** weighted pick: [[value, weight], …] */
     weighted: (pairs) => {
       const total = pairs.reduce((s, [, w]) => s + w, 0);
       let r = next() * total;
@@ -43,7 +43,7 @@ export function makeRng(seed) {
       } while (p > l);
       return k - 1;
     },
-    /** rng con cho một thực thể — đổi số lượt rút ở thực thể này không làm lệch thực thể khác */
+    /** child rng for one entity — changing the number of draws for this entity does not shift other entities */
     fork: (label) => makeRng(`${seed}/${label}`),
   };
   return rng;

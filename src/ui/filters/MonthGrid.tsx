@@ -1,5 +1,5 @@
-// Lưới tháng trong panel lọc: mỗi NĂM có dữ liệu một khối 12 ô (4 × 3). Ô ngoài phạm vi dữ liệu bị
-// khoá (disabled) chứ không ẩn, để lưới năm nào cũng đủ 12 ô và thẳng hàng.
+// Month grid in the filter panel: each YEAR with data gets a block of 12 cells (4 × 3). Cells outside the data range are
+// locked (disabled) rather than hidden, so every year's grid has all 12 cells and lines up.
 import { inRange, type MonthRange, type Ym } from '../../data/period';
 import { monthLabel } from '../format';
 import { useLangStore, useT } from '../i18n';
@@ -13,11 +13,11 @@ export function MonthGrid({
   onPick,
   onHover,
 }: {
-  /** Tháng có trong dữ liệu (tăng dần). */
+  /** Months present in the data (ascending). */
   months: readonly Ym[];
-  /** Khoảng đang tô (nền nhạt); null ⇒ không tô. */
+  /** Range being highlighted (light background); null ⇒ no highlight. */
   selected: MonthRange | null;
-  /** Ô đầu/cuối tô đậm + aria-pressed. */
+  /** Start/end cells highlighted strongly + aria-pressed. */
   edges: readonly Ym[];
   onPick: (ym: Ym) => void;
   onHover?: (ym: Ym | null) => void;

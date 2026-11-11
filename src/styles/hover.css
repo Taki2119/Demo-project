@@ -1,5 +1,5 @@
-/* Hover + nhấn (kit 02 §5). Đứng CUỐI cùng trong thứ tự import.
-   Nút phẳng: sáng = nhấc 2px + bóng đổ xuống · tối = nhấc 1px + quầng --accent-fill · nhấn = scale(.97). */
+/* Hover + press (kit 02 §5). Comes LAST in the import order.
+   Flat buttons: light = lift 2px + drop shadow · dark = lift 1px + --accent-fill glow · press = scale(.97). */
 
 .btn, .ui-filter {
   transition: background-color .16s ease, box-shadow .2s ease, color .16s ease,
@@ -10,13 +10,13 @@
 :root[data-theme='dark'] .btn:not(:disabled):hover, :root[data-theme='dark'] .ui-filter:hover { transform: translateY(-1px); }
 .btn:not(:disabled):active, .ui-filter:active { transform: scale(.97); }
 
-/* Thẻ Home bấm được. Kit không ghi hover cho thẻ — (tự chọn): nhấc như nút + vành --accent. */
+/* Clickable Home cards. The kit specifies no card hover — (our choice): lift like a button + --accent rim. */
 .card { transition: transform .2s cubic-bezier(.2,.9,.3,1), border-color .16s ease; }
 .card:hover { transform: translateY(-2px); border-color: var(--accent); }
 :root[data-theme='dark'] .card:hover { transform: translateY(-1px); }
 .card:active { transform: scale(.985); }
 
-/* Mọi selector hover có transform đều có bản transform:none ở đây. */
+/* Every hover selector with a transform has a transform:none counterpart here. */
 @media (prefers-reduced-motion: reduce) {
   .btn:not(:disabled):hover,
   :root[data-theme='dark'] .btn:not(:disabled):hover,

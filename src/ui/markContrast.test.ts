@@ -1,9 +1,9 @@
-// Sàn màu của mark (kit 03 §5) — đọc hex TRỰC TIẾP từ styles/tokens.css, cho cả sáng lẫn tối.
-//   · mark ↔ "nền tệ nhất" của thẻ kính ≥ 2:1   (Ember: sáng #e8dbd0 · tối #543a25)
-//   · ΔE2000 giữa 6 chuỗi ≥ 15 · khi mô phỏng mù màu (D + P) ≥ 6
-//   · ΔE chuỗi ↔ --accent-fill ≥ 10 · ΔE trạng thái ↔ chuỗi ≥ 10
-//   · chữ ≥ 4.5 · đường kẻ bảng ≥ 2:1
-// LUẬT (người dùng chốt 2026-11-11): sàn "nền tệ nhất" CHỈ áp cho MARK (≥ 2:1); CHỮ đo ≥ 4.5:1 trên NỀN THẬT của chính chữ đó (--surface, --pill-flat…), không đo trên nền kính tệ nhất.
+// Mark colour floors (kit 03 §5) — reads hex DIRECTLY from styles/tokens.css, for both light and dark.
+//   · mark ↔ the glass card's "worst background" ≥ 2:1   (Ember: light #e8dbd0 · dark #543a25)
+//   · ΔE2000 between the 6 series ≥ 15 · under colour-blindness simulation (D + P) ≥ 6
+//   · ΔE series ↔ --accent-fill ≥ 10 · ΔE status ↔ series ≥ 10
+//   · text ≥ 4.5 · table rules ≥ 2:1
+// RULE (user decided 2026-11-11): the "worst background" floor applies ONLY to MARKS (≥ 2:1); TEXT is measured ≥ 4.5:1 on the text's OWN REAL background (--surface, --pill-flat…), not on the worst glass background.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 const css = readFileSync(fileURLToPath(new URL('../styles/tokens.css', import.meta.url)), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 function block(selector: string): Map<string, string> {
   const at = css.indexOf(`${selector} {`);
-  if (at < 0) throw new Error(`thiếu khối ${selector}`);
+  if (at < 0) throw new Error(`missing block ${selector}`);
   const body = css.slice(css.indexOf('{', at) + 1, css.indexOf('}', at));
   return new Map([...body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map((m) => [m[1] as string, (m[2] as string).trim()]));
 }
@@ -24,7 +24,7 @@ type RGB = [number, number, number];
 function hex(theme: Map<string, string>, name: string): RGB {
   const v = theme.get(name);
   const m = v?.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-  if (!m) throw new Error(`${name} không phải hex: ${v}`);
+  if (!m) throw new Error(`${name} is not hex: ${v}`);
   const h = (m[1] as string).length === 3 ? [...(m[1] as string)].map((c) => c + c).join('') : (m[1] as string);
   return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255) as RGB;
 }
@@ -35,7 +35,7 @@ const lum = (c: RGB) => { const [r, g, b] = toLin(c); return 0.2126 * r + 0.7152
 const contrast = (a: RGB, b: RGB) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p) as [number, number]; return (x + 0.05) / (y + 0.05); };
 const mix = (a: RGB, b: RGB, t: number) => a.map((v, i) => v * t + (b[i] as number) * (1 - t)) as RGB;
 
-// sRGB tuyến tính → Lab (D65)
+// linear sRGB → Lab (D65)
 function labOfLin([r, g, b]: RGB): RGB {
   const x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
   const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
@@ -64,7 +64,7 @@ function dE([L1, a1, b1]: RGB, [L2, a2, b2]: RGB): number {
   const Rt = -2 * Math.sqrt(Cbp ** 7 / (Cbp ** 7 + 25 ** 7)) * Math.sin(60 * Math.exp(-(((hb - 275) / 25) ** 2)) * rad);
   return Math.sqrt((dL / Sl) ** 2 + (dC / Sc) ** 2 + (dH / Sh) ** 2 + Rt * (dC / Sc) * (dH / Sh));
 }
-// Mô phỏng mù màu (Machado 2009, độ nặng 1.0) trên sRGB tuyến tính.
+// Colour-blindness simulation (Machado 2009, severity 1.0) on linear sRGB.
 const CVD: Record<string, number[][]> = {
   deutan: [[0.367322, 0.860646, -0.227968], [0.280085, 0.672501, 0.047413], [-0.01182, 0.04294, 0.968881]],
   protan: [[0.152286, 1.052583, -0.204868], [0.114503, 0.786281, 0.099216], [-0.003882, -0.048116, 1.051998]],
@@ -78,13 +78,13 @@ const SERIES = [1, 2, 3, 4, 5, 6].map((i) => `--series-${i}`);
 const MARKS = [...SERIES, ...[1, 2, 3, 4, 5].map((i) => `--ord-${i}`), '--ok-fill', '--ok-fill-2', '--crit-fill', '--crit-fill-2', '--line-solo', '--bar-fill'];
 const STATUS = ['--ok', '--warn', '--crit'];
 
-describe('thước đo', () => {
-  it('ΔE2000 khớp bảng kiểm Sharma 2005 (cặp 1 = 2.0425, cặp 17 = 27.1492)', () => {
+describe('measures', () => {
+  it('ΔE2000 matches the Sharma 2005 test table (pair 1 = 2.0425, pair 17 = 27.1492)', () => {
     expect(dE([50, 2.6772, -79.7751], [50, 0, -82.7485])).toBeCloseTo(2.0425, 4);
     expect(dE([22.7233, 20.0904, -46.694], [23.0331, 14.973, -42.5619])).toBeCloseTo(2.0373, 4);
     expect(dE([50, 2.5, 0], [73, 25, -18])).toBeCloseTo(27.1492, 4);
   });
-  it('tương phản đen–trắng = 21', () => {
+  it('black–white contrast = 21', () => {
     expect(contrast(parse('#000000'), parse('#ffffff'))).toBeCloseTo(21, 5);
   });
 });
@@ -92,26 +92,26 @@ describe('thước đo', () => {
 for (const [name, { tokens: t, worst }] of Object.entries(THEMES)) {
   describe(`mark · Ember ${name}`, () => {
     const bg = parse(worst);
-    it('mọi mark ≥ 2:1 trên nền kính tệ nhất', () => {
+    it('every mark ≥ 2:1 on the worst glass background', () => {
       for (const m of MARKS) expect(contrast(hex(t, m), bg), m).toBeGreaterThanOrEqual(2);
     });
-    it('ΔE2000 giữa 6 chuỗi ≥ 15', () => {
+    it('ΔE2000 between the 6 series ≥ 15', () => {
       for (const [a, b] of pairs(SERIES)) expect(dE(labOf(hex(t, a)), labOf(hex(t, b))), `${a}~${b}`).toBeGreaterThanOrEqual(15);
     });
-    it('ΔE giữa 6 chuỗi khi mô phỏng mù màu D + P ≥ 6', () => {
+    it('ΔE between the 6 series under colour-blindness simulation D + P ≥ 6', () => {
       for (const [kind, m] of Object.entries(CVD))
         for (const [a, b] of pairs(SERIES))
           expect(dE(labOfLin(sim(hex(t, a), m)), labOfLin(sim(hex(t, b), m))), `${kind} ${a}~${b}`).toBeGreaterThanOrEqual(6);
     });
-    it('ΔE chuỗi ↔ --accent-fill ≥ 10; trạng thái ↔ chuỗi ≥ 10', () => {
+    it('ΔE series ↔ --accent-fill ≥ 10; status ↔ series ≥ 10', () => {
       for (const s of SERIES) expect(dE(labOf(hex(t, s)), labOf(hex(t, '--accent-fill'))), s).toBeGreaterThanOrEqual(10);
       for (const st of STATUS) for (const s of SERIES) expect(dE(labOf(hex(t, st)), labOf(hex(t, s))), `${st}~${s}`).toBeGreaterThanOrEqual(10);
     });
-    it('chữ ≥ 4.5 (chữ trên --surface; chữ pill trên --pill-flat)', () => {
+    it('text ≥ 4.5 (text on --surface; pill text on --pill-flat)', () => {
       for (const c of ['--ink', '--ink-2', '--ink-3', '--accent-text']) expect(contrast(hex(t, c), hex(t, '--surface')), c).toBeGreaterThanOrEqual(4.5);
       expect(contrast(hex(t, '--on-pill-flat'), hex(t, '--pill-flat'))).toBeGreaterThanOrEqual(4.5);
     });
-    it('đường kẻ bảng (ink 34%) ≥ 2:1 trên nền kính tệ nhất', () => {
+    it('table rules (ink 34%) ≥ 2:1 on the worst glass background', () => {
       expect(contrast(mix(hex(t, '--ink'), bg, 0.34), bg)).toBeGreaterThanOrEqual(2);
     });
   });

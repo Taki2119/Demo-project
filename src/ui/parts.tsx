@@ -1,5 +1,5 @@
-// Các mảnh giao diện dùng chung. Hợp đồng (props + tên class) giữ từ khung; kiểu dáng theo
-// docs/ui-kit/ (CSS ở src/styles/*).
+// Shared UI pieces. The contract (props + class names) is kept from the frame; styling follows
+// docs/ui-kit/ (CSS in src/styles/*).
 import { useState, type ReactNode } from 'react';
 import type { Phase, Row } from '../data/api';
 import { useColumnLabel, useColumnUnit, useLabel } from '../data/labels';
@@ -26,7 +26,7 @@ export function LangToggle() {
   );
 }
 
-/** Trạng thái thay cho dữ liệu: chưa cấu hình API · đang tải · lỗi · rỗng. */
+/** State in place of data: API not configured · loading · error · empty. */
 export function StateBox({ phase, empty }: { phase: Phase; empty?: boolean }) {
   const t = useT();
   const msg =
@@ -39,9 +39,9 @@ export function Chip({ children }: { children: ReactNode }) {
   return <span className="chip">{children}</span>;
 }
 
-/** Đầu mỗi trang: nhãn "Dữ liệu mẫu" (luôn có, nằm trong luồng — không position: fixed) + chip
- *  "có số tới ngày …". `asOf` lấy từ updatedAt của nguồn (freshness.ts), KHÔNG từ đồng hồ máy;
- *  null ⇒ không hiện chip ngày. Trang không có dữ liệu (Giới thiệu) bỏ `asOf`. */
+/** Header of each page: the "Dữ liệu mẫu" (sample data) label (always present, in the flow — not position: fixed) + a
+ *  "có số tới ngày …" (data up to …) chip. `asOf` comes from the source's updatedAt (freshness.ts), NOT the machine clock;
+ *  null ⇒ no date chip. A page without data (About) omits `asOf`. */
 export function PageMeta({ asOf }: { asOf?: string | null }) {
   const t = useT();
   const lang = useLangStore((s) => s.lang);
@@ -53,7 +53,7 @@ export function PageMeta({ asOf }: { asOf?: string | null }) {
   );
 }
 
-// Cột chứa MÃ của một domain nhãn ⇒ ô hiện nhãn ja/vi thay cho mã.
+// Columns holding the CODE of a label domain ⇒ the cell shows the ja/vi label instead of the code.
 const CODE_DOMAIN: Record<string, string> = {
   plan_id: 'plan', plan_prev: 'plan', industry: 'industry', region: 'region', size_band: 'size_band',
   movement: 'movement', plan_change: 'plan_change', risk_band: 'risk_band', top_reason: 'top_reason',
@@ -61,9 +61,9 @@ const CODE_DOMAIN: Record<string, string> = {
   trigger: 'intervention_trigger', channel: 'intervention_channel',
 };
 
-/** Bảng số chung: tiêu đề cột + giá trị mã hoá lấy nhãn từ DB, số định dạng theo đơn vị của cột.
- *  Sort + chia trang theo kit 03 §8. State nằm TRONG bảng (giữ props cũ); chưa bấm sort thì giữ
- *  thứ tự nơi gọi truyền vào. */
+/** Shared number table: column headers + coded values take labels from the DB, numbers formatted by the column's unit.
+ *  Sort + pagination per kit 03 §8. State lives INSIDE the table (keeps the old props); until a sort is clicked, keep
+ *  the order the caller passed in. */
 export function DataTable({ rows, columns }: { rows: readonly Row[]; columns: readonly string[] }) {
   const lang = useLangStore((s) => s.lang);
   const col = useColumnLabel();
@@ -74,7 +74,7 @@ export function DataTable({ rows, columns }: { rows: readonly Row[]; columns: re
   const [size, setSize] = useState<PageSize>(PAGE_SIZES[0]);
 
   const isNumeric = (k: string) => typeof rows.find((r) => r[k] != null)?.[k] === 'number';
-  // Giá trị để sort = cái người xem THẤY: cột mã ⇒ nhãn; cờ ⇒ 1/0.
+  // Sort value = what the viewer SEES: code column ⇒ label; flag ⇒ 1/0.
   const sortValue = (r: Row, k: string): SortValue => {
     const v = r[k] ?? null;
     if (v == null) return null;
@@ -100,7 +100,7 @@ export function DataTable({ rows, columns }: { rows: readonly Row[]; columns: re
   const cell = (k: string, v: Row[string]) => {
     if (v == null) return NO_VALUE;
     if (typeof v === 'boolean') return v ? '✓' : '–';
-    // Cột tháng: nhãn tháng thay cho ngày đầu tháng ISO. Sort vẫn theo chuỗi ISO gốc.
+    // Month column: month label instead of the ISO first-of-month date. Sorting still uses the original ISO string.
     if (k === 'month' && typeof v === 'string') return monthLabel(v, lang);
     const domain = CODE_DOMAIN[k];
     if (domain && typeof v === 'string') return label(domain, v);
@@ -137,7 +137,7 @@ export function DataTable({ rows, columns }: { rows: readonly Row[]; columns: re
   );
 }
 
-/** `info` = khoá glossary ⇒ nút ⓘ cạnh nhãn (glossary.test.ts bắt mọi StatTile phải có). */
+/** `info` = glossary key ⇒ ⓘ button next to the label (glossary.test.ts requires it on every StatTile). */
 export function StatTile({ label, value, sub, info }: { label: string; value: string; sub?: string; info?: GlossaryKey }) {
   return (
     <div className="tile">

@@ -1,5 +1,5 @@
-// Thanh phân trang (kit 03 §8): <nav aria-label>, aria-current="page", chọn cỡ trang bằng nhóm nút.
-// Bảng ≤ cỡ trang nhỏ nhất (20 hàng) thì KHÔNG hiện.
+// Pagination bar (kit 03 §8): <nav aria-label>, aria-current="page", page size picked with a button group.
+// Table ≤ the smallest page size (20 rows) ⇒ NOT shown.
 import { count } from './format';
 import { useLangStore, useT } from './i18n';
 import { pageCount, pageItems, pageSlice, PAGE_SIZES, type PageSize } from './tablePage';

@@ -1,57 +1,57 @@
-# Hợp đồng API dữ liệu — thứ web app đang chờ phía Vercel trả về
+# Data API contract — what the web app expects the Vercel side to return
 
-Web app chỉ gọi **một** endpoint (`src/data/api.ts`). Bước Vercel phải dựng đúng hợp đồng này;
-đổi hợp đồng thì sửa cả hai phía.
+The web app calls only **one** endpoint (`src/data/api.ts`). The Vercel step must build exactly this contract;
+if the contract changes, update both sides.
 
 ```
 POST {VITE_API_URL}/api/board-data
 content-type: application/json
 
-{ "source": "<mã nguồn>", ...tham số }
+{ "source": "<source code>", ...params }
 ```
 
-Phản hồi `200`:
+Response `200`:
 
 ```json
 { "source": "revenue-monthly", "updatedAt": "2026-11-10", "rows": [ { "month": "2026-10-01", "plan_id": "growth", "mrr_end": 1234000 } ] }
 ```
 
-- `rows` là mảng object, khoá = **tên cột tiếng Anh** của view `mart`. Số `numeric` của Postgres
-  được phép trả dạng chuỗi, vì client ép lại (`numericRows`).
+- `rows` is an array of objects, keys = the **English column names** of the `mart` view. Postgres `numeric` values
+  may be returned as strings, because the client coerces them (`numericRows`).
 - `updatedAt` = `mart.as_of()`.
-- Còn trả thêm `rowCount`. Ngày là chuỗi `YYYY-MM-DD`; số là number.
-- Lỗi:
+- Also returns `rowCount`. Dates are `YYYY-MM-DD` strings; numbers are numbers.
+- Errors:
 
-| Mã | Khi nào |
+| Code | When |
 |---|---|
-| `400 bad_json` | body không đọc được |
-| `400 bad_source` | mã nguồn lạ |
-| `400 bad_params` | tham số sai dạng, hoặc có khoá lạ |
-| `403 forbidden_origin` | origin không có trong danh sách |
-| `405` | không phải `POST` |
-| `413 too_large` | phản hồi vượt trần dung lượng |
-| `429 rate_limited` | gọi quá nhịp |
-| `502 db_error` | DB lỗi; chi tiết chỉ ghi vào log |
+| `400 bad_json` | body can't be parsed |
+| `400 bad_source` | unknown source code |
+| `400 bad_params` | malformed params, or unknown keys |
+| `403 forbidden_origin` | origin not in the list |
+| `405` | not `POST` |
+| `413 too_large` | response exceeds the size cap |
+| `429 rate_limited` | called too often |
+| `502 db_error` | DB error; details go to the log only |
 
-  Gặp lỗi, client hiện "không tải được dữ liệu", không vẽ gì.
-- Code: `server/lib/sources.js` (registry) · `server/lib/handler.js`. Triển khai:
+  On error, the client shows "couldn't load data" and draws nothing.
+- Code: `server/lib/sources.js` (registry) · `server/lib/handler.js`. Deployment:
   [`server/README.md`](../server/README.md).
-- CORS: chỉ cho origin của GitHub Pages (và `http://localhost:5180` khi phát triển).
+- CORS: only the GitHub Pages origin (and `http://localhost:5180` during development).
 
-| `source` | View | Tham số | Ghi chú |
+| `source` | View | Params | Notes |
 |---|---|---|---|
-| `revenue-monthly` | `mart.revenue_monthly` | — | mọi tháng × mọi gói; client tự gộp "tất cả gói" |
-| `users-monthly` | `mart.users_monthly` | — | như trên |
-| `user-monthly` | `mart.user_monthly` | `plan?`, `month?` | nhiều dòng ⇒ server lọc; không có `month` thì lấy tháng mới nhất |
-| `company-monthly` | `mart.company_monthly` | `plan?`, `month?` | như trên |
-| `churn-watchlist` | `mart.churn_watchlist` | — | ảnh chụp mới nhất |
-| `churn-history` | `mart.churn_risk_snapshot` | — | 52 tuần, cho bảng độ chính xác |
+| `revenue-monthly` | `mart.revenue_monthly` | — | every month × every plan; the client rolls up "all plans" itself |
+| `users-monthly` | `mart.users_monthly` | — | same as above |
+| `user-monthly` | `mart.user_monthly` | `plan?`, `month?` | many rows ⇒ filtered on the server; without `month` takes the latest month |
+| `company-monthly` | `mart.company_monthly` | `plan?`, `month?` | same as above |
+| `churn-watchlist` | `mart.churn_watchlist` | — | latest snapshot |
+| `churn-history` | `mart.churn_risk_snapshot` | — | 52 weeks, for the accuracy table |
 | `interventions-monthly` | `mart.interventions_monthly` | — | |
-| `labels` | `mart.labels` | — | nhãn ja/vi của giá trị mã hoá |
-| `column-labels` | `mart.column_labels` | — | nhãn ja/vi + đơn vị của cột |
+| `labels` | `mart.labels` | — | ja/vi labels of coded values |
+| `column-labels` | `mart.column_labels` | — | ja/vi labels + units of columns |
 
-Cửa sổ **Hỏi AI** (bản demo) không có endpoint riêng. Nó gọi lại đúng các nguồn ở bảng
-trên (`src/ask/q/*.ts` → `needs`) và dùng chung cache của client với các bảng.
+The **Ask AI** window (demo version) has no endpoint of its own. It reuses exactly the sources in the table
+above (`src/ask/q/*.ts` → `needs`) and shares the client cache with the boards.
 
-⚠ **SQL cố định theo `source` ở phía server**, client không gửi SQL. Tham số đi qua
-placeholder, không ghép chuỗi. Server chạy bằng role `analytics_reader` (chỉ đọc, chỉ `mart`).
+⚠ **SQL is fixed per `source` on the server side**, the client does not send SQL. Params go through
+placeholders, never string concatenation. The server runs as role `analytics_reader` (read-only, `mart` only).

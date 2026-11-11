@@ -1,8 +1,8 @@
-// Tiêu đề cột sort được (kit 03 §8): <th aria-sort> bọc <button>. Cột số: icon bên TRÁI chữ.
+// Sortable column header (kit 03 §8): <th aria-sort> wrapping a <button>. Numeric columns: icon to the LEFT of the text.
 import type { SortState } from './tableSort';
 
 function SortIcon({ dir }: { dir: 'asc' | 'desc' | null }) {
-  // Chưa sort: 2 mũi tên mờ. Đang sort: 1 mũi tên theo chiều.
+  // Not sorted: 2 faded arrows. Sorted: 1 arrow in the sort direction.
   const up = 'M5 1 L9 5 H1 Z';
   const down = 'M5 9 L1 5 H9 Z';
   return (

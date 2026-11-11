@@ -1,4 +1,4 @@
-// Chú giải (kit 03 §5): chữ dùng token CHỮ; ô màu mô phỏng đúng hình của mark, 11×11, bo 30%.
+// Legend (kit 03 §5): text uses TEXT tokens; the swatch mimics the mark's shape exactly, 11×11, 30% radius.
 import type { CSSProperties } from 'react';
 
 export type SwatchKind = 'bar' | 'dot' | 'line' | 'dash';
@@ -15,7 +15,7 @@ export function Swatch({ color, kind }: { color: string; kind: SwatchKind }) {
 }
 
 export function Legend({ items }: { items: readonly LegendItem[] }) {
-  if (items.length < 2) return null; // 1 chuỗi: tiêu đề thẻ đã là tên chuỗi
+  if (items.length < 2) return null; // 1 series: the card title is already the series name
   return (
     <ul className="ui-legend">
       {items.map((it) => (

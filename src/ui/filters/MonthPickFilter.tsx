@@ -1,4 +1,4 @@
-// Chọn MỘT tháng (kit 01 §6 PickFilter, dạng lưới tháng). Bấm ô ⇒ áp dụng + đóng + focus về nút.
+// Pick ONE month (kit 01 §6 PickFilter, month-grid form). Click a cell ⇒ apply + close + focus back to the button.
 import { createPortal } from 'react-dom';
 import type { Ym } from '../../data/period';
 import { useT } from '../i18n';

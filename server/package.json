@@ -2,7 +2,7 @@
   "name": "saas-analytics-api",
   "private": true,
   "type": "module",
-  "description": "API đọc dữ liệu (Vercel Functions) — Root Directory của project Vercel là thư mục này.",
+  "description": "Data read API (Vercel Functions) — this folder is the Vercel project's Root Directory.",
   "engines": {
     "node": "22.x"
   },

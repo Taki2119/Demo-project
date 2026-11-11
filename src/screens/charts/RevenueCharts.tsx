@@ -1,4 +1,4 @@
-// Biểu đồ trang Doanh thu (nạp động — kéo Recharts theo). Nhận dòng THÁNG đã gộp theo gói.
+// Charts for the Revenue page (lazy-loaded — pulls Recharts in). Receives MONTH rows already rolled up by plan.
 import type { Row } from '../../data/api';
 import { maxAbs, pickColumns, stackTotals } from '../../data/chartData';
 import { useColumnLabel } from '../../data/labels';
@@ -16,7 +16,7 @@ export default function RevenueCharts({ rows }: { rows: readonly Row[] }) {
   const col = useColumnLabel();
   const data = pickColumns(rows, 'month', KEYS);
 
-  // Thang tiền chọn theo ĐÍCH của từng thẻ ⇒ mọi nhãn trục cùng đơn vị (in ở đầu thẻ).
+  // Money scale chosen by each card's TARGET ⇒ all axis labels share one unit (printed at the top of the card).
   const money = (points: readonly Point[], keys: readonly string[]): ChartFormat & { unit: string } => {
     const s = moneyScale(maxAbs(points, keys) ?? 0, lang);
     return {
@@ -30,15 +30,15 @@ export default function RevenueCharts({ rows }: { rows: readonly Row[] }) {
 
   const mrrFmt = money(data, ['mrr_end']);
 
-  // Cột phân cực: VÀO (mới, mở rộng) trên mốc 0 · RA (thu hẹp, huỷ — mart đã chở số âm) dưới.
-  // Kênh mã hoá thứ hai cho tốt/xấu = VỊ TRÍ (trên/dưới 0), không chỉ màu.
+  // Diverging bars: IN (new, expansion) above 0 · OUT (contraction, churn — the mart already carries negatives) below.
+  // Second encoding channel for good/bad = POSITION (above/below 0), not just colour.
   const moves: BarSpec[] = [
     { key: 'new_mrr', label: col('new_mrr'), color: 'var(--ok-fill)' },
     { key: 'expansion_mrr', label: col('expansion_mrr'), color: 'var(--ok-fill-2)' },
     { key: 'contraction_mrr', label: col('contraction_mrr'), color: 'var(--crit-fill-2)', sign: -1 },
     { key: 'churned_mrr', label: col('churned_mrr'), color: 'var(--crit-fill)', sign: -1 },
   ];
-  // Biên độ của cột phân cực = tổng chồng mỗi phía (chỉ để chọn đơn vị trục; ô thiếu bị BỎ QUA).
+  // Extent of the diverging bars = stacked total per side (only to pick the axis unit; missing cells are SKIPPED).
   const movesFmt = money(stackTotals(data, moves), ['up', 'down']);
 
   const billed: BarSpec[] = [{ key: 'invoiced_amount', label: col('invoiced_amount'), color: 'var(--series-2)' }];

@@ -1,5 +1,5 @@
-// Một bảng của một gói. KHUNG: vỏ trang + bộ lọc tháng + trạng thái dữ liệu + ô số chính + bảng số.
-// Biểu đồ của từng bảng cắm vào `<section className="viz">` (nạp động, xem CHARTS).
+// One board of one plan. FRAME: page shell + month filter + data state + headline stat tiles + number table.
+// Each board's charts plug into `<section className="viz">` (lazy-loaded, see CHARTS).
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 'react';
 import { useSource, type Params, type Row } from '../data/api';
 import { useColumnLabel, useLabel } from '../data/labels';
@@ -24,8 +24,8 @@ const TABLE_COLUMNS: Record<BoardKey, readonly string[]> = {
 
 const num = (v: unknown) => (typeof v === 'number' ? v : null);
 
-// Biểu đồ nạp ĐỘNG (Recharts không được vào chunk đầu). Mỗi bảng một chunk; Recharts tách chunk chung.
-// asOf = ngày dữ liệu của nguồn (updatedAt = mart.as_of()), KHÔNG phải đồng hồ máy người xem.
+// Charts are lazy-loaded (Recharts must not get into the initial chunk). One chunk per board; Recharts splits into a shared chunk.
+// asOf = the source's data date (updatedAt = mart.as_of()), NOT the viewer's machine clock.
 type ChartsProps = { rows: readonly Row[]; asOf: string | null };
 const CHARTS: Record<BoardKey, LazyExoticComponent<ComponentType<ChartsProps>>> = {
   revenue: lazy(boardChunk('revenue', () => import('./charts/RevenueCharts'))),
@@ -68,9 +68,9 @@ export function BoardScreen({ plan, board }: { plan: PlanKey; board: BoardKey })
   return board === 'revenue' || board === 'users' ? <MonthlyBoard plan={plan} board={board} /> : <SnapshotBoard plan={plan} board={board} />;
 }
 
-/** Doanh thu · Người dùng: API trả MỌI tháng ⇒ lọc KHOẢNG tháng ở trình duyệt.
- *  Ô số: tồn kho = tháng CUỐI khoảng · luồng = CỘNG cả khoảng · so với khoảng trước dài bằng nhau
- *  (khoảng đó không nằm trọn trong dữ liệu ⇒ "—"). Tỉ lệ (ARPA, DAU/MAU, dùng ghế) = tháng cuối. */
+/** Revenue · Users: the API returns EVERY month ⇒ filter the month RANGE in the browser.
+ *  Stat tiles: stock = LAST month of the range · flow = SUM over the range · compared with the previous range of equal length
+ *  (that range not fully inside the data ⇒ "—"). Ratios (ARPA, DAU/MAU, seat usage) = last month. */
 function MonthlyBoard({ plan, board }: { plan: PlanKey; board: BoardKey }) {
   const t = useT();
   const lang = useLangStore((s) => s.lang);
@@ -88,7 +88,7 @@ function MonthlyBoard({ plan, board }: { plan: PlanKey; board: BoardKey }) {
   const end = r ? rowAt(all, r.to) : null;
   const v = (key: string) => (end ? num(end[key]) : null);
 
-  // Số phụ: "[kỳ · ]±x% so với …". Không có kỳ trước ⇒ "—".
+  // Secondary figure: "[period · ]±x% vs …". No previous period ⇒ "—".
   const stockSub = (key: string, withMonth: boolean) => {
     if (!r) return undefined;
     const d = pct(deltaRate(stockAt(all, r.to, key), prev ? stockAt(all, prev.to, key) : null), lang);
@@ -135,9 +135,9 @@ function MonthlyBoard({ plan, board }: { plan: PlanKey; board: BoardKey }) {
   );
 }
 
-/** Theo người dùng · Theo công ty: mỗi lần MỘT tháng, truyền tham số `month` SẴN CÓ của API.
- *  Danh sách tháng lấy từ dữ liệu (nguồn revenue-monthly — mọi tháng của mart), không từ đồng hồ.
- *  Link có `?month=` ⇒ chờ danh sách tháng rồi mới nạp (khỏi nạp nhầm tháng mới nhất trước). */
+/** By user · By company: ONE month at a time, passing the API's EXISTING `month` parameter.
+ *  The month list comes from the data (the revenue-monthly source — every month in the mart), not from the clock.
+ *  Link with `?month=` ⇒ wait for the month list before loading (avoids loading the latest month by mistake first). */
 function SnapshotBoard({ plan, board }: { plan: PlanKey; board: BoardKey }) {
   const t = useT();
   const list = useSource('revenue-monthly');
@@ -147,7 +147,7 @@ function SnapshotBoard({ plan, board }: { plan: PlanKey; board: BoardKey }) {
   const params: Params = {};
   if (plan !== 'all') params.plan = plan;
   if (f.dirty && f.month) params.month = f.month;
-  // Chỉ chờ khi URL có `month` mà danh sách tháng chưa về (lỗi / chưa cấu hình ⇒ thôi chờ).
+  // Only wait when the URL has `month` and the month list hasn't arrived (error / not configured ⇒ stop waiting).
   const ready = q.month == null || months != null || list.phase === 'failed' || list.phase === 'off';
   const { phase, data } = useSource(boardOf(board).source, params, ready);
   const asOf = data?.updatedAt ?? null;

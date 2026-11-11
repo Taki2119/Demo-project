@@ -1,5 +1,5 @@
-// Câu trả lời của bộ câu hỏi mẫu, chạy trên dữ liệu GIẢ nhỏ, tính tay được.
-// Dữ liệu này chỉ nằm trong test (không vào bundle — §2.1).
+// Answers of the sample question set, run on small FAKE data that can be computed by hand.
+// This data lives only in the test (never in the bundle — §2.1).
 import { describe, expect, it } from 'vitest';
 import type { Row, SourceData } from '../data/api';
 import type { SourceKey } from '../nav/catalog';
@@ -7,13 +7,13 @@ import type { Lang } from '../ui/i18n';
 import { GROUPS, type Ctx } from './kit';
 import { QUESTIONS, STARTERS, questionById, resolve, resolveId } from './questions';
 
-// ── dữ liệu giả ──────────────────────────────────────────────────────────────
+// ── fake data ────────────────────────────────────────────────────────────────
 const PLANS = ['starter', 'growth', 'scale'] as const;
 const MONTHS = Array.from({ length: 14 }, (_, i) => {
   const m = 10 + i; // 2025-10 … 2026-11
   return `${2025 + Math.floor((m - 1) / 12)}-${String(((m - 1) % 12) + 1).padStart(2, '0')}`;
 });
-const LAST = MONTHS.at(-1)!; // 2026-11, tháng đang chạy
+const LAST = MONTHS.at(-1)!; // 2026-11, the current (running) month
 const k = (p: string) => PLANS.indexOf(p as (typeof PLANS)[number]) + 1;
 
 const revenue: Row[] = MONTHS.flatMap((ym, i) =>
@@ -151,9 +151,9 @@ const ctx = (lang: Lang, over: Partial<Ctx> = {}): Ctx => ({
 
 const build = (id: string, c: Ctx) => questionById(id)!.build(c);
 
-// ── bộ câu hỏi ──────────────────────────────────────────────────────────────
-describe('bộ câu hỏi', () => {
-  it('đủ nhiều, id không trùng, mỗi nhóm có câu, ≥ 2 cách hỏi mỗi ngôn ngữ', () => {
+// ── question set ────────────────────────────────────────────────────────────
+describe('question set', () => {
+  it('large enough, unique ids, every group has questions, ≥ 2 phrasings per language', () => {
     expect(QUESTIONS.length).toBeGreaterThanOrEqual(35);
     expect(new Set(QUESTIONS.map((q) => q.id)).size).toBe(QUESTIONS.length);
     for (const g of GROUPS) expect(QUESTIONS.some((q) => q.group === g)).toBe(true);
@@ -162,15 +162,15 @@ describe('bộ câu hỏi', () => {
       expect(q.ask.vi.length, q.id).toBeGreaterThanOrEqual(2);
     }
   });
-  it('related + STARTERS trỏ tới câu có thật', () => {
+  it('related + STARTERS point to existing questions', () => {
     for (const q of QUESTIONS) for (const r of q.related) expect(questionById(r), `${q.id} → ${r}`).toBeTruthy();
     for (const id of STARTERS) expect(questionById(id), id).toBeTruthy();
   });
-  it('nguồn cần nạp chỉ là nguồn SẴN CÓ của API (không SQL mới)', () => {
+  it('sources to load are only EXISTING API sources (no new SQL)', () => {
     const known = new Set(['revenue-monthly', 'users-monthly', 'user-monthly', 'company-monthly', 'churn-watchlist', 'churn-history', 'interventions-monthly']);
     for (const q of QUESTIONS) for (const n of q.needs({ plan: 'growth', topN: 5 })) expect(known.has(n.source), `${q.id}: ${n.source}`).toBe(true);
   });
-  it('tham số gói chỉ gửi lên API cho nguồn nhận nó', () => {
+  it('the plan parameter is only sent to the API for sources that accept it', () => {
     for (const q of QUESTIONS)
       for (const n of q.needs({ plan: 'growth', topN: 5 })) {
         if (n.source === 'company-monthly' || n.source === 'user-monthly') expect(n.params).toEqual({ plan: 'growth' });
@@ -179,7 +179,7 @@ describe('bộ câu hỏi', () => {
   });
 });
 
-describe('mọi câu trả lời dựng được ở cả ja và vi', () => {
+describe('every answer builds in both ja and vi', () => {
   for (const q of QUESTIONS) {
     it.each(['ja', 'vi'] as const)(`${q.id} (%s)`, (lang) => {
       const a = q.build(ctx(lang));
@@ -187,20 +187,20 @@ describe('mọi câu trả lời dựng được ở cả ja và vi', () => {
       const all = [a!.text, a!.basis, a!.period, ...a!.figures.flatMap((f) => [f.label, f.value, f.sub ?? '']), ...(a!.table?.head ?? []), ...(a!.table?.rows.flat() ?? [])].join(' | ');
       expect(all).not.toMatch(/undefined|NaN|\bnull\b|\[object/);
       expect(a!.text.length).toBeGreaterThan(10);
-      // Tên chuỗi của biểu đồ đường hiện trong tooltip ⇒ phải NGẮN (không phải nguyên câu hỏi).
+      // The line chart's series name shows in the tooltip ⇒ must be SHORT (not the whole question).
       if (a!.chart?.kind === 'line') expect(a!.chart.label.length, q.id).toBeLessThanOrEqual(20);
       if (a!.table) {
         expect(a!.table.numeric).toHaveLength(a!.table.head.length);
         for (const r of a!.table.rows) expect(r).toHaveLength(a!.table.head.length);
       }
-      // Câu trả lời tiếng Nhật không lẫn chữ tiếng Việt có dấu, và ngược lại
+      // Japanese answers contain no accented Vietnamese letters, and vice versa
       if (lang === 'ja') expect(a!.text).not.toMatch(/[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i);
       else expect(a!.text).not.toMatch(/[぀-ヿ]/);
     });
   }
 });
 
-describe('không có dữ liệu ⇒ null, không vỡ', () => {
+describe('no data ⇒ null, no crash', () => {
   it.each(QUESTIONS.map((q) => q.id))('%s', (id) => {
     expect(build(id, ctx('vi', { data: {} }))).toBeNull();
     const empty = Object.fromEntries(Object.keys(DATA).map((s) => [s, { rows: [], updatedAt: null }]));
@@ -208,66 +208,66 @@ describe('không có dữ liệu ⇒ null, không vỡ', () => {
   });
 });
 
-describe('số tính đúng (tính tay trên dữ liệu giả)', () => {
-  // tháng cuối i = 13: MRR = Σ_k (100000k + 130000k) = 230000 × 6 = 1.380.000; tháng trước i = 12: 220000 × 6
-  it('MRR hiện tại + so tháng trước; tháng chưa trọn ghi ngày chốt', () => {
+describe('numbers are correct (hand-computed on fake data)', () => {
+  // last month i = 13: MRR = Σ_k (100000k + 130000k) = 230000 × 6 = 1.380.000; previous month i = 12: 220000 × 6
+  it('current MRR + vs. previous month; partial month shows the cut-off date', () => {
     const a = build('mrr_now', ctx('vi'))!;
     expect(a.figures[0]!.value).toBe('¥1.380.000');
     expect(a.figures[1]!.value).toBe('+¥60.000 (+4,5%)');
     expect(a.period).toBe('Tháng 11/2026 (tính đến 10/11/2026)');
   });
-  it('gói đã chọn ⇒ chỉ gói đó, có chip đã áp', () => {
+  it('plan selected ⇒ only that plan, with an "applied" chip', () => {
     const a = build('mrr_now', ctx('vi', { slots: { plan: 'growth', topN: null } }))!;
     expect(a.figures[0]!.value).toBe('¥460.000'); // k = 2
     expect(a.applied.plan).toBe('growth');
     expect(a.text).toContain('gói plan:growth');
   });
-  it('huỷ đọc trên tháng ĐÃ CHỐT gần nhất (10/2026), không phải tháng đang chạy', () => {
+  it('churn is read on the latest CLOSED month (10/2026), not the running month', () => {
     const a = build('churn_mrr', ctx('vi'))!;
     expect(a.period).toBe('Tháng 10/2026');
-    // churned = 4000 × (1+2+3) = 24.000; contraction 2.000 × 3 = 6.000; MRR đầu = tháng 9 (i = 11): 210000 × 6
+    // churned = 4000 × (1+2+3) = 24.000; contraction 2.000 × 3 = 6.000; starting MRR = September (i = 11): 210000 × 6
     expect(a.figures[0]!.value).toBe('¥24.000');
     expect(a.figures[2]!.value).toBe('2,4%'); // 30.000 / 1.260.000
   });
-  it('NRR 12 tháng = (đầu kỳ + mở rộng + thu hẹp + huỷ) ÷ đầu kỳ', () => {
+  it('12-month NRR = (start + expansion + contraction + churn) ÷ start', () => {
     const a = build('nrr_12m', ctx('vi'))!;
-    // 12 tháng chốt: 11/2025 … 10/2026; đầu kỳ = 10/2025 (i = 0): 100000 × 6 = 600.000
-    // mỗi tháng: +18.000 −6.000 −24.000 = −12.000 ⇒ 12 tháng −144.000 ⇒ 456.000 / 600.000 = 76%
+    // 12 closed months: 11/2025 … 10/2026; start of period = 10/2025 (i = 0): 100000 × 6 = 600.000
+    // each month: +18.000 −6.000 −24.000 = −12.000 ⇒ 12 months −144.000 ⇒ 456.000 / 600.000 = 76%
     expect(a.figures[0]!.value).toBe('76,0%');
   });
-  it('NRR không đủ 12 tháng chốt ⇒ "—", không bịa', () => {
+  it('NRR without 12 closed months ⇒ "—", nothing made up', () => {
     const short = { ...DATA, 'revenue-monthly': { rows: revenue.filter((r) => String(r.month) >= '2026-06'), updatedAt: '2026-11-10' } };
     expect(build('nrr_12m', ctx('vi', { data: short }))!.figures[0]!.value).toBe('—');
   });
-  it('top N theo tham số; công ty MRR = 0 không vào danh sách MRR', () => {
+  it('top N from the parameter; companies with MRR = 0 are not in the MRR list', () => {
     const a = build('top_companies_mrr', ctx('vi', { slots: { plan: null, topN: 3 } }))!;
     expect(a.table!.rows.map((r) => r[0])).toEqual(['Co 10', 'Co 9', 'Co 8']);
     expect(a.applied.topN).toBe(3);
   });
-  it('đổi gói: đếm nâng / hạ', () => {
+  it('plan changes: count upgrades / downgrades', () => {
     const a = build('plan_changes', ctx('ja'))!;
     expect(a.figures.map((f) => f.value)).toEqual(['1', '1']);
   });
-  it('người dùng chưa hoạt động: 4 / 15, người chưa từng dùng lên đầu', () => {
+  it('inactive users: 4 / 15, never-used users first', () => {
     const a = build('inactive_users', ctx('vi'))!;
     expect(a.figures[0]!.value).toBe('4');
     expect(a.table!.rows[0]![2]).toBe('Chưa từng dùng');
   });
-  it('rủi ro: đếm theo band, MRR có nguy cơ', () => {
+  it('risk: count by band, MRR at risk', () => {
     const b = build('risk_bands', ctx('vi'))!;
     expect(b.figures.map((f) => f.value)).toEqual(['1', '2']);
     const m = build('mrr_at_risk', ctx('vi'))!;
-    // hẹn huỷ + cao = 10.000 + 20.000 + 30.000 = 60.000 / tổng 360.000
+    // cancel scheduled + high = 10.000 + 20.000 + 30.000 = 60.000 / total 360.000
     expect(m.figures[0]!.value).toBe('¥60.000');
     expect(m.figures[0]!.sub).toBe('16,7%');
   });
-  it('chăm sóc: tỉ lệ giữ được bỏ lượt đang xử lý', () => {
+  it('interventions: save rate excludes pending ones', () => {
     const a = build('intervention_channel', ctx('vi'))!;
-    // gọi điện: 6 / (6 + 2 + 1) = 66,7%
+    // call: 6 / (6 + 2 + 1) = 66,7%
     expect(a.table!.rows[0]![0]).toBe('intervention_channel:call');
     expect(a.table!.rows[0]![5]).toBe('66,7%');
   });
-  it('độ chính xác: chỉ lần chấm đã có kết quả 90 ngày', () => {
+  it('accuracy: only scorings whose 90-day outcome is known', () => {
     const a = build('risk_accuracy', ctx('vi'))!;
     const high = a.table!.rows.find((r) => r[0] === 'risk_band:high')!;
     expect(high[1]).toBe('10');
@@ -275,15 +275,15 @@ describe('số tính đúng (tính tay trên dữ liệu giả)', () => {
   });
 });
 
-describe('đường đi đầu-cuối: câu gõ → câu trả lời', () => {
-  it('câu gõ tiếng Nhật khi giao diện là tiếng Việt vẫn trả lời (bằng tiếng Việt)', () => {
+describe('end-to-end path: typed query → answer', () => {
+  it('a Japanese query while the UI is Vietnamese still gets answered (in Vietnamese)', () => {
     const r = resolve('業種別の売上');
     expect(r.kind).toBe('answer');
     if (r.kind !== 'answer') return;
     const a = r.question.build(ctx('vi', { slots: r.slots }));
     expect(a!.text).toContain('ngành');
   });
-  it('bấm nút gợi ý ⇒ trả lời đúng câu đó', () => {
+  it('clicking a suggestion button ⇒ answers exactly that question', () => {
     const r = resolveId('arpa');
     expect(r?.kind).toBe('answer');
     expect(resolveId('khong-co')).toBeNull();

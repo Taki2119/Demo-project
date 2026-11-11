@@ -8,16 +8,16 @@ const NAMES = {
   scale: { ja: 'スケール', vi: 'Mở rộng' },
 };
 
-describe('fold — chuẩn hoá để so', () => {
-  it('Latin bỏ dấu, đ → d, chữ thường, NFKC', () => {
+describe('fold — normalize for comparison', () => {
+  it('Latin diacritics stripped, đ → d, lowercase, NFKC', () => {
     expect(fold('Doanh Thu ĐƯỢC bao nhiêu')).toBe('doanh thu duoc bao nhieu');
     expect(fold('ＭＲＲ')).toBe('mrr');
   });
-  it('KHÔNG bỏ dấu kana (が không thành か)', () => {
+  it('does NOT strip kana marks (が does not become か)', () => {
     expect(fold('解約が多い')).toBe('解約が多い');
     expect(fold('ｸﾞﾛｰｽ')).toBe('グロース');
   });
-  it('đặc trưng: từ + cặp từ; bigram tiếng Nhật; số thuần bị bỏ', () => {
+  it('features: words + word pairs; Japanese bigrams; pure numbers dropped', () => {
     const f = features(fold('Doanh thu 2026 theo ngành'));
     expect(f.has('w:doanh')).toBe(true);
     expect(f.has('p:doanh thu')).toBe(true);
@@ -26,28 +26,28 @@ describe('fold — chuẩn hoá để so', () => {
   });
 });
 
-describe('extractSlots — gói + top N', () => {
-  it('top N nhiều kiểu viết, chặn trần 50', () => {
+describe('extractSlots — plan + top N', () => {
+  it('top N in many spellings, capped at 50', () => {
     expect(extractSlots(fold('top 5 công ty')).slots.topN).toBe(5);
     expect(extractSlots(fold('上位20社')).slots.topN).toBe(20);
     expect(extractSlots(fold('15 người dùng nhiều nhất')).slots.topN).toBe(15);
     expect(extractSlots(fold('top 500')).slots.topN).toBe(50);
     expect(extractSlots(fold('MRR tháng 11')).slots.topN).toBeNull();
   });
-  it('gói: mã, nhãn ja, nhãn vi CHỈ sau chữ "gói"', () => {
+  it('plan: code, ja label, vi label ONLY after the word "gói"', () => {
     expect(extractSlots(fold('MRR growth'), NAMES).slots.plan).toBe('growth');
     expect(extractSlots(fold('グロースのMRR'), NAMES).slots.plan).toBe('growth');
     expect(extractSlots(fold('MRR gói Tăng trưởng'), NAMES).slots.plan).toBe('growth');
     expect(extractSlots(fold('mrr goi mo rong'), NAMES).slots.plan).toBe('scale');
-    // "tăng trưởng MRR", "MRR mở rộng" là nghĩa thường, không phải tên gói
+    // "tăng trưởng MRR", "MRR mở rộng" are ordinary meanings, not plan names
     expect(extractSlots(fold('tăng trưởng MRR'), NAMES).slots.plan).toBeNull();
     expect(extractSlots(fold('MRR mở rộng'), NAMES).slots.plan).toBeNull();
-    // chưa có nhãn DB ⇒ vẫn nhận mã
+    // no DB labels yet ⇒ the code is still recognized
     expect(extractSlots(fold('scale plan')).slots.plan).toBe('scale');
   });
 });
 
-describe('mọi câu mẫu tự khớp về chính nó', () => {
+describe('every sample question matches itself', () => {
   for (const q of QUESTIONS) {
     for (const p of [...q.ask.ja, ...q.ask.vi]) {
       it(`${q.id}: ${p}`, () => {
@@ -59,10 +59,10 @@ describe('mọi câu mẫu tự khớp về chính nó', () => {
   }
 });
 
-// Câu diễn đạt KHÁC câu mẫu — đây là bảng dùng để chỉnh ngưỡng (ANSWER_MIN), đừng sửa kỳ vọng
-// cho khớp code: thêm cách hỏi / từ khoá vào câu hỏi mẫu.
+// Queries phrased DIFFERENTLY from the sample questions — this is the table used to tune the threshold
+// (ANSWER_MIN); don't change expectations to fit the code: add phrasings / keywords to the sample question.
 const PARAPHRASES: [string, string][] = [
-  // tiếng Việt có dấu
+  // Vietnamese with diacritics
   ['MRR bây giờ bao nhiêu', 'mrr_now'],
   ['doanh thu hiện tại', 'mrr_now'],
   ['tỉ trọng doanh thu của từng gói', 'mrr_by_plan'],
@@ -101,13 +101,13 @@ const PARAPHRASES: [string, string][] = [
   ['nhân viên nào phụ trách nhiều khách rủi ro', 'risk_by_owner'],
   ['gọi điện hay email hiệu quả hơn', 'intervention_channel'],
   ['điểm rủi ro có chính xác không', 'risk_accuracy'],
-  // tiếng Việt KHÔNG dấu
+  // Vietnamese WITHOUT diacritics
   ['mrr hien tai bao nhieu', 'mrr_now'],
   ['doanh thu theo nganh', 'revenue_by_industry'],
   ['cong ty nao sap huy', 'cancel_scheduled'],
   ['ti le dung ghe', 'seat_usage'],
   ['khach hang moi thang nay', 'new_mrr'],
-  // tiếng Nhật
+  // Japanese
   ['MRRいくら？', 'mrr_now'],
   ['今の売上', 'mrr_now'],
   ['プランごとの売上構成', 'mrr_by_plan'],
@@ -143,14 +143,14 @@ const PARAPHRASES: [string, string][] = [
   ['スコアの精度', 'risk_accuracy'],
 ];
 
-describe('câu diễn đạt khác câu mẫu vẫn ra đúng câu trả lời', () => {
+describe('queries phrased differently from the samples still get the right answer', () => {
   it.each(PARAPHRASES)('%s → %s', (text, id) => {
     const r = resolve(text, NAMES);
     expect(r.kind === 'answer' ? r.question.id : `suggest(${r.suggestions.map((q) => q.id).join(',')})`).toBe(id);
   });
 });
 
-describe('câu lạc đề ⇒ chỉ gợi ý, không trả lời bừa', () => {
+describe('off-topic query ⇒ suggestions only, no random answer', () => {
   it.each(['thời tiết hôm nay thế nào', '今日の天気は？', 'asdfgh qwerty', '', '   ', 'xin chào', 'こんにちは'])('%s', (text) => {
     const r = resolve(text, NAMES);
     expect(r.kind).toBe('suggest');
@@ -161,8 +161,8 @@ describe('câu lạc đề ⇒ chỉ gợi ý, không trả lời bừa', () => 
   });
 });
 
-describe('trả lời kèm gợi ý + tham số', () => {
-  it('câu trả lời luôn có 3 câu liên quan, không trùng chính nó', () => {
+describe('answers come with suggestions + parameters', () => {
+  it('an answer always has 3 related questions, never itself', () => {
     for (const q of QUESTIONS) {
       const r = resolve(q.ask.vi[0]!, NAMES);
       if (r.kind !== 'answer') throw new Error(q.id);
@@ -170,7 +170,7 @@ describe('trả lời kèm gợi ý + tham số', () => {
       expect(r.related.map((x) => x.id)).not.toContain(r.question.id);
     }
   });
-  it('gói + top N đi theo câu trả lời', () => {
+  it('plan + top N carry over to the answer', () => {
     const r = resolve('top 5 công ty MRR lớn nhất gói Tăng trưởng', NAMES);
     expect(r.kind).toBe('answer');
     if (r.kind === 'answer') {
@@ -178,21 +178,21 @@ describe('trả lời kèm gợi ý + tham số', () => {
       expect(r.slots).toEqual({ plan: 'growth', topN: 5 });
     }
   });
-  it('câu hơi gần ⇒ gợi ý đúng chủ đề', () => {
+  it('somewhat close query ⇒ on-topic suggestions', () => {
     const r = resolve('khách hàng', NAMES);
     const ids = r.kind === 'answer' ? [r.question.id, ...r.related.map((q) => q.id)] : r.suggestions.map((q) => q.id);
     expect(ids.length).toBeGreaterThan(0);
   });
 });
 
-describe('autocomplete — gợi ý khi đang gõ', () => {
+describe('autocomplete — suggestions while typing', () => {
   const ids = (text: string, lang: 'ja' | 'vi' = 'vi') => autocomplete(text, lang, NAMES).map((x) => x.id);
-  it('dưới 2 ký tự hoặc chữ rác ⇒ không gợi ý', () => {
+  it('under 2 characters or garbage text ⇒ no suggestions', () => {
     expect(ids('m')).toEqual([]);
     expect(ids('  ')).toEqual([]);
     expect(ids('zxqv')).toEqual([]);
   });
-  it('tối đa 3, không trùng, câu hiện bằng ngôn ngữ đang chọn', () => {
+  it('at most 3, no duplicates, shown in the selected language', () => {
     for (const t of ['mrr', 'doanh thu', 'cong ty', 'người dùng', '解約', 'ユーザー', 'top']) {
       const r = autocomplete(t, 'vi', NAMES);
       expect(r.length, t).toBeLessThanOrEqual(AUTO_MAX);
@@ -200,14 +200,14 @@ describe('autocomplete — gợi ý khi đang gõ', () => {
     }
     for (const x of autocomplete('MRR', 'ja', NAMES)) expect(x.text).toMatch(/[\u3040-\u30ff\u4e00-\u9fff]/);
   });
-  it('gõ dở vẫn ra đúng chủ đề (có dấu / không dấu / tiếng Nhật)', () => {
+  it('partial input still finds the right topic (with / without diacritics / Japanese)', () => {
     expect(ids('MRR hiện')).toContain('mrr_now');
     expect(ids('doanh thu theo ng')).toContain('revenue_by_industry');
     expect(ids('cong ty sap h')).toContain('cancel_scheduled');
     expect(ids('解約予', 'ja')).toContain('cancel_scheduled');
     expect(ids('業種', 'ja')).toContain('revenue_by_industry');
   });
-  it('câu hiện ra CHỨA chữ đang gõ khi có câu mẫu như vậy (Tab điền đúng câu đó)', () => {
+  it('the shown question CONTAINS the typed text when such a sample exists (Tab fills in exactly that question)', () => {
     const r = autocomplete('hen huy', 'vi', NAMES);
     expect(r.length).toBeGreaterThan(0);
     expect(fold(r[0]!.text)).toContain('hen huy');

@@ -1,9 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Hội thoại của trang Hỏi AI (bản demo). Nằm trong bộ nhớ (zustand) ⇒ rời trang rồi quay lại vẫn
-// còn; F5 thì mất (không lưu đâu cả — không có gì cần giữ).
+// Conversation of the Ask AI page (demo version). Kept in memory (zustand) ⇒ leaving the page and
+// coming back keeps it; F5 loses it (not persisted anywhere — nothing worth keeping).
 //
-// Tin nhắn lưu MÃ câu hỏi + tham số + DỮ LIỆU THÔ, không lưu chữ đã dựng ⇒ đổi ngôn ngữ thì cả
-// cuộc trò chuyện dựng lại theo ngôn ngữ mới (câu trả lời là hàm thuần của dữ liệu + ngôn ngữ).
+// Messages store the question ID + parameters + RAW DATA, not the rendered text ⇒ switching language
+// re-renders the whole conversation in the new language (an answer is a pure function of data + language).
 // ─────────────────────────────────────────────────────────────────────────────
 import { create } from 'zustand';
 import { apiConfigured, loadSource, type SourceData } from '../data/api';
@@ -22,21 +22,21 @@ export type Message =
       kind: 'answer' | 'suggest';
       qid: string | null;
       slots: Slots;
-      /** answer ⇒ câu liên quan · suggest ⇒ câu gợi ý */
+      /** answer ⇒ related questions · suggest ⇒ suggested questions */
       more: string[];
       data: Partial<Record<SourceKey, SourceData>>;
     };
 
-/** Thời gian "đang phân tích" tối thiểu — để người xem thấy được bước xử lý (không phải chờ thật). */
+/** Minimum "analyzing" time — so the viewer can see the processing step (not a real wait). */
 export const THINK_MS = 650;
 
 interface ChatState {
   messages: Message[];
   busy: boolean;
   clear: () => void;
-  /** Câu gõ tự do. */
+  /** Free-typed question. */
   ask: (text: string, names: PlanNames) => Promise<void>;
-  /** Bấm câu gợi ý (giữ tham số của câu đang trả lời nếu có). */
+  /** Click a suggestion (keeps the parameters of the question being answered, if any). */
   askId: (id: string, slots?: Slots) => Promise<void>;
 }
 

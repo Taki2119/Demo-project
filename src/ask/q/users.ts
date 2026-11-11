@@ -1,4 +1,4 @@
-// Câu hỏi mẫu — nhóm NGƯỜI DÙNG. Nguồn: users-monthly (tháng × gói) · user-monthly (1 tháng, từng user).
+// Sample questions — USERS group. Sources: users-monthly (month × plan) · user-monthly (1 month, per user).
 import type { Row } from '../../data/api';
 import { dauAvg, seatUsage, stickiness } from '../../data/metrics';
 import { dayLabel } from '../../ui/format';
@@ -210,7 +210,7 @@ const usersTotal: Question = {
   },
 };
 
-// ── user-monthly: tháng mới nhất, từng người dùng ───────────────────────────
+// ── user-monthly: latest month, per user ────────────────────────────────────
 const UM = 'user-monthly' as const;
 const needUm = (s: Parameters<Question['needs']>[0]) => [{ source: UM, params: planParam(s) }];
 
@@ -276,7 +276,7 @@ const inactive: Question = {
     const idle = snap.rows.filter((r) => r.is_seat === true && n(r.active_days) === 0);
     const seats = snap.rows.filter((r) => r.is_seat === true).length;
     const k = topOf(ctx);
-    // Lâu không vào nhất lên đầu; chưa từng vào (null) đứng đầu hẳn.
+    // Longest since last visit first; never visited (null) comes at the very top.
     const list = [...idle].sort((a, b) => String(a.last_active_date ?? '').localeCompare(String(b.last_active_date ?? ''))).slice(0, k);
     const s = scopeOf(ctx);
     return {

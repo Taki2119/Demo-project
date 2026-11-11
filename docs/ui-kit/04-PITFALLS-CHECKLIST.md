@@ -1,83 +1,83 @@
-# 04 · Bẫy đã sập thật và checklist nghiệm thu
+# 04 · Pitfalls actually hit and the acceptance checklist
 
-Các bẫy dưới đây đều đã xảy ra thật ở repo nguồn. Đặc điểm chung: **build xanh, test xanh mà sản phẩm vẫn sai.**
-Nên mỗi bẫy đi kèm một cổng (test hoặc script) để bắt nó, thay vì chỉ ghi chú cho người đọc.
+Every pitfall below actually happened in the source repo. What they have in common: **build green, tests green, product still wrong.**
+So each pitfall comes with a gate (a test or a script) that catches it, rather than just a note for the reader.
 
-## A. Bẫy build / CSS
+## A. Build / CSS pitfalls
 
-| # | Bẫy | Cách chặn |
+| # | Pitfall | How to block it |
 |---|---|---|
-| 1 | **Nguồn đúng chưa chắc bản ship đúng.** Lightning CSS (Tailwind v4) gộp khai báo trùng, viết lại `@supports`, và gập `color-mix` hằng số thành `#0000` | Sau khi build, grep `dist/`. Dùng 2 script mẫu `check-bundle-glass.mjs` và `check-bundle-viewport.mjs` |
-| 2 | **Comment CSS đóng sớm.** Chữ đậm markdown đứng trước phép chia, ví dụ hai dấu sao rồi `/765`, ghép lại thành đúng chuỗi đóng comment. Rule ngay sau biến mất khỏi `dist/` | Test `cssSource.test.ts` quét một lượt toàn file, bắt mọi chuỗi đóng comment nằm ngoài comment |
-| 3 | `height:100vh; height:100dvh;` bị gộp, mất đường lui. Trình duyệt không hiểu `dvh` thì cột flex sập (đo được 563px trên khung 900px) | Viết đường lui riêng: `@supports not (height:100dvh)` |
-| 4 | `-webkit-backdrop-filter` chứa `url()` hoặc `var()` không hợp lệ thì Safari mất trắng kính | Không đưa `url()` vào `backdrop-filter`. Không bọc kính trong `@supports` |
-| 5 | **Backdrop root.** Tổ tiên có `filter`, `opacity<1` hoặc `mask`, hoặc animation dùng `fill-mode: forwards/both`, làm kính bên trong chỉ còn nhoè nền rỗng | Animation dùng `backwards`. Overlay portal ra `body` |
-| 6 | Hai rule cùng specificity thì rule đứng sau thắng. `transition` viết tắt ở rule chung đặt sau sẽ xoá transition riêng của biến thể | Biến thể chỉ khai biến. Rule vặn núm đặt **sau** rule gốc |
-| 7 | `text-transform` đổi glyph nhưng `textContent` vẫn như cũ, nên test so chuỗi không phát hiện. Ví dụ `Acme.io` hiển thị thành `ACME.IO` | Cấm `text-transform` trên khoá nghiệp vụ và tên thương hiệu |
-| 8 | Hai file trùng tên khi bỏ phân biệt hoa thường và bỏ đuôi (`Toast.tsx` và `toast.ts`): trên Windows import nhầm, trắng trang, trong khi CI Linux vẫn xanh | Test `fileCase.test.ts`. File store đặt hậu tố, ví dụ `toastStore.ts` |
-| 9 | Sửa file bằng script mà không đếm số chỗ thay. Phép `replace` không khớp gì vẫn chạy êm | Mỗi phép thay phải có assert số lần khớp |
+| 1 | **Correct source does not guarantee a correct shipped build.** Lightning CSS (Tailwind v4) merges duplicate declarations, rewrites `@supports`, and folds constant `color-mix` into `#0000` | After building, grep `dist/`. Use the 2 sample scripts `check-bundle-glass.mjs` and `check-bundle-viewport.mjs` |
+| 2 | **A CSS comment closes early.** Markdown bold placed before a division, e.g. two asterisks then `/765`, combines into exactly the comment-close sequence. The rule right after vanishes from `dist/` | The `cssSource.test.ts` test scans the whole file in one pass, catching any comment-close sequence outside a comment |
+| 3 | `height:100vh; height:100dvh;` gets merged and the fallback is lost. A browser that does not understand `dvh` collapses the flex column (measured 563px in a 900px viewport) | Write a separate fallback: `@supports not (height:100dvh)` |
+| 4 | `-webkit-backdrop-filter` containing `url()` or an invalid `var()` makes Safari lose the glass entirely | Never put `url()` into `backdrop-filter`. Never wrap glass in `@supports` |
+| 5 | **Backdrop root.** An ancestor with `filter`, `opacity<1` or `mask`, or an animation using `fill-mode: forwards/both`, leaves the glass inside blurring only an empty backdrop | Animations use `backwards`. Overlays portal to `body` |
+| 6 | With two rules of equal specificity, the later one wins. A shorthand `transition` in a shared rule placed later wipes out a variant's own transition | Variants only declare variables. Knob-tuning rules go **after** the base rule |
+| 7 | `text-transform` changes the glyphs but `textContent` stays the same, so string-comparing tests do not notice. E.g. `Acme.io` displays as `ACME.IO` | Forbid `text-transform` on business keys and brand names |
+| 8 | Two files with the same name once case and extension are ignored (`Toast.tsx` and `toast.ts`): on Windows the wrong one is imported and the page goes blank, while Linux CI stays green | The `fileCase.test.ts` test. Store files get a suffix, e.g. `toastStore.ts` |
+| 9 | Editing files with a script without counting replacements. A `replace` that matches nothing still runs quietly | Every replacement must assert its match count |
 
-## B. Bẫy test / công cụ
+## B. Test / tooling pitfalls
 
-| # | Bẫy | Cách chặn |
+| # | Pitfall | How to block it |
 |---|---|---|
-| 10 | `npx tsc --noEmit` chạy ở gốc một solution tsconfig (`"files": []`) thì **không kiểm file nào** mà vẫn in kết quả sạch | Dùng `npm run typecheck` = `tsc --noEmit -p tsconfig.app.json` |
-| 11 | Vitest pool `forks` làm rơi im lặng một file test trên Windows; báo cáo vẫn ghi "15 passed" | Đặt `pool: 'threads'`. Kiểm **số lượng** file/test so với lần chạy trước, đừng chỉ nhìn chữ "passed" |
-| 12 | Test quét thư mục bằng `readdirSync` không đệ quy. Dời code vào thư mục con thì cổng vẫn xanh nhưng không còn kiểm gì | Dùng `readdirSync(dir, { recursive: true })` |
-| 13 | Hàm thuần đọc thẳng biến môi trường (`import.meta.env`), nên test xanh hay đỏ tuỳ máy | Truyền giá trị env vào qua tham số |
-| 14 | Chụp ảnh để đo trong khi icon SMIL đang chạy, mỗi ảnh ra một khung khác nhau | Gọi `svg.pauseAnimations()` trước khi chụp. Đổi tham số qua biến CSS, không gán inline |
+| 10 | `npx tsc --noEmit` run at the root of a solution tsconfig (`"files": []`) **checks no files at all** yet prints a clean result | Use `npm run typecheck` = `tsc --noEmit -p tsconfig.app.json` |
+| 11 | The Vitest `forks` pool silently drops a test file on Windows; the report still says "15 passed" | Set `pool: 'threads'`. Check the **count** of files/tests against the previous run, not just the word "passed" |
+| 12 | A test scanning a folder with non-recursive `readdirSync`. Move code into a subfolder and the gate stays green but no longer checks anything | Use `readdirSync(dir, { recursive: true })` |
+| 13 | A pure function reads environment variables directly (`import.meta.env`), so tests pass or fail depending on the machine | Pass env values in as parameters |
+| 14 | Taking screenshots for measurement while SMIL icons are animating; every shot captures a different frame | Call `svg.pauseAnimations()` before capturing. Change parameters via CSS variables, not inline assignment |
 
-## C. Bẫy Recharts / viz
+## C. Recharts / viz pitfalls
 
-| # | Bẫy | Cách chặn |
+| # | Pitfall | How to block it |
 |---|---|---|
-| 15 | `margin` của chart là phần chừa chỗ cho mark nằm ở mốc biên (pill, node, quầng). Thiếu chỗ thì mark bị cắt | `margin.top = PILL_TOP` hoặc `HOVER_GLOW.room`, `margin.right = 34`. Đo đủ 4 mép ở cả 1440px và 430px |
-| 16 | Recharts lọc `children` theo loại component và bỏ đi không báo. `<defs>` bọc trong component tự viết sẽ mất | Đặt def ngay trong `shape`, hoặc viết `<defs>` trực tiếp trong chart |
-| 17 | Prop của chuỗi rò sang dot (`fillOpacity`, dash) | Ghim lại trong `DOT_RING`. Dùng `'none'`, không dùng `undefined` |
-| 18 | `dot` dạng hàm nhận `cy: null` ở mốc trống | Chặn trường hợp null. Không spread props của Recharts vào `<circle>` |
-| 19 | `margin.left` âm cộng nhãn Y dài làm mất chữ số đầu: `14000` hiển thị thành `4000` | Đổi `tickFormatter` thì đo lại. Nhãn từ 5 chữ số dùng `AXIS_GUTTER_WIDE` |
-| 20 | `interval="preserveEnd"` xoá nhãn ở giữa trục khi màn hẹp | Nhãn dài thì dùng `HBars` (DOM) |
-| 21 | `style={{ background: color }}` inline xoá mất `background-image` (gradient phủ) | Dùng `backgroundColor` |
-| 22 | Cột xếp lớp có lát cuối bằng 0 thì đỉnh cột thành góc vuông | Xác định mép từ giá trị (`stackEdges`) |
-| 23 | Recharts lọt vào chunk đầu | Dùng `lazy()` và cổng `activeTooltipIndex` |
-| 24 | Deploy xong, tab cũ gọi `import()` chunk đã bị xoá thì ra màn đen | `boardChunk()` và `ErrorBoundary` bọc ngoài `Suspense` |
+| 15 | A chart's `margin` is the room reserved for marks at edge points (pill, node, glow). Without enough room, marks get clipped | `margin.top = PILL_TOP` or `HOVER_GLOW.room`, `margin.right = 34`. Measure all 4 edges at both 1440px and 430px |
+| 16 | Recharts filters `children` by component type and drops them silently. `<defs>` wrapped in a custom component disappear | Put the def directly in `shape`, or write `<defs>` directly in the chart |
+| 17 | Series props leak into the dot (`fillOpacity`, dash) | Pin them in `DOT_RING`. Use `'none'`, not `undefined` |
+| 18 | A function-style `dot` receives `cy: null` at empty points | Guard the null case. Do not spread Recharts props into `<circle>` |
+| 19 | A negative `margin.left` plus long Y labels drops the leading digit: `14000` displays as `4000` | Re-measure after changing `tickFormatter`. Labels of 5+ digits use `AXIS_GUTTER_WIDE` |
+| 20 | `interval="preserveEnd"` removes labels in the middle of the axis on narrow screens | For long labels use `HBars` (DOM) |
+| 21 | An inline `style={{ background: color }}` wipes out `background-image` (the gradient overlay) | Use `backgroundColor` |
+| 22 | A stacked bar whose last slice is 0 gets a square top | Determine edges from values (`stackEdges`) |
+| 23 | Recharts leaks into the initial chunk | Use `lazy()` and the `activeTooltipIndex` gate |
+| 24 | After a deploy, an old tab calling `import()` on a deleted chunk shows a black screen | `boardChunk()` and an `ErrorBoundary` wrapped outside `Suspense` |
 
-## D. Bẫy dữ liệu / nghiệp vụ
+## D. Data / business pitfalls
 
-| # | Bẫy | Cách chặn |
+| # | Pitfall | How to block it |
 |---|---|---|
-| 25 | Bịa số liệu, kể cả trong fixture | Loader trả rỗng ⇒ hiện `NoData`. Mock dùng `@example.com` |
-| 26 | `?? 0` biến "không tính được" thành 0 | Trả `null` và hiện `—` |
-| 27 | `new Date('YYYY-MM-DD')` bị lệch múi giờ | So sánh chuỗi `YYYY-MM`, hoặc dùng `Date.UTC` (`lib/day.ts`) |
-| 28 | Cộng dồn một đại lượng tồn kho, ra con số đúng cỡ mà sai | Đại lượng luồng thì cộng, tồn kho thì lấy giá trị cuối kỳ. Bảng thưa thì dùng LOCF |
-| 29 | Nhãn không đổi theo bộ lọc (vẫn ghi "tháng này" khi đang xem 3 tháng) | Nhãn gọi đúng tên khoảng đang xem. `deltaNote` đổi theo độ dài khoảng |
-| 30 | Ghim `fileId` của Drive; ghi đè file là id đổi | Tra file theo **tên** trong folder |
-| 31 | Mốc "cập nhật lúc" lấy `Date.now()` | Lấy `modifiedTime` của nguồn |
-| 32 | `dist/` chứa dữ liệu thật, SQL hoặc tên dataset (Pages công khai kể cả khi repo private) | `check-bundle-privacy.mjs` và hook pre-commit |
-| 33 | Thiếu `VITE_*` lúc build: build xanh, nhưng trang không dùng được | Cổng soi `dist/` xem chuỗi đó có thật sự nằm trong bundle hay không |
+| 25 | Made-up numbers, even in fixtures | The loader returns empty ⇒ show `NoData`. Mocks use `@example.com` |
+| 26 | `?? 0` turns "cannot be computed" into 0 | Return `null` and show `—` |
+| 27 | `new Date('YYYY-MM-DD')` shifts by time zone | Compare `YYYY-MM` strings, or use `Date.UTC` (`lib/day.ts`) |
+| 28 | Summing a stock quantity gives a number of the right magnitude but wrong | Flow quantities are summed, stock quantities take the end-of-period value. For sparse tables use LOCF |
+| 29 | Labels do not follow the filter (still saying "this month" while viewing 3 months) | Labels name the range being viewed exactly. `deltaNote` changes with the range length |
+| 30 | Pinning a Drive `fileId`; overwriting the file changes the id | Look the file up by **name** within the folder |
+| 31 | The "updated at" timestamp uses `Date.now()` | Use the source's `modifiedTime` |
+| 32 | `dist/` contains real data, SQL or dataset names (Pages is public even when the repo is private) | `check-bundle-privacy.mjs` and a pre-commit hook |
+| 33 | `VITE_*` missing at build time: build is green, but the page is unusable | A gate inspecting `dist/` to see whether that string is actually in the bundle |
 
-## Checklist nghiệm thu một board
+## Acceptance checklist for a board
 
-**Máy:**
-- [ ] `npm test`: số file và số test khớp với lần chạy trước, cộng thêm phần test mới
+**Machine:**
+- [ ] `npm test`: file and test counts match the previous run, plus the new tests
 - [ ] `npm run typecheck`
 - [ ] `npm run build`
-- [ ] `npm run privacy:bundle` (và `check:clientid` nếu có OAuth)
-- [ ] `grep -c activeTooltipIndex dist/assets/index-*.js` ra `0`
-- [ ] Grep `dist/assets/*.css` thấy các class mới
+- [ ] `npm run privacy:bundle` (and `check:clientid` if there is OAuth)
+- [ ] `grep -c activeTooltipIndex dist/assets/index-*.js` returns `0`
+- [ ] Grepping `dist/assets/*.css` finds the new classes
 
-**Mắt:**
-- [ ] Tên nghiệp vụ đúng ngôn ngữ đã chốt; giải thích ⓘ khớp với công thức trong code
-- [ ] Mỗi biểu đồ chỉ có 1 trục Y; hình chọn đúng theo bảng ở `03` §3
-- [ ] Đã chụp 4 ảnh: **1440px và 430px × sáng và tối**; không có cuộn ngang
-- [ ] Nhãn không đè lên nhau; mark ở mép không bị cắt; rê chuột được lên mọi mark
-- [ ] Đổi bộ lọc thì nhãn, delta và sparkline cùng đổi; nút đặt lại đưa về mặc định
-- [ ] Không có dữ liệu thì hiện `NoData`, khối giữ nguyên chiều cao (không nhảy layout)
-- [ ] Bật `prefers-reduced-motion` thì không còn chuyển động; số nhảy thẳng tới giá trị cuối
+**Eyes:**
+- [ ] Business names are in the agreed language; the ⓘ explanations match the formulas in the code
+- [ ] Each chart has only 1 Y axis; the form is chosen per the table in `03` §3
+- [ ] 4 screenshots taken: **1440px and 430px × light and dark**; no horizontal scroll
+- [ ] Labels do not overlap; marks at the edges are not clipped; every mark can be hovered
+- [ ] Changing a filter changes labels, deltas and sparklines together; the reset button returns to the default
+- [ ] With no data, `NoData` shows and the block keeps its height (no layout jump)
+- [ ] With `prefers-reduced-motion` on, nothing moves; numbers jump straight to their final value
 
-## Quy trình git (nên giữ nguyên ở repo mới)
+## Git workflow (worth keeping in the new repo)
 
-1. Không commit thẳng vào `main`. Tạo nhánh `feat/*`, `fix/*`, `chore/*` hoặc `docs/*`.
-   Có thể dùng 2 hook `pre-commit` / `pre-push` để chặn.
-2. Agent làm xong thì push **nhánh** rồi dừng. Người duyệt mới là người bảo mở PR, và sau đó là người bảo merge.
-3. `checks.yml` (chạy trên PR) và `deploy.yml` (chạy trên `main`) phải có **cùng bộ cổng, cùng thứ tự**.
+1. Never commit directly to `main`. Create a `feat/*`, `fix/*`, `chore/*` or `docs/*` branch.
+   The 2 hooks `pre-commit` / `pre-push` can enforce this.
+2. When an agent finishes, it pushes the **branch** and stops. The reviewer is the one who says to open a PR, and then the one who says to merge.
+3. `checks.yml` (runs on PRs) and `deploy.yml` (runs on `main`) must have **the same gates, in the same order**.

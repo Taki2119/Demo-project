@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { count, dayLabel, MINUS, moneyScale, monthLabel, monthShort, NO_VALUE, pct, scaled, yen } from './format';
 
 describe('format', () => {
-  it('null / NaN ⇒ "—", không bao giờ "0"', () => {
+  it('null / NaN ⇒ "—", never "0"', () => {
     for (const f of [yen, count, pct]) {
       expect(f(null, 'ja')).toBe(NO_VALUE);
       expect(f(Number.NaN, 'vi')).toBe(NO_VALUE);
     }
   });
 
-  it('số âm dùng U+2212, đặt trước ký hiệu tiền', () => {
+  it('negative numbers use U+2212, placed before the currency symbol', () => {
     expect(yen(-2400, 'ja')).toBe(`${MINUS}¥2,400`);
     expect(yen(-2400, 'vi')).toBe(`${MINUS}¥2.400`);
     expect(count(-12, 'ja')).toBe(`${MINUS}12`);
@@ -17,11 +17,11 @@ describe('format', () => {
     expect(yen(-2400, 'ja')).not.toContain('-');
   });
 
-  it('âm nhưng làm tròn ra 0 ⇒ không có dấu trừ', () => {
+  it('negative but rounds to 0 ⇒ no minus sign', () => {
     expect(pct(-0.00001, 'ja')).toBe('0.0%');
   });
 
-  it('nhãn tháng không đi qua Date', () => {
+  it('month label does not go through Date', () => {
     expect(monthLabel('2026-11-01', 'ja')).toBe('2026年11月');
     expect(monthLabel('2026-11-01', 'vi')).toBe('Tháng 11/2026');
     expect(monthShort('2026-01-01', 'ja')).toBe('2026/1');
@@ -30,7 +30,7 @@ describe('format', () => {
     expect(dayLabel('2026-11-08', 'vi')).toBe('8/11/2026');
   });
 
-  it('thang tiền chọn theo đích; mọi nhãn cùng đơn vị', () => {
+  it('money scale chosen by target; all labels share one unit', () => {
     const ja = moneyScale(10_980_820, 'ja');
     expect(ja.unit).toBe('万円');
     expect(scaled(10_980_820, ja, 'ja')).toBe('1,098');

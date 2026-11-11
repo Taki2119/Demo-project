@@ -1,9 +1,9 @@
-// NODE – VÀNH – PILL (kit 03 §4): mỗi mốc là một chấm có vành; số đáng đọc nằm trên MỘT pill.
+// NODE – RING – PILL (kit 03 §4): each point is a dot with a ring; the number worth reading sits on ONE pill.
 import { VALUE_PILL } from './axis';
 
 export const NODE = { r: 4, hotR: 5, sparkR: 3, sparkRing: 1.5, pillEdge: 34 } as const;
 
-/** Ghim lại prop của chấm — dùng 'none', không undefined (prop của chuỗi rò sang dot). */
+/** Pin the dot's props — use 'none', not undefined (the series' props leak into dot). */
 export const DOT_RING = {
   stroke: 'var(--node-ring)',
   strokeWidth: 2,
@@ -12,15 +12,15 @@ export const DOT_RING = {
   strokeDasharray: 'none',
 } as const;
 
-/** activeDot mặc định: tô --accent (cam = lớp tương tác). */
+/** Default activeDot: filled with --accent (orange = interaction layer). */
 export const HOT_NODE = { r: NODE.hotR, fill: 'var(--accent)', ...DOT_RING } as const;
-/** Đường đơn: tránh cam chồng lên cam ⇒ chấm nóng tô --line-solo-hot. */
+/** Single line: avoid orange on orange ⇒ hot dot filled with --line-solo-hot. */
 export const SOLO_HOT = { r: NODE.hotR, fill: 'var(--line-solo-hot)', ...DOT_RING } as const;
 
 export interface PillSpec {
-  /** chỉ số mốc */
+  /** point index */
   at: number;
-  /** giá trị mong đợi ở mốc — ASSERTION: không khớp thì KHÔNG vẽ pill (thay vì gắn nhầm mốc). */
+  /** expected value at the point — ASSERTION: on mismatch, do NOT draw the pill (rather than tagging the wrong point). */
   value: number;
   text: string;
 }
@@ -28,7 +28,7 @@ export interface PillSpec {
 export const pillWidth = (text: string) =>
   Math.max(VALUE_PILL.h * 1.4, text.length * VALUE_PILL.ch + 2 * VALUE_PILL.padX);
 
-/** Mốc TỐT NHẤT theo goodWhen. Bằng nhau ⇒ lấy mốc MUỘN NHẤT (tự chọn: mốc gần nhất đáng đọc hơn). */
+/** The BEST point per goodWhen. Ties ⇒ take the LATEST point (own choice: the most recent point is more worth reading). */
 export function bestIn(values: readonly (number | null)[], goodWhen: 'up' | 'down'): number | null {
   let best: number | null = null;
   values.forEach((v, i) => {
@@ -69,7 +69,7 @@ function Pill({ x, y, text }: { x: number; y: number; text: string }) {
   );
 }
 
-/** Hàm `dot` cho <Line>/<Area>. Bỏ qua mốc trống (cy null). Không spread props Recharts vào <circle>. */
+/** `dot` function for <Line>/<Area>. Skips empty points (cy null). Doesn't spread Recharts props into <circle>. */
 export function seriesNode({ color, pill }: { color: string; pill?: PillSpec }) {
   return function Node(p: DotProps) {
     const key = `n-${p.index ?? 0}`;

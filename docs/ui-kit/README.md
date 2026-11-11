@@ -1,90 +1,90 @@
 # Dashboard UI Kit
 
-Bộ kit để dựng một site dashboard tĩnh trên **GitHub Pages**. Nó cho bạn:
+A kit for building a static dashboard site on **GitHub Pages**. It gives you:
 
-- một hệ thiết kế (token màu, hiệu ứng kính, vỏ app, chuyển động);
-- logic vẽ biểu đồ và bảng số;
-- quy trình dựng một board từ dữ liệu ra giao diện.
+- a design system (color tokens, glass effect, app shell, motion);
+- the logic for drawing charts and number tables;
+- a workflow for building a board from data to UI.
 
-Bộ kit được rút từ một repo dashboard đang chạy thật, nhưng đã gỡ mọi tên, logo và ví dụ gắn với sản phẩm gốc. Vì vậy repo nào cũng dùng được.
+The kit was extracted from a dashboard repo that runs in production, but every name, logo and example tied to the original product has been removed. So any repo can use it.
 
-## Bộ kit gồm gì
+## What the kit contains
 
-| File | Đọc khi |
+| File | Read when |
 |---|---|
-| [`00-HUONG-DAN-VSCODE.md`](00-HUONG-DAN-VSCODE.md) | **Bắt đầu ở đây**: từng bước áp dụng kit vào repo mới bằng VS Code + Claude Code, tới khi lên GitHub Pages |
-| [`01-ARCHITECTURE.md`](01-ARCHITECTURE.md) | Dựng khung app: luồng dữ liệu → board, catalog, route hash, bộ lọc, deploy Pages |
-| [`02-DESIGN-SYSTEM.md`](02-DESIGN-SYSTEM.md) | Dựng giao diện: token màu (3 bộ × sáng/tối), liquid glass, vỏ app, hover/motion, component chung |
-| [`03-CHARTS-TABLES.md`](03-CHARTS-TABLES.md) | Vẽ biểu đồ và bảng: 12 khuôn chart, luật chọn hình, mark node–vành–pill, màu chuỗi, định dạng số, bảng có sort và chia trang |
-| [`04-PITFALLS-CHECKLIST.md`](04-PITFALLS-CHECKLIST.md) | Trước khi merge: các bẫy đã gặp thật, checklist nghiệm thu, các cổng CI |
-| [`05-PROMPTS.md`](05-PROMPTS.md) | Prompt dán cho Claude Code, kèm mẫu `CLAUDE.md` cho repo mới |
+| [`00-VSCODE-GUIDE.md`](00-VSCODE-GUIDE.md) | **Start here**: step by step, applying the kit to a new repo with VS Code + Claude Code, all the way to GitHub Pages |
+| [`01-ARCHITECTURE.md`](01-ARCHITECTURE.md) | Building the app skeleton: data flow → board, catalog, hash route, filters, Pages deploy |
+| [`02-DESIGN-SYSTEM.md`](02-DESIGN-SYSTEM.md) | Building the UI: color tokens (3 palettes × light/dark), liquid glass, app shell, hover/motion, shared components |
+| [`03-CHARTS-TABLES.md`](03-CHARTS-TABLES.md) | Drawing charts and tables: 12 chart templates, rules for choosing a form, node–ring–pill marks, series colors, number formatting, tables with sort and pagination |
+| [`04-PITFALLS-CHECKLIST.md`](04-PITFALLS-CHECKLIST.md) | Before merging: pitfalls actually hit, acceptance checklist, CI gates |
+| [`05-PROMPTS.md`](05-PROMPTS.md) | Prompts to paste into Claude Code, plus a `CLAUDE.md` template for the new repo |
 
-## Cách dùng: 4 bước
+## How to use it: 4 steps
 
-> Dùng VS Code + Claude Code thì làm theo `00-HUONG-DAN-VSCODE.md`. Tài liệu đó đi chi tiết hơn 4 bước dưới đây.
+> If you use VS Code + Claude Code, follow `00-VSCODE-GUIDE.md`. That document goes into more detail than the 4 steps below.
 
-1. **Tạo repo mới** với đúng stack sau: Vite 6, React 18, TypeScript strict, Tailwind CSS v4
+1. **Create a new repo** with exactly this stack: Vite 6, React 18, TypeScript strict, Tailwind CSS v4
    (`@tailwindcss/vite`), Recharts 2.x, zustand 5, vitest 2.
-2. **Chép code từ repo nguồn** theo *Bản đồ file* ở dưới. Có thể dùng prompt P1 trong `05-PROMPTS.md`. Khi chép:
-   - đổi tiền tố class `jw-` thành `ui-`;
-   - đổi khoá localStorage sang tên app của bạn;
-   - gỡ mọi tên hoặc logo của sản phẩm nguồn còn sót trong chuỗi và comment.
-3. **Chép mẫu CLAUDE.md** (`05-PROMPTS.md`, mục P0) vào gốc repo mới. Chép 6 file của kit vào `docs/ui-kit/`.
-4. **Chạy các prompt** P2 → P3 → P4, rồi dùng P5 cho từng board.
+2. **Copy code from the source repo** following the *File map* below. You can use prompt P1 in `05-PROMPTS.md`. When copying:
+   - rename the class prefix `jw-` to `ui-`;
+   - rename the localStorage keys to your app's name;
+   - remove any name or logo of the source product left in strings and comments.
+3. **Copy the CLAUDE.md template** (`05-PROMPTS.md`, section P0) into the root of the new repo. Copy the kit's 6 files into `docs/ui-kit/`.
+4. **Run the prompts** P2 → P3 → P4, then use P5 for each board.
 
-> Kit này chỉ ghi những gì code đang làm. Ở chỗ tài liệu cũ của repo nguồn nói khác code, kit theo **code**.
-> Ví dụ: donut tối đa 5 lát, animation biểu đồ 1000ms.
+> This kit only records what the code actually does. Where the source repo's old docs disagree with the code, the kit follows the **code**.
+> For example: donut at most 5 slices, chart animation 1000ms.
 
-## Bản đồ file: lấy gì từ `src/` của repo nguồn
+## File map: what to take from the source repo's `src/`
 
-### A. Chép nguyên được (chỉ cần React, Recharts và token CSS)
+### A. Can be copied as-is (needs only React, Recharts and the CSS tokens)
 
-| Nhóm | File |
+| Group | File |
 |---|---|
-| Viz: hằng số và mark | `ui/viz/axis.ts` · `marks.tsx` · `nodes.tsx` · `series.ts` · `motion.ts` · `donutCorner.ts` · `heat.ts` · `beeswarm.ts` |
-| Viz: phụ trợ | `ui/viz/Tip.tsx` · `FloatTip.tsx` · `TrendArrow.tsx` · `CellBar.tsx` · `ChartZoom.tsx` |
-| Viz: 12 khuôn chart | `ui/viz/charts/*.tsx` (không import gì ngoài `ui/viz`) |
-| Bảng (phần thuần) | `ui/tablePage.ts` · `ui/tableSort.ts` |
-| Theme / bộ màu | `ui/theme.ts` · `ui/palette.ts` (đổi `STORAGE_KEY`) · `ui/viewSwitch.ts`, cộng script prePaint trong `index.html` |
+| Viz: constants and marks | `ui/viz/axis.ts` · `marks.tsx` · `nodes.tsx` · `series.ts` · `motion.ts` · `donutCorner.ts` · `heat.ts` · `beeswarm.ts` |
+| Viz: helpers | `ui/viz/Tip.tsx` · `FloatTip.tsx` · `TrendArrow.tsx` · `CellBar.tsx` · `ChartZoom.tsx` |
+| Viz: 12 chart templates | `ui/viz/charts/*.tsx` (imports nothing outside `ui/viz`) |
+| Tables (pure part) | `ui/tablePage.ts` · `ui/tableSort.ts` |
+| Theme / palette | `ui/theme.ts` · `ui/palette.ts` (rename `STORAGE_KEY`) · `ui/viewSwitch.ts`, plus the prePaint script in `index.html` |
 | Motion | `ui/reveal.ts` · `ui/staggerIn.ts` · `ui/useStaggerIn.ts` · `ui/cssMotion.ts` · `ui/usePresence.ts` |
-| Hạ tầng UI | `ui/useEscape.ts` · `useMediaQuery.ts` · `popoverFocus.ts` · `popoverPlace.ts` · `tipPlace.ts` |
-| Component | `ui/SlideToggle.tsx` · `ConfirmDialog.tsx` · `HoverTip.tsx` · `Toast.tsx` + `toastStore.ts` · `Loading.tsx` · `NoData.tsx` · `ErrorBoundary.tsx` |
-| Bộ lọc | `ui/filters/*` (cả phần thuần lẫn component) |
-| Dữ liệu (thuần) | `data/csv.ts` · `lib/day.ts` · `data/fiscal.ts` (đặt lại `FISCAL_START_MONTH`, `ANCHOR`) |
-| Điều hướng | `nav/route.ts` (đổi tên segment) · `boards/chunkReload.ts` |
-| Nền | `ui/ambient/` (`Ambient.tsx`, `svgFile.ts`, `ribbon.svg`; có thể thay bằng hình khác) |
+| UI infrastructure | `ui/useEscape.ts` · `useMediaQuery.ts` · `popoverFocus.ts` · `popoverPlace.ts` · `tipPlace.ts` |
+| Components | `ui/SlideToggle.tsx` · `ConfirmDialog.tsx` · `HoverTip.tsx` · `Toast.tsx` + `toastStore.ts` · `Loading.tsx` · `NoData.tsx` · `ErrorBoundary.tsx` |
+| Filters | `ui/filters/*` (both the pure part and the components) |
+| Data (pure) | `data/csv.ts` · `lib/day.ts` · `data/fiscal.ts` (reset `FISCAL_START_MONTH`, `ANCHOR`) |
+| Navigation | `nav/route.ts` (rename segments) · `boards/chunkReload.ts` |
+| Background | `ui/ambient/` (`Ambient.tsx`, `svgFile.ts`, `ribbon.svg`; can be replaced with another image) |
 | CI | `.github/workflows/deploy.yml` · `checks.yml` · `scripts/check-bundle-*.mjs` · `scripts/check-branch.mjs` · `privacy-rules.mjs` |
-| Test làm mẫu | `boards/boardShell.test.ts` · `ui/cssSource.test.ts` · `ui/markContrast.test.ts` · `ui/i18n.test.ts` · `ui/prePaint.test.ts` |
+| Example tests | `boards/boardShell.test.ts` · `ui/cssSource.test.ts` · `ui/markContrast.test.ts` · `ui/i18n.test.ts` · `ui/prePaint.test.ts` |
 
-### B. Chép được nhưng phải CẮT DÂY
+### B. Can be copied but the WIRES must be CUT
 
-| File | Dây cần cắt |
+| File | Wires to cut |
 |---|---|
-| `ui/format.ts` | `numberLocaleNow` (store định dạng vùng) → locale cố định; type `Bucket` import từ một module dữ liệu → khai tại chỗ; type `Lang`; ký hiệu tiền tệ |
-| `ui/viz/StatTile.tsx` · `stats.tsx` | `useT` / `useLangStore` (i18n) · `InfoTip` (dính glossary + catalog) |
-| `ui/TablePager.tsx` | `SegmentFilter` (đã có trong `ui/filters`) · `SolarIcon` + `solarIcons` (bộ icon Solar mã nguồn mở) · các key i18n `pager*`, `pageSize` |
+| `ui/format.ts` | `numberLocaleNow` (regional-format store) → fixed locale; type `Bucket` imported from a data module → declare locally; type `Lang`; currency symbol |
+| `ui/viz/StatTile.tsx` · `stats.tsx` | `useT` / `useLangStore` (i18n) · `InfoTip` (tied to glossary + catalog) |
+| `ui/TablePager.tsx` | `SegmentFilter` (already in `ui/filters`) · `SolarIcon` + `solarIcons` (the open-source Solar icon set) · the i18n keys `pager*`, `pageSize` |
 | `ui/SortHead.tsx` | `SolarIcon` · key `sortHint` |
-| `ui/i18n.ts` | Giữ khung (`Lang`, `DICT`, `useT`, `fill`), thay toàn bộ nội dung |
-| `ui/InfoTip.tsx` | Giữ UI popover, thay nguồn glossary bằng glossary của repo mới |
-| `data/driveData.ts` · `driveSource.ts` | Lấy token của kho file → adapter của repo mới; bỏ hằng id thư mục/file |
-| `data/boardData.ts` | Danh sách mã board |
-| `nav/catalog.ts` · `resolve.ts` | Giữ **kiểu** và hàm tiện ích, bỏ cây danh mục cụ thể và các bảng `LEGACY_*` |
-| `src/index.css` | **Không chép nguyên** (khoảng 1 MB). Chỉ trích các khối liệt kê ở `02-DESIGN-SYSTEM.md` §9 |
+| `ui/i18n.ts` | Keep the skeleton (`Lang`, `DICT`, `useT`, `fill`), replace all content |
+| `ui/InfoTip.tsx` | Keep the popover UI, replace the glossary source with the new repo's glossary |
+| `data/driveData.ts` · `driveSource.ts` | Getting the file-store token → the new repo's adapter; drop the folder/file id constants |
+| `data/boardData.ts` | List of board codes |
+| `nav/catalog.ts` · `resolve.ts` | Keep the **types** and utility functions, drop the concrete catalog tree and the `LEGACY_*` tables |
+| `src/index.css` | **Do not copy as-is** (about 1 MB). Extract only the blocks listed in `02-DESIGN-SYSTEM.md` §9 |
 
-### C. Không mang sang
+### C. Do not bring over
 
-- Các board, parser và glossary cụ thể của sản phẩm nguồn.
-- Đăng nhập (`auth/`) và proxy server.
-- Màn Home, side panel cụ thể.
-- Các module riêng: chat AI, telemetry, settings.
-- Mọi logo, wordmark, icon thương hiệu.
-- `GlassDefs.tsx` (bản backup đã bỏ).
+- The source product's specific boards, parsers and glossary.
+- Sign-in (`auth/`) and the proxy server.
+- The Home screen, the specific side panel.
+- Product-specific modules: AI chat, telemetry, settings.
+- Any brand logo, wordmark or icon.
+- `GlassDefs.tsx` (an abandoned backup).
 
-Logo, tên và favicon của repo mới thì bạn tự dựng.
+You build the new repo's logo, name and favicon yourself.
 
-## Ba quyết định nên giữ nguyên
+## Three decisions worth keeping
 
-1. **Route hash** (`#/dashboard/...`). Host tĩnh không có rewrite, nên bấm F5 ở một path sâu sẽ ra 404.
-2. **Recharts nạp động** qua `lazy(boardChunk(...))`. Cách này giảm bundle đầu từ 578 kB xuống 170 kB.
-3. **Mọi byte trong `dist/` coi như đã công khai.** Pages vẫn công khai kể cả khi repo để private, nên không
-   được đưa dữ liệu thật, SQL hay secret vào bundle.
+1. **Hash routes** (`#/dashboard/...`). A static host has no rewrites, so pressing F5 on a deep path gives a 404.
+2. **Recharts lazy-loaded (dynamic import)** via `lazy(boardChunk(...))`. This cuts the initial bundle from 578 kB to 170 kB.
+3. **Treat every byte in `dist/` as public.** Pages is public even when the repo is private, so real data, SQL or
+   secrets must never go into the bundle.

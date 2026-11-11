@@ -3,23 +3,23 @@ import { BOARD_KEYS, PLAN_KEYS } from './catalog';
 import { parseHash, parseQuery, toHash, toQueryString } from './route';
 
 describe('route', () => {
-  it('điểm bất động: toHash(parseHash(h)) === h cho mọi trang hợp lệ', () => {
+  it('fixed point: toHash(parseHash(h)) === h for every valid page', () => {
     const hashes = ['#/', '#/project/churn', '#/about', ...PLAN_KEYS.flatMap((p) => BOARD_KEYS.map((b) => `#/plans/${p}/${b}`))];
     for (const h of hashes) expect(toHash(parseHash(h))).toBe(h);
     expect(hashes).toHaveLength(3 + 16);
   });
 
-  it('hash lạ hoặc thiếu đoạn ⇒ Home', () => {
+  it('unknown hash or missing segment ⇒ Home', () => {
     for (const h of ['', '#', '#/nope', '#/plans/gold/revenue', '#/plans/all', '#/plans/all/revenue/extra', '#/project', '#/about/x']) {
       expect(parseHash(h)).toEqual({ kind: 'home' });
     }
   });
 
-  it('đọc đúng gói và bảng', () => {
+  it('reads plan and board correctly', () => {
     expect(parseHash('#/plans/growth/by-company')).toEqual({ kind: 'board', plan: 'growth', board: 'by-company' });
   });
 
-  it('query: điểm bất động trên hash + query hợp lệ', () => {
+  it('query: fixed point on valid hash + query', () => {
     const cases = [
       '#/plans/all/revenue?from=2025-01&to=2025-06',
       '#/plans/growth/users?from=2026-11&to=2026-11',
@@ -34,12 +34,12 @@ describe('route', () => {
     }
   });
 
-  it('query không làm hỏng route', () => {
+  it('query does not break the route', () => {
     expect(parseHash('#/plans/all/revenue?from=2025-01')).toEqual({ kind: 'board', plan: 'all', board: 'revenue' });
     expect(parseHash('#/project/churn?x=1')).toEqual({ kind: 'churn' });
   });
 
-  it('query rác bị bỏ: khoá lạ, khoá không thuộc trang, giá trị sai dạng', () => {
+  it('garbage query is dropped: unknown keys, keys not for the page, malformed values', () => {
     const q = (h: string) => parseQuery(h, parseHash(h));
     expect(q('#/plans/all/revenue?from=2025-13&to=abc')).toEqual({});
     expect(q('#/plans/all/revenue?from=2025-01&to=2025-1&x=2025-01')).toEqual({ from: '2025-01' });
@@ -52,7 +52,7 @@ describe('route', () => {
     expect(q('#/plans/all/revenue?%E0%A4%A=1&from=2025-01')).toEqual({ from: '2025-01' });
   });
 
-  it('thứ tự khoá cố định khi ghép', () => {
+  it('fixed key order when building', () => {
     expect(toQueryString({ to: '2025-06', from: '2025-01' })).toBe('?from=2025-01&to=2025-06');
     expect(toQueryString({})).toBe('');
   });

@@ -1,8 +1,8 @@
-// Gộp các bảng (tháng × gói) thành MỘT dòng mỗi tháng.
-//   · plan = 'all'  ⇒ CỘNG mọi gói theo tháng — đúng vì mart chỉ chở số cộng được và mỗi công ty
-//                     ở đúng một gói mỗi tháng (docs/SCHEMA.md §4).
-//   · plan = mã gói ⇒ lọc đúng gói đó.
-// Cột KHÔNG cộng được (khoá thời gian, cờ) lấy nguyên giá trị của tháng.
+// Roll up the (month × plan) tables into ONE row per month.
+//   · plan = 'all'  ⇒ SUM every plan per month — correct because the mart only carries additive numbers and each company
+//                     is on exactly one plan each month (docs/SCHEMA.md §4).
+//   · plan = plan code ⇒ filter to exactly that plan.
+// NON-additive columns (time keys, flags) take the month's value as is.
 import type { PlanKey } from '../nav/catalog';
 import type { Row } from './api';
 
@@ -27,7 +27,7 @@ export function rollupByMonth(rows: readonly Row[], plan: PlanKey): Row[] {
   return [...byMonth.values()].sort((a, b) => String(a.month).localeCompare(String(b.month)));
 }
 
-/** Ép các cột số đang ở dạng chuỗi (Postgres numeric → JSON string) về number. */
+/** Coerce numeric columns currently held as strings (Postgres numeric → JSON string) to number. */
 export function numericRows(rows: readonly Row[]): Row[] {
   return rows.map((r) => {
     const o: Row = {};

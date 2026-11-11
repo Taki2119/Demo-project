@@ -1,14 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// REGISTRY nguồn dữ liệu — hợp đồng ở docs/API.md. Mỗi `source` = MỘT câu SQL CỐ ĐỊNH trên
-// `mart`; client không bao giờ gửi SQL. Tham số đi qua placeholder ($1, $2…), không ghép chuỗi.
-// Hàng rào thứ hai là role `analytics_reader` (chỉ đọc, chỉ `mart`) — sai ở đây cũng không ghi
-// được và không đọc được `raw`.
+// Data source REGISTRY — contract in docs/API.md. Each `source` = ONE FIXED SQL statement on
+// `mart`; the client never sends SQL. Parameters go through placeholders ($1, $2…), no string concatenation.
+// The second barrier is the `analytics_reader` role (read-only, `mart` only) — even a mistake here can't write
+// and can't read `raw`.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PLAN_RE = /^[a-z][a-z0-9_]{0,31}$/;
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-/** Bộ kiểm tham số: trả giá trị đã chuẩn hoá, `null` khi vắng, ném khi sai dạng. */
+/** Parameter validators: return the normalised value, `null` when absent, throw when malformed. */
 const PARAMS = {
   plan: (v) => {
     if (v == null || v === '' || v === 'all') return null;
@@ -22,7 +22,7 @@ const PARAMS = {
   },
 };
 
-// Tháng mặc định của các nguồn lớn = tháng mới nhất (tháng đang chạy).
+// Default month for the large sources = the latest month (the running month).
 const LATEST_MONTH = '(select max(month) from mart.months)';
 
 export const SOURCES = {
@@ -58,8 +58,8 @@ export const SOURCES = {
 export const AS_OF_SQL = 'select mart.as_of()::text as as_of';
 
 /**
- * Đọc body → { source, sql, args } hoặc ném `Error(code)`:
- *   'bad_source' khi mã nguồn lạ · 'bad_params' khi tham số sai dạng hoặc có khoá lạ.
+ * Read the body → { source, sql, args } or throw `Error(code)`:
+ *   'bad_source' for an unknown source code · 'bad_params' when a parameter is malformed or there's an unknown key.
  */
 export function resolveRequest(body) {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) throw new Error('bad_source');

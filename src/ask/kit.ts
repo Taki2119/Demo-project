@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Bộ đồ nghề chung của các câu hỏi mẫu ("Hỏi AI" bản demo — KHÔNG gọi AI thật).
+// Shared toolkit for the sample questions ("Ask AI" demo version — does NOT call a real AI).
 //
-// Mỗi câu hỏi = cách hỏi ja/vi + nguồn cần nạp + hàm THUẦN dựng câu trả lời từ dòng API.
-// Luật giữ nguyên như các bảng:
-//   · số lấy từ nguồn SẴN CÓ của board-data (không SQL mới); bundle không chở số nào;
-//   · tỉ lệ tính ở đây bằng data/metrics.ts; mẫu số 0 ⇒ null ⇒ "—";
-//   · chữ DỮ LIỆU (tên gói, ngành, band…) lấy từ nhãn DB qua `ctx.label`, chữ câu trả lời ở đây.
+// Each question = ja/vi phrasings + sources to load + a PURE function that builds the answer from API rows.
+// Same rules as the boards:
+//   · numbers come from EXISTING board-data sources (no new SQL); the bundle carries no numbers;
+//   · ratios are computed here with data/metrics.ts; zero denominator ⇒ null ⇒ "—";
+//   · DATA text (plan names, industries, bands…) comes from DB labels via `ctx.label`; answer text lives here.
 // ─────────────────────────────────────────────────────────────────────────────
 import type { Row, SourceData, Params } from '../data/api';
 import { addMonths, ymOf, type Ym } from '../data/period';
@@ -27,14 +27,14 @@ export interface Figure {
 export interface TableSpec {
   head: string[];
   rows: string[][];
-  /** Cột số (căn phải). */
+  /** Numeric columns (right-aligned). */
   numeric: boolean[];
 }
 
-/** line = đường 1 chuỗi theo tháng (SoloLine, BẮT BUỘC goodWhen — kit 03 §1 không có mặc định).
- *  bar = thanh ngang DOM (HBars) — giá trị âm không vẽ được thanh ⇒ đừng dùng cho số âm. */
+/** line = single-series monthly line (SoloLine, goodWhen REQUIRED — kit 03 §1 has no default).
+ *  bar = horizontal DOM bars (HBars) — negative values can't be drawn as bars ⇒ don't use for negative numbers. */
 export type ChartSpec =
-  | { kind: 'line'; unit: 'yen' | 'count' | 'pct'; goodWhen: 'up' | 'down'; /** tên chuỗi ngắn (tooltip) */ label: string; points: { x: string; y: number | null }[] }
+  | { kind: 'line'; unit: 'yen' | 'count' | 'pct'; goodWhen: 'up' | 'down'; /** short series name (tooltip) */ label: string; points: { x: string; y: number | null }[] }
   | { kind: 'bar'; unit: 'yen' | 'count' | 'pct'; points: { x: string; y: number | null }[] };
 
 export interface Answer {
@@ -42,11 +42,11 @@ export interface Answer {
   figures: Figure[];
   table?: TableSpec;
   chart?: ChartSpec;
-  /** "Dữ liệu dùng" — bảng nào + cách tính. KHÔNG phải SQL. */
+  /** "Data used" — which board + how it's computed. NOT SQL. */
   basis: string;
-  /** Kỳ dữ liệu của câu trả lời ("Tháng 11/2026 (tính đến 10/11/2026)"). */
+  /** Data period of the answer ("Tháng 11/2026 (tính đến 10/11/2026)"). */
   period: string;
-  /** Tham số đã áp (vd. gói) — trang hiện thành chip. */
+  /** Applied parameters (e.g. plan) — the page shows them as chips. */
   applied: { plan: Exclude<PlanKey, 'all'> | null; topN: number | null };
 }
 
@@ -65,18 +65,18 @@ export interface Need {
 export interface Question {
   id: string;
   group: Group;
-  /** Cách hỏi — câu ĐẦU là câu hiện trên nút gợi ý. Cần ≥ 2 mỗi ngôn ngữ (test khoá). */
+  /** Phrasings — the FIRST one is shown on the suggestion button. Needs ≥ 2 per language (locked by test). */
   ask: { ja: readonly string[]; vi: readonly string[] };
   keywords?: readonly string[];
-  /** Câu hỏi có dùng tham số nào (để chip "đã áp" nói thật). */
+  /** Which parameters the question uses (so the "applied" chip tells the truth). */
   uses: { plan?: boolean; topN?: boolean };
   related: readonly string[];
   needs: (slots: Slots) => Need[];
-  /** null ⇒ không đủ dữ liệu để trả lời (trang nói "chưa có dữ liệu"). */
+  /** null ⇒ not enough data to answer (the page says "no data yet"). */
   build: (ctx: Ctx) => Answer | null;
 }
 
-// ── chữ ──────────────────────────────────────────────────────────────────────
+// ── text ─────────────────────────────────────────────────────────────────────
 export const tx = (lang: Lang, ja: string, vi: string): string => (lang === 'ja' ? ja : vi);
 
 export const DEFAULT_TOP = 10;
@@ -84,7 +84,7 @@ export const topOf = (ctx: Ctx): number => ctx.slots.topN ?? DEFAULT_TOP;
 
 export const planParam = (s: Slots): Params => (s.plan ? { plan: s.plan } : {});
 
-/** "（グロースプラン）" / " (gói Tăng trưởng)" — rỗng khi không chọn gói. */
+/** "（グロースプラン）" / " (gói Tăng trưởng)" — empty when no plan is selected. */
 export function scopeOf(ctx: Ctx): string {
   const p = ctx.slots.plan;
   if (!p) return '';
@@ -96,13 +96,13 @@ export function applied(ctx: Ctx, q: Pick<Question, 'uses'>): Answer['applied'] 
   return { plan: q.uses.plan ? ctx.slots.plan : null, topN: q.uses.topN ? topOf(ctx) : null };
 }
 
-// ── nguồn ────────────────────────────────────────────────────────────────────
+// ── sources ──────────────────────────────────────────────────────────────────
 export function rowsOf(ctx: Ctx, source: SourceKey): Row[] | null {
   const d = ctx.data[source];
   return d ? numericRows(d.rows) : null;
 }
 
-/** Bảng (tháng × gói) gộp về một dòng / tháng theo gói đang chọn (không chọn ⇒ cộng mọi gói). */
+/** A (month × plan) table rolled up to one row / month for the selected plan (none selected ⇒ sum of all plans). */
 export function monthly(ctx: Ctx, source: 'revenue-monthly' | 'users-monthly', plan: PlanKey | null = ctx.slots.plan): Row[] | null {
   const rows = rowsOf(ctx, source);
   if (!rows || rows.length === 0) return null;
@@ -117,13 +117,13 @@ export function rowAtYm(rows: readonly Row[], ym: Ym): Row | null {
   return rows.find((r) => ymRow(r) === ym) ?? null;
 }
 
-/** Dòng ĐÃ CHỐT gần nhất (đại lượng luồng như huỷ, hoá đơn nên đọc trên tháng trọn). */
+/** Latest CLOSED row (flow quantities such as cancellations and invoices should be read on full months). */
 export function lastClosed(rows: readonly Row[]): Row | null {
   for (let i = rows.length - 1; i >= 0; i--) if (rows[i]!.is_closed === true) return rows[i]!;
   return null;
 }
 
-/** k tháng cuối (theo thứ tự tăng). */
+/** Last k months (ascending order). */
 export const lastN = <T>(rows: readonly T[], k: number): T[] => rows.slice(Math.max(0, rows.length - k));
 
 /** "2026年11月（2026年11月10日時点）" / "Tháng 11/2026 (tính đến 10/11/2026)". */
@@ -135,7 +135,7 @@ export function monthText(lang: Lang, row: Row): string {
   return m;
 }
 
-/** Nguồn chỉ có MỘT tháng (theo công ty / người dùng): tháng đó + ngày chốt số nếu chưa trọn. */
+/** Sources with only ONE month (by company / by user): that month + the cut-off date if it's a partial month. */
 export function snapshotText(lang: Lang, ym: Ym, updatedAt: string | null | undefined): string {
   const m = monthLabel(ym, lang);
   if (updatedAt && ymOf(updatedAt) === ym && updatedAt !== monthEnd(ym)) {
@@ -144,7 +144,7 @@ export function snapshotText(lang: Lang, ym: Ym, updatedAt: string | null | unde
   return m;
 }
 
-/** Ngày cuối tháng — tính bằng số ngày của tháng, không qua Date (tránh lệch múi giờ). */
+/** Last day of the month — computed from the month's day count, not via Date (avoids timezone shifts). */
 export function monthEnd(ym: Ym): string {
   const [y, m] = ym.split('-').map(Number) as [number, number];
   const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
@@ -158,12 +158,12 @@ export function rangeText(lang: Lang, from: Ym, to: Ym): string {
   return tx(lang, `${monthLabel(from, lang)}〜${monthLabel(to, lang)}`, `${monthLabel(from, lang)} – ${monthLabel(to, lang)}`);
 }
 
-/** Điểm biểu đồ theo tháng. */
+/** Monthly chart points. */
 export function series(lang: Lang, rows: readonly Row[], pick: (r: Row) => number | null): ChartSpec['points'] {
   return rows.map((r) => ({ x: monthShort(ymRow(r), lang), y: pick(r) }));
 }
 
-/** "+¥12.000（+3,1%）" — số thay đổi kèm %; thiếu kỳ trước ⇒ "—". */
+/** "+¥12.000（+3,1%）" — change amount with %; missing previous period ⇒ "—". */
 export function deltaText(lang: Lang, now: number | null, before: number | null, fmt: 'yen' | 'count'): string {
   if (now == null || before == null) return '—';
   const d = now - before;
@@ -174,7 +174,7 @@ export function deltaText(lang: Lang, now: number | null, before: number | null,
   return rateTxt ? tx(lang, `${sign}${body}（${rateTxt}）`, `${sign}${body} (${rateTxt})`) : `${sign}${body}`;
 }
 
-/** Nhóm + cộng: key → {sum, n}. */
+/** Group + sum: key → {sum, n}. */
 export function groupSum(rows: readonly Row[], key: string, val: string): { code: string; sum: number; n: number }[] {
   const m = new Map<string, { sum: number; n: number }>();
   for (const r of rows) {
@@ -187,7 +187,7 @@ export function groupSum(rows: readonly Row[], key: string, val: string): { code
   return [...m.entries()].map(([code, v]) => ({ code, ...v })).sort((a, b) => b.sum - a.sum || b.n - a.n);
 }
 
-/** Danh sách có giới hạn: "A、B、C" / "A, B, C". */
+/** Delimited list: "A、B、C" / "A, B, C". */
 export const listText = (lang: Lang, items: readonly string[]): string => items.join(tx(lang, '、', ', '));
 
 export { count, pct, yen, monthLabel };

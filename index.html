@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SaaS Analytics</title>
-    <!-- prePaint: script THƯỜNG (không phải module) — đặt data-theme trước lần vẽ đầu để theme tối
-         không loé trắng. Chỉ bộ Ember ⇒ không ghi data-palette. Sáng/tối theo hệ thống, ghi giá
-         trị ĐÃ GIẢI (light | dark), không bao giờ 'system'. prePaint.test.ts khoá. -->
+    <!-- prePaint: a CLASSIC script (not a module) — sets data-theme before the first paint so the dark theme
+         doesn't flash white. Ember palette only ⇒ no data-palette written. Light/dark follows the system, writes the
+         RESOLVED value (light | dark), never 'system'. Locked by prePaint.test.ts. -->
     <script>
       (function () {
         var mq = window.matchMedia('(prefers-color-scheme: dark)');

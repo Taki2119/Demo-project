@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** Gốc của API trên Vercel, vd. https://<project>.vercel.app — rỗng ⇒ app chạy không dữ liệu. */
+  /** Root of the API on Vercel, e.g. https://<project>.vercel.app — empty ⇒ the app runs without data. */
   readonly VITE_API_URL?: string;
 }
 

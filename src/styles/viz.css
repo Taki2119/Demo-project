@@ -1,6 +1,6 @@
-/* Thẻ, ô số, trạng thái, bảng (kit 02 §6, 03 §8). Giữ tên class cũ. */
+/* Cards, stat tiles, states, tables (kit 02 §6, 03 §8). Keeps the old class names. */
 
-/* ── Thẻ Home ── */
+/* ── Home cards ── */
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(16.25rem, 1fr)); gap: var(--blk-in); }
 .card {
   display: flex;
@@ -21,14 +21,14 @@
 .card-num strong { font-family: var(--font-display); font-size: 1.9rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .card-project { border-style: dashed; }
 
-/* ── Ô số (KPI) ── */
+/* ── Stat tiles (KPI) ── */
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(12.75rem, 1fr)); gap: var(--blk-in); margin-bottom: var(--blk-out); }
 .tile { min-width: 0; padding: 1rem 1.15rem; border-radius: 16px; }
 .tile-label { font-size: .82rem; color: var(--ink-2); }
 .tile-value { font-family: var(--font-display); font-size: 1.9rem; font-weight: 600; line-height: 1.2; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .tile-sub { font-size: .82rem; color: var(--ink-3); margin-top: 2px; font-variant-numeric: tabular-nums; }
 
-/* ── Trạng thái thay cho dữ liệu (NoData của kit: cao 18rem để layout không nhảy) ── */
+/* ── State in place of data (the kit's NoData: 18rem tall so the layout doesn't jump) ── */
 .state {
   display: grid;
   place-items: center;
@@ -41,8 +41,8 @@
 }
 .viz:empty { display: none; }
 
-/* ── Bảng (kit 03 §8). position:relative là BẮT BUỘC (con absolute làm cả trang cuộn ngang).
-   Không sticky header. Selector luôn ghi rõ thead / tbody. ── */
+/* ── Tables (kit 03 §8). position:relative is REQUIRED (an absolute child makes the whole page scroll sideways).
+   No sticky header. Selectors always spell out thead / tbody. ── */
 .table-wrap { position: relative; overflow-x: auto; border-radius: 16px; }
 .table-wrap table { border-collapse: collapse; width: 100%; font-size: .86rem; }
 .table-wrap thead th,
@@ -59,7 +59,7 @@
 .table-wrap thead th.num,
 .table-wrap tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
-/* Tiêu đề cột sort được: <th aria-sort> bọc <button>. Cột số: icon bên TRÁI chữ. */
+/* Sortable column headers: <th aria-sort> wraps a <button>. Numeric columns: icon to the LEFT of the text. */
 .sort {
   display: inline-flex;
   align-items: center;
@@ -75,7 +75,7 @@
 .sort-ico { width: .7rem; height: .7rem; flex: none; opacity: .45; }
 th[aria-sort='ascending'] .sort-ico, th[aria-sort='descending'] .sort-ico { opacity: 1; color: var(--accent-text); }
 
-/* ── Thẻ biểu đồ (kit 01 §2, 03 §7) ── */
+/* ── Chart cards (kit 01 §2, 03 §7) ── */
 .ui-charts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
@@ -91,11 +91,11 @@ th[aria-sort='ascending'] .sort-ico, th[aria-sort='descending'] .sort-ico { opac
 .ui-card-note { margin: 0; }
 .ui-chart { height: 15rem; min-width: 0; }
 .ui-chart-dom { min-width: 0; }
-/* <svg> mặc định overflow:hidden — mở ra để quầng hover / pill ở mép không bị cắt. */
+/* <svg> defaults to overflow:hidden — open it up so hover glows / pills at the edge aren't clipped. */
 .ui-chart .recharts-surface { overflow: visible; }
 .ui-chart .recharts-wrapper:focus, .ui-chart .recharts-surface:focus { outline: none; }
 
-/* Chú giải: chữ dùng token CHỮ; ô màu 11×11 bo 30% mô phỏng hình của mark. */
+/* Legend: text uses TEXT tokens; 11×11 swatches rounded 30% mimic the mark's shape. */
 .ui-legend { display: flex; flex-wrap: wrap; gap: .2rem .9rem; margin: 0; padding: 0; list-style: none; font-size: .82rem; color: var(--ink-2); }
 .ui-legend li { display: inline-flex; align-items: center; gap: .4rem; }
 .ui-swatch { display: inline-block; flex: none; width: 11px; height: 11px; border-radius: 30%; }
@@ -104,7 +104,7 @@ th[aria-sort='ascending'] .sort-ico, th[aria-sort='descending'] .sort-ico { opac
 .ui-swatch--line { border-radius: 0; background: linear-gradient(var(--sw), var(--sw)) center / 100% 2px no-repeat; }
 .ui-swatch--dash { border-radius: 0; background: repeating-linear-gradient(90deg, var(--sw) 0 4px, transparent 4px 6px) center / 100% 2px no-repeat; }
 
-/* Tooltip: thân ĐỤC (nằm trong thẻ kính — kính lồng kính chỉ nhoè được nền rỗng). */
+/* Tooltip: OPAQUE surface (sits inside a glass card — glass nested in glass can only blur an empty backdrop). */
 .ui-tip {
   min-width: 9.5rem;
   padding: .5rem .7rem;
@@ -118,7 +118,7 @@ th[aria-sort='ascending'] .sort-ico, th[aria-sort='descending'] .sort-ico { opac
 .ui-tip-row { display: flex; align-items: center; gap: .45rem; color: var(--ink-2); }
 .ui-tip-row b { margin-left: auto; padding-left: .9rem; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-/* Thanh ngang DOM (HBars). Mép tự do (phải) bo BAR_R 6px; vùng hàng ≥ 24px. */
+/* Horizontal DOM bars (HBars). The free (right) edge is rounded BAR_R 6px; row hit area ≥ 24px. */
 .ui-hbars { list-style: none; margin: 0; padding: .25rem 0 .5rem; display: grid; gap: .5rem; }
 .ui-hbar {
   display: grid;
@@ -141,7 +141,7 @@ th[aria-sort='ascending'] .sort-ico, th[aria-sort='descending'] .sort-ico { opac
   background-image: var(--mark-shade-grad-x);
   transform-origin: left center;
   animation: ui-hbar-grow var(--x-anim, 1000ms) ease-out backwards;
-  /* 2 lớp quầng ở trạng thái nghỉ, alpha 0 — không để `none` (Chrome nội suy ra quầng đen). */
+  /* 2 glow layers at rest, alpha 0 — not `none` (Chrome would interpolate a black glow). */
   box-shadow: 0 0 3px color-mix(in srgb, var(--hb) 0%, transparent), 0 0 10px color-mix(in srgb, var(--hb) 0%, transparent);
   transition: box-shadow .2s ease, z-index 0s linear .2s;
 }
@@ -156,7 +156,7 @@ th[aria-sort='ascending'] .sort-ico, th[aria-sort='descending'] .sort-ico { opac
   .ui-hbar-fill { animation: none; transition: none; }
 }
 
-/* ── Phân trang ── */
+/* ── Pagination ── */
 .pager {
   display: flex;
   flex-wrap: wrap;

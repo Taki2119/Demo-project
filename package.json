@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Bản demo cá nhân: dashboard SaaS trên dữ liệu tổng hợp (Supabase + Vercel + GitHub Pages).",
+  "description": "Personal demo: a SaaS dashboard on synthetic data (Supabase + Vercel + GitHub Pages).",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

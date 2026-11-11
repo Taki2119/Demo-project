@@ -1,6 +1,6 @@
-// DB demo trong bộ nhớ: PGlite + mọi migration + dữ liệu từ bộ sinh + mart.refresh().
-// Dùng cho test API và cho `npm run api:dev` (chạy app end-to-end khi chưa có Supabase).
-// ⚠ Chỉ dành cho máy dev — không đi vào server/ (Vercel không cần PGlite).
+// In-memory demo DB: PGlite + all migrations + data from the generator + mart.refresh().
+// Used for the API tests and for `npm run api:dev` (run the app end-to-end without Supabase).
+// ⚠ For dev machines only — does not go into server/ (Vercel does not need PGlite).
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,7 +24,7 @@ export async function createDemoDb(options = {}) {
   return db;
 }
 
-/** Hàm query cùng hình với server/lib/db.js — chạy bằng role analytics_reader như production. */
+/** Query function with the same shape as server/lib/db.js — runs as the analytics_reader role, like production. */
 export async function readerQuery(db) {
   await db.exec('set role analytics_reader');
   return async (text, args) => (await db.query(text, args)).rows;

@@ -1,6 +1,6 @@
-// Biểu đồ đường 1 chuỗi của câu trả lời Hỏi AI — nạp ĐỘNG (Recharts không vào chunk đầu, kit 01 §1).
-// Trục x đã là nhãn tháng ngắn (câu trả lời dựng sẵn) ⇒ xTick / xTitle giữ nguyên. Trục tiền: vạch
-// chỉ có số theo thang moneyScale; đơn vị in MỘT lần phía trên biểu đồ (AnswerView).
+// Single-series line chart for Ask AI answers — LAZY-LOADED (Recharts stays out of the initial chunk, kit 01 §1).
+// The x axis is already short month labels (prebuilt by the answer) ⇒ xTick / xTitle pass through. Money axis: ticks
+// show only numbers on the moneyScale scale; the unit is printed ONCE above the chart (AnswerView).
 import type { ChartSpec } from '../../ask/kit';
 import { count, moneyScale, pct, scaled, yen } from '../format';
 import { useLangStore } from '../i18n';

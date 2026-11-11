@@ -1,7 +1,7 @@
-// Nút "Hỏi AI" (bản demo — KHÔNG gọi AI thật) ở góc trên bên phải, có ở MỌI màn.
-// File này nằm trong chunk đầu nên chỉ có cái nút: bộ câu hỏi + cửa sổ chat (ChatPanel) nạp ĐỘNG ở
-// lần mở đầu tiên. Đã mở rồi thì cửa sổ giữ nguyên trong DOM khi thu gọn (ẩn bằng `hidden`) ⇒ chữ
-// đang gõ và vị trí cuộn còn nguyên.
+// "Ask AI" button (demo version — does NOT call a real AI) in the top-right corner, on EVERY screen.
+// This file is in the initial chunk, so it holds only the button: the question set + chat window (ChatPanel) are
+// LAZY-LOADED on first open. Once opened, the window stays in the DOM when collapsed (hidden via `hidden`) ⇒ typed
+// text and scroll position are preserved.
 import { lazy, Suspense, useCallback, useRef, useState } from 'react';
 import { pick, PAGE_ASK } from '../../nav/catalog';
 import { boardChunk } from '../chunk';

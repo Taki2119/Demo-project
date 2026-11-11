@@ -1,7 +1,7 @@
-// Tooltip nhiều dòng (kit 03 §7). Thứ tự dòng = thứ tự `items` — khuôn cột xếp lớp tự sắp sao cho
-// khớp hình (lát trên cùng trước; cột phân cực: lát dương từ trên xuống rồi lát âm).
-// Lệch kit: thân ĐỤC (--surface) thay vì kính — tooltip của Recharts nằm TRONG thẻ kính, mà kính
-// lồng trong tổ tiên có backdrop-filter chỉ nhoè được nền rỗng (kit 02 §3 bẫy 1).
+// Multi-line tooltip (kit 03 §7). Row order = order of `items` — the stacked-bar template orders them to
+// match the picture (top slice first; diverging bars: positive slices top-down, then negative slices).
+// Deviation from kit: OPAQUE surface (--surface) instead of glass — Recharts' tooltip sits INSIDE a glass card, and glass
+// nested in an ancestor with backdrop-filter can only blur an empty backdrop (kit 02 §3 glass pitfall 1).
 import { NO_VALUE } from '../format';
 import { Swatch, type LegendItem } from './Legend';
 
@@ -14,7 +14,7 @@ export interface TipProps {
   items: readonly LegendItem[];
   format: (key: string, v: number) => string;
   title: (label: string) => string;
-  // Recharts tiêm vào:
+  // Injected by Recharts:
   active?: boolean;
   payload?: readonly Entry[];
   label?: string | number;

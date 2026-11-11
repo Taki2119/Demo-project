@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-/** true khi media query khớp; tự cập nhật khi khung nhìn đổi. */
+/** true when the media query matches; updates itself when the viewport changes. */
 export function useMediaQuery(query: string): boolean {
   return useSyncExternalStore(
     (onChange) => {

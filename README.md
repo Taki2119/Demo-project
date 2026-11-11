@@ -1,78 +1,78 @@
 # SaaS Analytics Demo
 
-Dự án cá nhân: dashboard phân tích cho một SaaS **giả lập**. Dữ liệu là dữ liệu tổng hợp
-hoàn toàn (tên công ty, tên người, email đều sinh ngẫu nhiên). Giao diện có hai ngôn ngữ,
-tiếng Nhật và tiếng Việt, đổi bằng nút ở side panel. Tiền tệ là yên Nhật.
+A personal project: an analytics dashboard for a **simulated** SaaS. The data is fully synthetic
+(company names, people's names and emails are all randomly generated). The UI has two languages,
+Japanese and Vietnamese, switched with a button in the side panel. The currency is Japanese yen.
 
-| Phần | Công nghệ | Trạng thái |
+| Part | Technology | Status |
 |---|---|---|
-| Dữ liệu | Supabase (Postgres), `raw` → `mart` | ✅ schema + bộ sinh dữ liệu |
-| Web app | Vite + React 18 + TypeScript, GitHub Pages | ✅ khung: điều hướng · ja/vi · lớp dữ liệu · trang trống |
-| API | Vercel (`server/`, project riêng) | ✅ `POST /api/board-data` + `GET /api/health`. Hợp đồng ở [`docs/API.md`](docs/API.md), triển khai ở [`server/README.md`](server/README.md) |
-| Thiết kế, biểu đồ | theo [`docs/ui-kit/`](docs/ui-kit/README.md), Recharts 2 (nạp động) | ✅ |
-| Hỏi AI | **bản demo**: cửa sổ chat (nút góc trên phải, mọi màn), câu hỏi mẫu + so khớp gần đúng, KHÔNG gọi AI thật | ✅ xem mục dưới |
+| Data | Supabase (Postgres), `raw` → `mart` | ✅ schema + data generator |
+| Web app | Vite + React 18 + TypeScript, GitHub Pages | ✅ shell: navigation · ja/vi · data layer · empty pages |
+| API | Vercel (`server/`, separate project) | ✅ `POST /api/board-data` + `GET /api/health`. Contract in [`docs/API.md`](docs/API.md), deployment in [`server/README.md`](server/README.md) |
+| Design, charts | per [`docs/ui-kit/`](docs/ui-kit/README.md), Recharts 2 (lazy-loaded) | ✅ |
+| Ask AI | **demo version**: chat window (top-right button, every screen), sample questions + approximate matching, does NOT call a real AI | ✅ see section below |
 
 ```bash
 npm install
 npm run dev              # http://localhost:5173/Demo-project/
 npm run typecheck && npm test && npm run build
-npm run db:test          # migration + bộ sinh trên Postgres WASM (PGlite)
-npm run api:test         # toàn bộ API trên PGlite, bằng role chỉ đọc
-npm run api:dev          # API cục bộ với DB demo trong bộ nhớ → VITE_API_URL=http://localhost:3001 npm run dev
+npm run db:test          # migrations + generator on Postgres WASM (PGlite)
+npm run api:test         # the whole API on PGlite, using the read-only role
+npm run api:dev          # local API with an in-memory demo DB → VITE_API_URL=http://localhost:3001 npm run dev
 npm run data:generate    # → data/out/*.csv
-npm run data:load        # cần DATABASE_URL trong .env — xem docs/SCHEMA.md §8
+npm run data:load        # needs DATABASE_URL in .env — see docs/SCHEMA.md §8
 ```
 
-Biến lúc build: `VITE_API_URL` (gốc API trên Vercel; để trống thì app chạy không có dữ liệu),
-`VITE_BASE_PATH` (mặc định `/Demo-project/`).
+Build-time variables: `VITE_API_URL` (API root on Vercel; leave empty and the app runs without data),
+`VITE_BASE_PATH` (default `/Demo-project/`).
 
-## Cấu trúc `src/`
+## `src/` structure
 
-| Thư mục | Việc |
+| Folder | Purpose |
 |---|---|
-| `nav/` | `catalog.ts`: MỘT nguồn cho cây trang · `route.ts`: router hash |
-| `data/` | `api.ts`: đường đọc duy nhất · `labels.ts`: nhãn ja/vi từ DB · `metrics.ts`: công thức tỉ lệ · `rollup.ts`: gộp gói · `churn.ts` · `period.ts`: bộ lọc tháng · `glossary.ts`: giải thích chỉ số |
-| `ask/` | Hỏi AI bản demo: `match.ts` (so khớp) · `q/*.ts` (37 câu hỏi mẫu) · `questions.ts` · `chat.ts` |
-| `ui/` | `i18n.ts`: chữ giao diện ja/vi · `format.ts`: số / yên / tháng · `parts.tsx` · `viz/` (biểu đồ) · `filters/` · `ask/` (nút + cửa sổ chat Hỏi AI) |
-| `screens/` | Sidebar · Home · Board (4 bảng × 4 gói) · Cảnh báo huỷ sớm · Giới thiệu |
+| `nav/` | `catalog.ts`: ONE source for the page tree · `route.ts`: hash router |
+| `data/` | `api.ts`: the only read path · `labels.ts`: ja/vi labels from the DB · `metrics.ts`: ratio formulas · `rollup.ts`: plan rollup · `churn.ts` · `period.ts`: month filter · `glossary.ts`: metric explanations |
+| `ask/` | Ask AI demo: `match.ts` (matching) · `q/*.ts` (37 sample questions) · `questions.ts` · `chat.ts` |
+| `ui/` | `i18n.ts`: ja/vi UI text · `format.ts`: numbers / yen / months · `parts.tsx` · `viz/` (charts) · `filters/` · `ask/` (Ask AI button + chat window) |
+| `screens/` | Sidebar · Home · Board (4 boards × 4 plans) · Early churn warning · About |
 
-**Hai luật:**
-- Không có số mẫu nào trong bundle: chưa có API thì mọi trang nói thẳng là chưa có dữ liệu.
-- Chữ **giao diện** nằm ở `ui/i18n.ts`; chữ **dữ liệu** (tên cột, tên gói, ngành…) lấy từ
+**Two rules:**
+- No sample numbers in the bundle: without an API every page says plainly that there is no data yet.
+- **UI** text lives in `ui/i18n.ts`; **data** text (column names, plan names, industries…) comes from
   `mart.labels` / `mart.column_labels`.
 
-Thiết kế dữ liệu, công thức chỉ số, điểm rủi ro huỷ: [`docs/SCHEMA.md`](docs/SCHEMA.md).
+Data design, metric formulas, churn risk score: [`docs/SCHEMA.md`](docs/SCHEMA.md).
 
-## Hỏi AI — bản demo
+## Ask AI — demo version
 
-Nút **Hỏi AI** ở góc trên bên phải, có ở mọi màn hình, mở một cửa sổ chat. Trên desktop cửa sổ
-nổi cạnh trang đang xem; ở ≤640px nó phủ toàn màn hình. Cuộc trò chuyện giữ nguyên khi chuyển
-trang.
+The **Ask AI** button in the top-right corner, present on every screen, opens a chat window. On desktop the window
+floats next to the current page; at ≤640px it covers the full screen. The conversation persists across page
+changes.
 
-Cửa sổ này **không gọi AI nào**: không có Claude CLI, không có API key, không có endpoint mới.
-Cửa sổ ghi rõ điều đó (chip "Demo" + ghi chú lúc mở).
+This window **does not call any AI**: no Claude CLI, no API key, no new endpoint.
+The window says so clearly (a "Demo" chip + a note on open).
 
-1. Người dùng gõ câu hỏi, bằng tiếng Nhật hay tiếng Việt, có dấu hay không dấu đều được.
-   - Đang gõ: hiện tối đa 3 câu hỏi mẫu gần nhất (↑↓ chọn, Enter hỏi, Tab điền vào ô).
-   - Ô còn trống: hiện 3 câu gợi ý. Danh sách câu mẫu đầy đủ KHÔNG bày ra.
-2. `src/ask/match.ts` so câu đó **gần đúng** với 37 câu hỏi mẫu:
-   - tiếng Việt so theo từ;
-   - tiếng Nhật so theo cặp ký tự;
-   - từ nào câu hỏi nào cũng có thì nhẹ ký.
+1. The user types a question, in Japanese or Vietnamese, with or without diacritics.
+   - While typing: shows up to 3 nearest sample questions (↑↓ to select, Enter to ask, Tab to fill the input).
+   - Empty input: shows 3 suggested questions. The full sample-question list is NOT displayed.
+2. `src/ask/match.ts` matches that question **approximately** against the 37 sample questions:
+   - Vietnamese is compared by word;
+   - Japanese is compared by character pairs;
+   - words that every question has carry little weight.
 
-   Nó cũng nhận ra tham số gói ("gói Tăng trưởng", "グロース") và top N ("top 5", "上位20社").
-3. Đủ gần thì trả lời câu mẫu gần nhất, kèm 3 câu liên quan. Không đủ gần thì chỉ gợi ý 4 câu.
-4. Số lấy từ các nguồn **sẵn có** của `POST /api/board-data`, nên khớp với dashboard. Câu trả
-   lời là hàm thuần của dữ liệu và ngôn ngữ (`src/ask/q/*.ts`); tỉ lệ tính bằng
-   `src/data/metrics.ts`. Mỗi câu trả lời có mục "dữ liệu dùng và cách tính".
+   It also recognizes a plan parameter ("gói Tăng trưởng", "グロース") and top N ("top 5", "上位20社").
+3. Close enough ⇒ answers the nearest sample question, plus 3 related questions. Not close enough ⇒ only suggests 4 questions.
+4. Numbers come from the **existing** sources of `POST /api/board-data`, so they match the dashboard. Answers
+   are pure functions of the data and the language (`src/ask/q/*.ts`); ratios are computed with
+   `src/data/metrics.ts`. Every answer has a "data used and how it is calculated" section.
 
-**Thêm một câu hỏi:**
-- Thêm một mục vào `src/ask/q/<nhóm>.ts`, gồm: ≥ 2 cách hỏi mỗi ngôn ngữ, `needs`, `build`,
+**Adding a question:**
+- Add an entry to `src/ask/q/<group>.ts`, with: ≥ 2 phrasings per language, `needs`, `build`,
   `related`.
-- `npm test` sẽ kiểm:
-  - mọi cách hỏi tự khớp về đúng câu đó;
-  - câu trả lời dựng được ở cả ja và vi;
-  - không có `undefined`/`NaN`;
-  - có dữ liệu rỗng thì trả `null`.
-- Một câu hỏi diễn đạt khác mà bị trượt thì thêm cách hỏi hoặc từ khoá cho câu mẫu. Đừng hạ ngưỡng
-  `ANSWER_MIN`.
+- `npm test` will check:
+  - every phrasing matches back to that exact question;
+  - the answer builds in both ja and vi;
+  - no `undefined`/`NaN`;
+  - empty data returns `null`.
+- If a differently worded question misses, add phrasings or keywords to the sample question. Don't lower the
+  `ANSWER_MIN` threshold.
