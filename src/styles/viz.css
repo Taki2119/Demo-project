@@ -1,0 +1,89 @@
+/* Thẻ, ô số, trạng thái, bảng (kit 02 §6, 03 §8). Giữ tên class cũ. */
+
+/* ── Thẻ Home ── */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(16.25rem, 1fr)); gap: var(--blk-in); }
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 1.1rem 1.15rem;
+  border-radius: 16px;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.card-title { font-weight: 600; font-size: 1.02rem; letter-spacing: -0.02em; }
+.card-desc { color: var(--ink-2); font-size: .82rem; }
+.card-num { margin: 6px 0 0; display: flex; flex-direction: column; gap: 2px; }
+.card-num span { font-size: .82rem; color: var(--ink-3); }
+.card-num strong { font-family: var(--font-display); font-size: 1.9rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.card-project { border-style: dashed; }
+
+/* ── Ô số (KPI) ── */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(12.75rem, 1fr)); gap: var(--blk-in); margin-bottom: var(--blk-out); }
+.tile { min-width: 0; padding: 1rem 1.15rem; border-radius: 16px; }
+.tile-label { font-size: .82rem; color: var(--ink-2); }
+.tile-value { font-family: var(--font-display); font-size: 1.9rem; font-weight: 600; line-height: 1.2; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.tile-sub { font-size: .82rem; color: var(--ink-3); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+/* ── Trạng thái thay cho dữ liệu (NoData của kit: cao 18rem để layout không nhảy) ── */
+.state {
+  display: grid;
+  place-items: center;
+  min-height: 18rem;
+  padding: 1.5rem;
+  margin-bottom: var(--blk-out);
+  border-radius: 20px;
+  color: var(--ink-2);
+  text-align: center;
+}
+.viz:empty { display: none; }
+
+/* ── Bảng (kit 03 §8). position:relative là BẮT BUỘC (con absolute làm cả trang cuộn ngang).
+   Không sticky header. Selector luôn ghi rõ thead / tbody. ── */
+.table-wrap { position: relative; overflow-x: auto; border-radius: 16px; }
+.table-wrap table { border-collapse: collapse; width: 100%; font-size: .86rem; }
+.table-wrap thead th,
+.table-wrap tbody td,
+.table-wrap tbody th { padding: .5rem .6rem; text-align: left; white-space: nowrap; }
+.table-wrap thead th {
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  color: var(--ink-2);
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 42%, transparent);
+}
+.table-wrap tbody tr + tr > * { border-top: 1px solid color-mix(in srgb, var(--ink) 34%, transparent); }
+.table-wrap thead th.num,
+.table-wrap tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Tiêu đề cột sort được: <th aria-sort> bọc <button>. Cột số: icon bên TRÁI chữ. */
+.sort {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+.sort:hover { color: var(--accent-text); }
+.sort-ico { width: .7rem; height: .7rem; flex: none; opacity: .45; }
+th[aria-sort='ascending'] .sort-ico, th[aria-sort='descending'] .sort-ico { opacity: 1; color: var(--accent-text); }
+
+/* ── Phân trang ── */
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--blk-in);
+  margin-top: var(--blk-in);
+}
+.pager-pages { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pager-gap { color: var(--ink-3); padding: 0 2px; }
+.pager-range { font-size: .82rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }

@@ -1,10 +1,14 @@
-// Các mảnh giao diện dùng chung của KHUNG. ⚠ Đây là lớp giao diện TẠM — thiết kế thật sẽ thay
-// toàn bộ file này + index.css, còn hợp đồng (props) giữ nguyên.
-import type { ReactNode } from 'react';
+// Các mảnh giao diện dùng chung. Hợp đồng (props + tên class) giữ từ khung; kiểu dáng theo
+// docs/ui-kit/ (CSS ở src/styles/*).
+import { useState, type ReactNode } from 'react';
 import type { Phase, Row } from '../data/api';
 import { useColumnLabel, useColumnUnit, useLabel } from '../data/labels';
 import { count, NO_VALUE, pct, yen } from './format';
 import { LANGS, useLangStore, useT } from './i18n';
+import { SortHead } from './SortHead';
+import { TablePager } from './TablePager';
+import { clampPage, pageKeepingRow, pageSlice, PAGE_SIZES, type PageSize } from './tablePage';
+import { sortRows, toggleSort, type SortState, type SortValue } from './tableSort';
 
 export function LangToggle() {
   const { lang, setLang } = useLangStore();
@@ -41,12 +45,42 @@ const CODE_DOMAIN: Record<string, string> = {
   trigger: 'intervention_trigger', channel: 'intervention_channel',
 };
 
-/** Bảng số chung: tiêu đề cột + giá trị mã hoá lấy nhãn từ DB, số định dạng theo đơn vị của cột. */
+/** Bảng số chung: tiêu đề cột + giá trị mã hoá lấy nhãn từ DB, số định dạng theo đơn vị của cột.
+ *  Sort + chia trang theo kit 03 §8. State nằm TRONG bảng (giữ props cũ); chưa bấm sort thì giữ
+ *  thứ tự nơi gọi truyền vào. */
 export function DataTable({ rows, columns }: { rows: readonly Row[]; columns: readonly string[] }) {
   const lang = useLangStore((s) => s.lang);
   const col = useColumnLabel();
   const unit = useColumnUnit();
   const label = useLabel();
+  const [sort, setSort] = useState<SortState | null>(null);
+  const [page, setPage] = useState(1);
+  const [size, setSize] = useState<PageSize>(PAGE_SIZES[0]);
+
+  const isNumeric = (k: string) => typeof rows.find((r) => r[k] != null)?.[k] === 'number';
+  // Giá trị để sort = cái người xem THẤY: cột mã ⇒ nhãn; cờ ⇒ 1/0.
+  const sortValue = (r: Row, k: string): SortValue => {
+    const v = r[k] ?? null;
+    if (v == null) return null;
+    if (typeof v === 'boolean') return v ? 1 : 0;
+    const domain = CODE_DOMAIN[k];
+    if (domain && typeof v === 'string') return label(domain, v);
+    return v;
+  };
+  const sorted = sort ? sortRows(rows, (r) => sortValue(r, sort.key), sort.dir) : rows;
+  const cur = clampPage(page, sorted.length, size);
+  const { from, to } = pageSlice(cur, sorted.length, size);
+  const shown = sorted.slice(from, to);
+
+  const onSort = (k: string) => {
+    setSort((s) => toggleSort(s, k, isNumeric(k) ? 'desc' : 'asc'));
+    setPage(1);
+  };
+  const onSize = (s: PageSize) => {
+    setSize(s);
+    setPage(pageKeepingRow(from, s));
+  };
+
   const cell = (k: string, v: Row[string]) => {
     if (v == null) return NO_VALUE;
     if (typeof v === 'boolean') return v ? '✓' : '–';
@@ -59,26 +93,29 @@ export function DataTable({ rows, columns }: { rows: readonly Row[]; columns: re
     return v;
   };
   return (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            {columns.map((c) => (
-              <th key={c} scope="col">{col(c)}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i}>
+    <>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
               {columns.map((c) => (
-                <td key={c} className={typeof r[c] === 'number' ? 'num' : undefined}>{cell(c, r[c] ?? null)}</td>
+                <SortHead key={c} label={col(c)} sortKey={c} sort={sort} numeric={isNumeric(c)} onSort={onSort} />
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {shown.map((r, i) => (
+              <tr key={from + i}>
+                {columns.map((c) => (
+                  <td key={c} className={typeof r[c] === 'number' ? 'num' : undefined}>{cell(c, r[c] ?? null)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <TablePager total={sorted.length} page={cur} size={size} onPage={setPage} onSize={onSize} />
+    </>
   );
 }
 

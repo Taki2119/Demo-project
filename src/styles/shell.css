@@ -1,0 +1,66 @@
+/* Vỏ app (kit 02 §4). Giữ tên class cũ: .app .side .main .page.
+   .main là ô cuộn DUY NHẤT; document không cuộn. */
+
+.app {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+  position: relative;
+}
+/* Đường lui riêng — KHÔNG viết `height:100vh; height:100dvh` liền nhau (minifier gộp mất). */
+@supports not (height: 100dvh) {
+  .app { height: 100vh; }
+}
+
+.side {
+  flex: none;
+  width: var(--sidenav-w);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 1rem .75rem;
+  overflow-y: auto;
+  border-width: 0 1px 0 0;
+  border-radius: 0;
+}
+.brand { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; padding: 4px 10px 12px; }
+.side a {
+  display: block;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color .16s ease, color .16s ease;
+}
+.side a:hover { background: var(--toggle-track); }
+.side a[aria-current='page'] {
+  background: color-mix(in srgb, var(--accent-fill) 14%, transparent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.side details > a { padding-left: 22px; }
+.side summary { cursor: pointer; padding: 6px 10px; color: var(--ink-2); border-radius: 8px; }
+.side summary:hover { background: var(--toggle-track); }
+.side-section { margin-top: 14px; padding: 4px 10px; font-size: .72rem; font-weight: 600; letter-spacing: .03em; color: var(--ink-3); }
+.side-foot { margin-top: auto; padding-top: 16px; }
+
+.main {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+}
+/* max-width đặt ở màn, KHÔNG đặt ở ô cuộn (thanh cuộn sẽ mọc giữa màn hình). */
+.page { max-width: 84rem; margin: 0 auto; padding: 1.5rem var(--screen-pad) 3rem; }
+.page h1 { margin: 0 0 6px; font-size: 1.62rem; line-height: 1.25; }
+.crumb { margin: 0 0 4px; color: var(--ink-3); font-size: .82rem; }
+.lead { margin: 0 0 var(--blk-out); color: var(--ink-2); font-size: .82rem; }
+
+/* ≤640px (breakpoint của kit). Kit dùng dải icon + ngăn kéo — cần sửa Sidebar.tsx, CHƯA làm.
+   Tạm: side panel xếp trên, .main vẫn là ô cuộn nội dung. */
+@media (max-width: 640px) {
+  .app { flex-direction: column; }
+  .side { width: auto; border-width: 0 0 1px 0; overflow-y: visible; }
+}

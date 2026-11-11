@@ -27,6 +27,10 @@ const ja = {
   updatedAt: '更新',
   open: '開く',
   menu: 'メニュー',
+  pager: 'ページ送り',
+  pageSize: '表示件数',
+  prevPage: '前のページ',
+  nextPage: '次のページ',
 } as const;
 
 export type DictKey = keyof typeof ja;
@@ -49,6 +53,10 @@ const vi: Record<DictKey, string> = {
   updatedAt: 'Cập nhật',
   open: 'Mở',
   menu: 'Menu',
+  pager: 'Phân trang',
+  pageSize: 'Số dòng mỗi trang',
+  prevPage: 'Trang trước',
+  nextPage: 'Trang sau',
 };
 
 export const DICT: Record<Lang, Record<DictKey, string>> = { ja, vi };

@@ -144,7 +144,10 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
      đọc danh sách cấm từ `PRIVACY_DENY`: thiếu khi `CI=true` ⇒ FAIL, ở máy ⇒ cảnh báo.
 
    Giai đoạn: (1) cài Recharts → (2) CSS + parts.tsx + prePaint → (3) viz + chart từng trang →
-   (4) cổng CI.
+   (4) cổng CI. **(1) xong, (2) xong — chờ người dùng duyệt (2).** Ảnh + công cụ chụp ở NGOÀI
+   repo: `Desktop/Claude Workspace/Demo-project-shots/` (`tools/shoot.mjs`, `fontcheck.mjs`).
+   Còn treo: ở ≤640px side panel xếp trên, `.main` chỉ còn ~297px cao — cần ngăn kéo của kit
+   (sửa `Sidebar.tsx`, ngoài phạm vi luật 2) ⇒ hỏi người dùng.
 5. Vặt: ngăn kéo side panel trên mobile (hiện panel xếp chồng trên nội dung); tên gói hiện MÃ
    khi API chưa trả nhãn (đúng thiết kế, nhưng có thể cân nhắc).
 
@@ -184,6 +187,16 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
 - **Hobby plan Vercel:** chỉ dùng domain production (`<tên>.vercel.app`). URL của từng deployment
   bị Vercel Authentication chặn. Region đặt `hnd1` trong `server/vercel.json`, phải cùng vùng
   Supabase.
+- **API cục bộ chặn Origin lạ (`403 forbidden_origin`)**: chỉ nhận `localhost:5180` / `5173`
+  (`server/lib/handler.js`). Chạy `vite preview` để chụp ảnh thì dùng `--port 5180` và build với
+  `VITE_API_URL=http://localhost:5180`, vào thư mục NGOÀI `dist/`. curl không gửi Origin nên vẫn qua
+  — đừng lấy curl làm bằng chứng trình duyệt gọi được.
+- **Chụp ảnh 430px bằng `chrome --headless --screenshot --window-size=430,…` SAI trên Windows**:
+  cửa sổ có bề rộng tối thiểu ~500px nên trang dựng ở ~500 rồi bị cắt ⇒ trông như cuộn ngang. Dùng
+  puppeteer `setViewport` và in `innerWidth`/`scrollWidth`.
+- **`--font-display` (Outfit) không có bộ chữ tiếng Việt** (Google Fonts chỉ có latin/latin-ext):
+  đo thật thì ạ ữ ỗ rơi sang Segoe UI. Chỉ dùng cho logo + số; `i18n.test.ts` khoá logo không có
+  chữ Latin có dấu.
 
 ## 7. Quy trình
 

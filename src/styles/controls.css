@@ -1,0 +1,55 @@
+/* Nút + nhóm chọn (kit 02 §5). Mọi nút là nút PHẲNG, thân đục — kính chỉ dành cho thẻ/panel.
+   Hover/nhấn ở hover.css. */
+
+/* Nhóm chọn (đổi ngôn ngữ, cỡ trang): rãnh đục + nấc đang chọn tô --accent-fill. */
+.lang, .seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--btn-ring);
+}
+.lang button, .seg button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  padding: 4px 12px;
+  font-size: .82rem;
+  cursor: pointer;
+  transition: background-color .16s ease, color .16s ease;
+}
+.lang button:hover, .seg button:hover { background: var(--toggle-track); color: var(--ink); }
+.lang button[aria-pressed='true'], .seg button[aria-pressed='true'] { background: var(--accent-fill); color: var(--on-accent); }
+
+/* Nút phẳng (phân trang). */
+.btn {
+  position: relative;
+  z-index: 0;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 .65rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  /* 2 lớp bóng ở trạng thái nghỉ (lớp 2 trong suốt) để hover nội suy đúng số lớp. */
+  box-shadow: 0 0 0 1px var(--btn-ring), 0 0 0 0 transparent;
+}
+.btn[aria-current='page'] { background: var(--accent-fill); color: var(--on-accent); }
+.btn:disabled { color: var(--ink-3); cursor: default; }
+
+.chip {
+  display: inline-block;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--btn-ring);
+  color: var(--accent-text);
+  font-size: .72rem;
+  font-weight: 600;
+}
