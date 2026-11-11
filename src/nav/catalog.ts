@@ -87,6 +87,21 @@ export const PROJECT_CHURN = {
   sources: ['churn-watchlist', 'churn-history', 'interventions-monthly'] as const satisfies readonly SourceKey[],
 } as const;
 
+/** Hỏi AI — BẢN DEMO: trả lời từ bộ câu hỏi mẫu (src/ask/), không gọi AI thật. KHÔNG phải một trang:
+ *  là cửa sổ chat mở từ nút góc trên bên phải, có ở mọi màn (src/ui/ask/ChatDock.tsx). Mục này cho tên
+ *  nút + dòng mô tả ở trang Giới thiệu. */
+export const PAGE_ASK = {
+  name: { ja: 'AIに質問', vi: 'Hỏi AI' },
+  desc: {
+    ja: '右上のボタンからどの画面でも開けるチャット。よくある質問を自然な言葉で入力すると、サンプルデータから答えを組み立てます（デモ：AIには接続していません）。',
+    vi: 'Cửa sổ chat mở từ nút góc trên bên phải, ở mọi màn hình. Gõ câu hỏi thường gặp bằng lời tự nhiên, app dựng câu trả lời từ dữ liệu mẫu (bản demo: chưa nối AI thật).',
+  },
+  question: {
+    ja: '表を開かずに「今のMRRは？」「解約しそうな会社は？」と聞いたら、数字と根拠がすぐ返ってくるか？',
+    vi: 'Không cần mở bảng, hỏi "MRR hiện tại?", "công ty nào sắp huỷ?" có nhận ngay số liệu kèm cách tính không?',
+  },
+} as const;
+
 export function boardOf(key: BoardKey): BoardDef {
   const b = BOARDS.find((x) => x.key === key);
   if (!b) throw new Error(`board lạ: ${key}`);

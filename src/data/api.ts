@@ -74,6 +74,22 @@ function load(source: SourceKey, params: Params): void {
   inflight.set(key, p);
 }
 
+/** Nạp một nguồn NGOÀI React (Hỏi AI: mỗi câu trả lời cần số nguồn khác nhau). Dùng CHUNG cache +
+ *  store với `useSource` ⇒ trang khác đã nạp thì trả ngay, không gọi lại. Lỗi ⇒ reject. */
+export function loadSource(source: SourceKey, params: Params = {}): Promise<SourceData> {
+  if (!apiConfigured) return Promise.reject(new Error('api_off'));
+  const key = cacheKey(source, params);
+  const ready = () => {
+    const e = useSourceStore.getState()[key];
+    if (e?.phase === 'ready' && e.data) return e.data;
+    throw new Error('load_failed');
+  };
+  const cur = useSourceStore.getState()[key];
+  if (cur?.phase === 'ready' && cur.data) return Promise.resolve(cur.data);
+  load(source, params);
+  return (inflight.get(key) ?? Promise.resolve()).then(ready);
+}
+
 /** Nạp một nguồn (có cache trong bộ nhớ). Chưa cấu hình API ⇒ phase 'off'.
  *  `enabled = false` ⇒ chưa nạp, trả 'loading' (vd. chờ danh sách tháng để biết tham số `month`). */
 export function useSource(source: SourceKey, params: Params = {}, enabled = true): Entry {

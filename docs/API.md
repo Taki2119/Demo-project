@@ -50,5 +50,8 @@ Phản hồi `200`:
 | `labels` | `mart.labels` | — | nhãn ja/vi của giá trị mã hoá |
 | `column-labels` | `mart.column_labels` | — | nhãn ja/vi + đơn vị của cột |
 
+Cửa sổ **Hỏi AI** (bản demo) không có endpoint riêng. Nó gọi lại đúng các nguồn ở bảng
+trên (`src/ask/q/*.ts` → `needs`) và dùng chung cache của client với các bảng.
+
 ⚠ **SQL cố định theo `source` ở phía server**, client không gửi SQL. Tham số đi qua
 placeholder, không ghép chuỗi. Server chạy bằng role `analytics_reader` (chỉ đọc, chỉ `mart`).
