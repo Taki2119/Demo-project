@@ -30,7 +30,8 @@ Kiến trúc: **Supabase (Postgres)** `raw → mart` · **Vercel** (`server/`, p
 2. **Code / thiết kế:. Nguồn duy nhất là bộ kit ở [`docs/ui-kit/`](docs/ui-kit/README.md); bắt đầu đọc
    từ `README.md` (bản đồ file) và `00-HUONG-DAN-VSCODE.md`. Lớp giao diện hiện tại
    (`src/ui/parts.tsx` + `src/index.css`) là bản TẠM do Claude tự viết. Bước "thiết kế" thay
-   2 file đó (giữ props + tên class) và thêm module mới dưới `src/ui/`; KHÔNG dựng lại trang,
+   2 file đó (giữ props + tên class) và thêm module mới dưới `src/ui/`. Ngoại lệ (người dùng cho
+   phép 2026-11-11): được sửa `src/screens/Sidebar.tsx` CHỈ để làm ngăn kéo ≤640px, giữ props. KHÔNG dựng lại trang,
    KHÔNG chạy P2 (dựng khung) của kit vì khung đã có. Vẫn giữ:
    - **không ghi tên công ty cũ vào repo này** — kể cả đường dẫn máy tới repo nguồn (đường dẫn
      đó chứa tên). Đường dẫn chỉ nằm ở `.claude/settings.local.json` hoặc `/add-dir`, không commit;
@@ -144,12 +145,14 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
      đọc danh sách cấm từ `PRIVACY_DENY`: thiếu khi `CI=true` ⇒ FAIL, ở máy ⇒ cảnh báo.
 
    Giai đoạn: (1) cài Recharts → (2) CSS + parts.tsx + prePaint → (3) viz + chart từng trang →
-   (4) cổng CI. **(1) xong, (2) xong — chờ người dùng duyệt (2).** Ảnh + công cụ chụp ở NGOÀI
-   repo: `Desktop/Claude Workspace/Demo-project-shots/` (`tools/shoot.mjs`, `fontcheck.mjs`).
-   Còn treo: ở ≤640px side panel xếp trên, `.main` chỉ còn ~297px cao — cần ngăn kéo của kit
-   (sửa `Sidebar.tsx`, ngoài phạm vi luật 2) ⇒ hỏi người dùng.
-5. Vặt: ngăn kéo side panel trên mobile (hiện panel xếp chồng trên nội dung); tên gói hiện MÃ
-   khi API chưa trả nhãn (đúng thiết kế, nhưng có thể cân nhắc).
+   (4) cổng CI. **(1), (2) đã duyệt; (2b) ngăn kéo ≤640px — chờ duyệt.** Ảnh + công cụ chụp ở
+   NGOÀI repo: `Desktop/Claude Workspace/Demo-project-shots/` (`tools/shoot.mjs`, `fontcheck.mjs`).
+   Giai đoạn 3 làm thêm: dấu trừ U+2212 cho số âm (`¥-2,400` hiện sai) và nhãn tháng cho cột
+   `month` (đang hiện `2026-11-01`).
+5. Vặt:
+   - nền ambient lớp nét SVG (`ribbon.svg`), đèn theo con trỏ (`reveal.ts`), phóng ra lần lượt
+     (`staggerIn.ts`) — cần sửa `App.tsx`, chưa làm (người dùng hoãn 2026-11-11);
+   - tên gói hiện MÃ khi API chưa trả nhãn (đúng thiết kế, nhưng có thể cân nhắc).
 
 ## 6. BẪY đã gặp — đừng dẫm lại
 

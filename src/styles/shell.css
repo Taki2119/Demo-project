@@ -58,9 +58,60 @@
 .crumb { margin: 0 0 4px; color: var(--ink-3); font-size: .82rem; }
 .lead { margin: 0 0 var(--blk-out); color: var(--ink-2); font-size: .82rem; }
 
-/* ≤640px (breakpoint của kit). Kit dùng dải icon + ngăn kéo — cần sửa Sidebar.tsx, CHƯA làm.
-   Tạm: side panel xếp trên, .main vẫn là ô cuộn nội dung. */
+/* ── ≤640px (breakpoint của kit): side panel thành NGĂN KÉO ──
+   Thanh trên (.side-bar, z 10) có nút mở · lớp phủ (.side-scrim) z 39 · ngăn kéo z 40, rộng
+   min(--sidenav-w, 100vw − 2.5rem). Kit có dải icon (rail) — repo không có bộ icon nên dùng
+   thanh trên thay rail. Mở ⇒ Sidebar.tsx đặt [data-drawer-open] trên <html> + .main inert. */
+.side-bar, .side-scrim { display: none; }
 @media (max-width: 640px) {
   .app { flex-direction: column; }
-  .side { width: auto; border-width: 0 0 1px 0; overflow-y: visible; }
+  .side-bar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: .6rem;
+    padding: .5rem var(--screen-pad);
+    position: relative;
+    z-index: 10;
+    border-width: 0 0 1px 0;
+    border-radius: 0;
+  }
+  .side-bar .brand { padding: 0; }
+  .side {
+    position: fixed;
+    z-index: 40;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(var(--sidenav-w), 100vw - 2.5rem);
+    overscroll-behavior: contain;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform var(--menu-close-dur) var(--menu-close-ease), visibility 0s linear var(--menu-close-dur);
+  }
+  .side[data-open='true'] {
+    transform: none;
+    visibility: visible;
+    transition: transform var(--menu-open-dur) var(--menu-open-ease), visibility 0s;
+  }
+  .side-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgba(12, 10, 8, .28);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--menu-close-dur) ease, visibility 0s linear var(--menu-close-dur);
+  }
+  .side-scrim[data-open='true'] {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity var(--menu-open-dur) ease, visibility 0s;
+  }
+  /* Ngăn kéo mở ⇒ nội dung phía sau không cuộn. */
+  :root[data-drawer-open] .main { overflow: hidden; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .side, .side[data-open='true'], .side-scrim, .side-scrim[data-open='true'] { transition: none; }
 }

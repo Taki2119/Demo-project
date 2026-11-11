@@ -67,7 +67,8 @@ describe('nguồn CSS', () => {
     expect(hits.some((h) => h.includes('-webkit-'))).toBe(true);
   });
 
-  it('cấm text-transform viết hoa trên tiêu đề bảng / khoá nghiệp vụ', () => {
+  // Rộng hơn kit (kit chỉ cấm trên tiêu đề bảng + khoá nghiệp vụ / tên thương hiệu): cấm ở MỌI file CSS.
+  it('cấm text-transform: uppercase trong TOÀN BỘ CSS', () => {
     for (const f of CSS_FILES) expect(stripComments(f.text, f.name)).not.toMatch(/text-transform\s*:\s*uppercase/);
   });
 });

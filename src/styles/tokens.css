@@ -30,6 +30,12 @@
   --bloom-2: color-mix(in srgb, var(--net-line) 12%, transparent);
   --bloom-3: color-mix(in srgb, var(--ink-3) 14%, transparent);
 
+  /* Nhịp menu (kit §2). Ngăn kéo dùng lại nhịp này — kit không ghi nhịp riêng cho ngăn kéo. */
+  --menu-open-dur: .32s;
+  --menu-open-ease: cubic-bezier(.25, .46, .45, .94);
+  --menu-close-dur: .2s;
+  --menu-close-ease: cubic-bezier(.4, 0, 1, 1);
+
   --screen-pad: 1.25rem;
   --sidenav-w: 16.25rem;
   --blk-in: 12px;
