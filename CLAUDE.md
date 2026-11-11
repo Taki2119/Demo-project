@@ -66,17 +66,20 @@ Kiến trúc: **Supabase (Postgres)** `raw → mart` · **Vercel** (`server/`, p
 | `supabase/tests/` | `schema.test.mjs` (kịch bản tính tay) · `generate.test.mjs` (bộ sinh → DB) |
 | `scripts/data/` | bộ sinh có seed (`generate.mjs` thuần) · `generate-cli.mjs` → `data/out/*.csv` · `load.mjs` (COPY vào Supabase) |
 | `scripts/dev/` | `demo-db.mjs` (PGlite + migration + dữ liệu) · `api-dev.mjs` (API cục bộ) |
+| `scripts/ci/` | cổng soi `dist/`: `bundle-checks.mjs` (luật, hàm thuần) · `check-bundle.mjs` (đọc `dist/` + env) · test |
 | `server/` | project Vercel: `api/board-data.js` · `api/health.js` · `lib/{sources,handler,db}.js` · `test/` |
 | `src/nav/` | `catalog.ts` (MỘT nguồn cho cây trang) · `route.ts` (hash router) |
 | `src/data/` | `api.ts` (đường đọc duy nhất + cache) · `labels.ts` · `metrics.ts` · `rollup.ts` · `churn.ts` |
 | `src/screens/` | Sidebar · Home · Board (chung cho 4×4) · Churn |
-| `.github/workflows/deploy.yml` | typecheck → test → db:test → api:test → build → deploy Pages (chỉ `main`) |
+| `.github/workflows/deploy.yml` | MỘT job `checks` cho cả PR lẫn `main`: typecheck → test → db:test → api:test → check:test → build → check:bundle → deploy Pages (chỉ `main`) |
 
 ## 4. Lệnh + con số đã đo (2026-11-11)
 
 ```bash
 npm install
-npm run typecheck && npm test && npm run build   # web: 15 test
+npm run typecheck && npm test && npm run build   # web: 11 file / 64 test
+npm run check:test  # 10 test (luật cổng, bundle giả)
+npm run check:bundle  # sau build: recharts · css · privacy · env (PRIVACY_DENY thiếu: máy ⇒ cảnh báo, CI=true ⇒ FAIL)
 npm run db:test     # 16 test, ~90s (PGlite)
 npm run api:test    # 7 test, ~10s, chạy bằng role analytics_reader
 npm run data:generate                            # 261 công ty · 5.103 user · ~835k dòng hoạt động · ~26 MB CSV
@@ -145,14 +148,16 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
      đọc danh sách cấm từ `PRIVACY_DENY`: thiếu khi `CI=true` ⇒ FAIL, ở máy ⇒ cảnh báo.
 
    Giai đoạn: (1) cài Recharts → (2) CSS + parts.tsx + prePaint → (3) viz + chart từng trang →
-   (4) cổng CI. **(1), (2), (2b), (3) đã duyệt; (3b) tooltip trị tuyệt đối + tháng chưa trọn; (4) — chờ duyệt.**
+   (4) cổng CI. **(1), (2), (2b), (3) đã duyệt; (3b) tooltip trị tuyệt đối + tháng chưa trọn và (4) cổng CI — chờ duyệt.**
+   Việc của người dùng sau (4): GitHub → Settings → Secrets → Actions → **`PRIVACY_DENY`** (tên cấm,
+   phẩy / xuống dòng). Thiếu secret này thì job `checks` ĐỎ ở `check:bundle`.
    Tháng chưa trọn (trang Theo người dùng): ngày X = `updatedAt` mà API trả kèm mỗi nguồn
    (= `mart.as_of()`), KHÔNG lấy đồng hồ máy người xem. Nguồn đã có ngày này nên không cần dự phòng
    "hôm nay"; `updatedAt` thiếu ⇒ không ghi gì (`monthProgress` trả null).
    Ảnh + công cụ chụp ở NGOÀI repo: `Desktop/Claude Workspace/Demo-project-shots/`
    (`tools/shoot.mjs`, `fontcheck.mjs`, `drawer-check.mjs`, `hover.mjs`, `table-check.mjs`).
-   Giai đoạn 4 (cổng CI) phải kiểm cả IMPORT TĨNH của chunk đầu + modulepreload, không chỉ grep
-   `activeTooltipIndex` trong `index-*.js` (xem bẫy ở §6).
+   Cổng Recharts (`bundle-recharts`) đi index.html → chunk đầu → bao đóng IMPORT TĨNH + mọi
+   modulepreload, nhận chunk Recharts theo NỘI DUNG (`RECHARTS_MARKERS`); đã thử lại ca manualChunks ⇒ đỏ.
 5. Vặt:
    - nền ambient lớp nét SVG (`ribbon.svg`), đèn theo con trỏ (`reveal.ts`), phóng ra lần lượt
      (`staggerIn.ts`) — cần sửa `App.tsx`, chưa làm (người dùng hoãn 2026-11-11);
