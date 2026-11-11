@@ -34,7 +34,7 @@ Kiến trúc: **Supabase (Postgres)** `raw → mart` · **Vercel** (`server/`, p
    KHÔNG chạy P2 (dựng khung) của kit vì khung đã có. Vẫn giữ:
    - **không ghi tên công ty cũ vào repo này** — kể cả đường dẫn máy tới repo nguồn (đường dẫn
      đó chứa tên). Đường dẫn chỉ nằm ở `.claude/settings.local.json` hoặc `/add-dir`, không commit;
-   - **không mang icon / logo / wordmark** của công ty cũ (kit không kèm cái nào);
+   - **không mang icon / logo / wordmark** của công ty thật (kit không kèm cái nào);
    - chép từ repo nguồn thì đổi tiền tố class `jw-` → `ui-`, và grep tên công ty trước khi commit (§7).
 3. **Tiền tệ: yên Nhật**, `numeric(14,0)`, số nguyên.
 4. **Song ngữ ja / vi**, nút đổi ở side panel. Hai nguồn chữ, đừng trộn:
@@ -129,9 +129,22 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
    - người xem không có CLI thì AI không dùng được. Có thể thêm engine dự phòng Claude API qua
      Vercel (cần API key ở env Vercel), nhưng phải hỏi người dùng trước.
 3. **Biểu đồ** cho từng bảng: chỗ cắm là `<section className="viz">` trong BoardScreen / ChurnScreen.
-   Thư viện: **Recharts 2.x, nạp động** theo `docs/ui-kit/03-CHARTS-TABLES.md`.
-4. **Thiết kế:** đã được phép (§2.2). Làm theo `docs/ui-kit/` trên nhánh `feat/ui-kit`; repo còn
-   thiếu Tailwind v4 + Recharts so với stack của kit. Lập kế hoạch, chờ người dùng duyệt rồi mới sửa.
+   Thư viện: **Recharts 2.x, nạp động** theo `docs/ui-kit/03-CHARTS-TABLES.md`. Làm chung với mục 4.
+4. **Thiết kế + biểu đồ (gộp 3 vào đây):** đã được phép (§2.2), kế hoạch ĐÃ DUYỆT 2026-11-11, làm
+   trên nhánh `feat/ui-kit`, dừng cho người dùng xem sau mỗi giai đoạn (kèm ảnh 1440/430 × sáng/tối).
+   Quyết định đã chốt:
+   - **Cách 2**: KHÔNG đọc repo nguồn, dựng lại từ đặc tả `docs/ui-kit/`. Hằng số lấy đúng số kit
+     ghi; chỗ kit không ghi thì nói ra, không tự đặt rồi coi là luật;
+   - chỉ bộ màu **Ember**, sáng/tối theo hệ thống (`data-theme` qua prePaint), chưa có nút đổi;
+   - Google Fonts như kit; kiểm chữ Việt có dấu không rơi sang font dự phòng;
+   - **không cài Tailwind**; cài Recharts 2.x;
+   - giữ props + tên class của `parts.tsx` / `index.css`; CSS chia vào `src/styles/*`;
+   - MRR 1 chuỗi = biểu đồ đường 1 chuỗi tự viết, đúng MỘT pill ở mốc tốt nhất (không dùng MultiLines);
+   - cổng mới thêm vào `deploy.yml` (không thay file): `npm run check:bundle`. `bundle-privacy`
+     đọc danh sách cấm từ `PRIVACY_DENY`: thiếu khi `CI=true` ⇒ FAIL, ở máy ⇒ cảnh báo.
+
+   Giai đoạn: (1) cài Recharts → (2) CSS + parts.tsx + prePaint → (3) viz + chart từng trang →
+   (4) cổng CI.
 5. Vặt: ngăn kéo side panel trên mobile (hiện panel xếp chồng trên nội dung); tên gói hiện MÃ
    khi API chưa trả nhãn (đúng thiết kế, nhưng có thể cân nhắc).
 
@@ -178,5 +191,5 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
   kết thúc bằng dòng `Co-Authored-By` theo hướng dẫn của phiên.
 - Trước khi báo "xong": chạy `npm run typecheck`, `npm test`, `npm run build`, và `db:test` /
   `api:test` nếu đụng SQL hoặc server. Báo CON SỐ test, không chỉ chữ "pass".
-- Quét trước khi push: không có chuỗi tên công ty cũ, không có email/số điện thoại thật, không
+- Quét trước khi push: không có chuỗi tên công ty thật, không có email/số điện thoại thật, không
   có `.env`.
