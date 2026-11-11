@@ -1,7 +1,7 @@
 // Số trong file này là số TỰ GÕ cho test, không phải dữ liệu mẫu của app.
 import { describe, expect, it } from 'vitest';
 import type { Row } from './api';
-import { countBy, crossCount, fillMonths, histogram, maxAbs, negate, pickColumns, stackTotals, stickinessByMonth, sumByKey } from './chartData';
+import { countBy, crossCount, fillMonths, histogram, maxAbs, monthProgress, negate, pickColumns, stackTotals, stickinessByMonth, sumByKey } from './chartData';
 
 describe('chartData', () => {
   it('pickColumns: không phải số ⇒ null, KHÔNG thành 0', () => {
@@ -75,5 +75,20 @@ describe('chartData', () => {
       { m: '2026-01-01', a: 2, b: 3 },
       { m: '2026-02-01', a: 5, b: null },
     ]);
+  });
+
+  it('monthProgress: ngày 1, ngày cuối tháng, tháng 2 năm nhuận, tháng đã qua, thiếu ngày', () => {
+    expect(monthProgress('2026-11-01', '2026-11-01')).toEqual({ complete: false, day: 1 });
+    expect(monthProgress('2026-11-01', '2026-11-10')).toEqual({ complete: false, day: 10 });
+    expect(monthProgress('2026-11-01', '2026-11-30')).toEqual({ complete: true });
+    expect(monthProgress('2026-12-01', '2026-12-30')).toEqual({ complete: false, day: 30 });
+    expect(monthProgress('2028-02-01', '2028-02-28')).toEqual({ complete: false, day: 28 });
+    expect(monthProgress('2028-02-01', '2028-02-29')).toEqual({ complete: true });
+    expect(monthProgress('2026-02-01', '2026-02-28')).toEqual({ complete: true });
+    expect(monthProgress('2100-02-01', '2100-02-28')).toEqual({ complete: true });
+    expect(monthProgress('2026-10-01', '2026-11-10')).toEqual({ complete: true });
+    expect(monthProgress('2025-12-01', '2026-01-01')).toEqual({ complete: true });
+    expect(monthProgress('2026-11-01', null)).toBeNull();
+    expect(monthProgress('2026-12-01', '2026-11-10')).toBeNull();
   });
 });

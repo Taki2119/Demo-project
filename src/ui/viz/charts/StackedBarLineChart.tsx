@@ -8,7 +8,7 @@ import { barShape, stackEdge } from '../marks';
 import { useChartAnim } from '../motion';
 import { HOT_NODE, NODE, seriesNode } from '../nodes';
 import { Tip } from '../Tip';
-import { num, type ChartFormat, type Point } from './common';
+import { num, tipFormat, type ChartFormat, type Point } from './common';
 
 export interface BarSpec {
   key: string;
@@ -16,6 +16,8 @@ export interface BarSpec {
   color: string;
   /** -1 = lát nằm DƯỚI mốc 0 (cột phân cực). Mặc định trên. */
   sign?: 1 | -1;
+  /** tooltip hiện số tuyệt đối (lát chỉ đổi dấu để vẽ dưới mốc 0). */
+  tipAbs?: boolean;
 }
 export interface LineSpec {
   key: string;
@@ -71,7 +73,7 @@ export function StackedBarLineChart({
         <CartesianGrid vertical={false} stroke={GRID} />
         <XAxis dataKey={xKey} tick={AXIS} tickFormatter={fmt.xTick} axisLine={false} tickLine={false} padding={AXIS_PAD} minTickGap={AXIS_TICK_GAP} />
         <YAxis width={Y_WIDTH} tick={AXIS} tickFormatter={fmt.tick} axisLine={false} tickLine={false} />
-        <Tooltip cursor={false} isAnimationActive={false} content={<Tip items={items} format={(_, v) => fmt.value(v)} title={fmt.xTitle} />} />
+        <Tooltip cursor={false} isAnimationActive={false} content={<Tip items={items} format={tipFormat(stacks, fmt.value)} title={fmt.xTitle} />} />
         {stacks.map((s) => {
           const edge = (row: Record<string, unknown>) => stackEdge(keys, s.key, row);
           return (

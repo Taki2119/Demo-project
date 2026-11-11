@@ -128,3 +128,24 @@ export function stickinessByMonth(rows: readonly Row[]): Point[] {
     return { month: String(r.month ?? ''), stickiness: aud == null || days == null || mau == null ? null : stickiness(aud, days, mau) };
   });
 }
+
+/** Tháng `month` ('YYYY-MM-01') đã trọn chưa, đo tới ngày dữ liệu `asOf` ('YYYY-MM-DD').
+ *  · asOf ở tháng sau, hoặc đúng ngày cuối tháng ⇒ { complete: true }
+ *  · asOf trong tháng, trước ngày cuối ⇒ { complete: false, day } (day = ngày của asOf)
+ *  · asOf thiếu / sai dạng / trước tháng ⇒ null (không biết — đừng ghi gì).
+ *  Không đi qua Date (tránh lệch múi giờ); năm nhuận theo lịch Gregory. */
+export function monthProgress(month: string, asOf: string | null): { complete: true } | { complete: false; day: number } | null {
+  const m = /^(\d{4})-(\d{2})/.exec(month);
+  const a = asOf ? /^(\d{4})-(\d{2})-(\d{2})/.exec(asOf) : null;
+  if (!m || !a) return null;
+  const ym = Number(m[1]) * 12 + Number(m[2]);
+  const ya = Number(a[1]) * 12 + Number(a[2]);
+  if (ya < ym) return null;
+  if (ya > ym) return { complete: true };
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+  const last = mo === 2 ? (leap ? 29 : 28) : [4, 6, 9, 11].includes(mo) ? 30 : 31;
+  const day = Number(a[3]);
+  return day >= last ? { complete: true } : { complete: false, day };
+}

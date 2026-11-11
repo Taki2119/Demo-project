@@ -36,6 +36,8 @@ const ja = {
   axisX: '横軸',
   axisY: '縦軸',
   atRiskOnly: '「低」を除く',
+  asOfDay: '（{d}日時点）',
+  partialMonthNote: '月の途中のため、利用日数の多い区分は実際より少なく出ます。',
 } as const;
 
 export type DictKey = keyof typeof ja;
@@ -67,6 +69,8 @@ const vi: Record<DictKey, string> = {
   axisX: 'Trục ngang',
   axisY: 'Trục dọc',
   atRiskOnly: 'Không tính mức "Thấp"',
+  asOfDay: ' (tính đến ngày {d})',
+  partialMonthNote: 'Tháng chưa trọn nên các nhóm ngày dùng cao còn thấp hơn thực tế.',
 };
 
 export const DICT: Record<Lang, Record<DictKey, string>> = { ja, vi };

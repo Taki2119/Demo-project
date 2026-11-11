@@ -145,7 +145,10 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
      đọc danh sách cấm từ `PRIVACY_DENY`: thiếu khi `CI=true` ⇒ FAIL, ở máy ⇒ cảnh báo.
 
    Giai đoạn: (1) cài Recharts → (2) CSS + parts.tsx + prePaint → (3) viz + chart từng trang →
-   (4) cổng CI. **(1), (2), (2b) đã duyệt; (3) biểu đồ 5 trang + U+2212 + nhãn tháng — chờ duyệt.**
+   (4) cổng CI. **(1), (2), (2b), (3) đã duyệt; (3b) tooltip trị tuyệt đối + tháng chưa trọn; (4) — chờ duyệt.**
+   Tháng chưa trọn (trang Theo người dùng): ngày X = `updatedAt` mà API trả kèm mỗi nguồn
+   (= `mart.as_of()`), KHÔNG lấy đồng hồ máy người xem. Nguồn đã có ngày này nên không cần dự phòng
+   "hôm nay"; `updatedAt` thiếu ⇒ không ghi gì (`monthProgress` trả null).
    Ảnh + công cụ chụp ở NGOÀI repo: `Desktop/Claude Workspace/Demo-project-shots/`
    (`tools/shoot.mjs`, `fontcheck.mjs`, `drawer-check.mjs`, `hover.mjs`, `table-check.mjs`).
    Giai đoạn 4 (cổng CI) phải kiểm cả IMPORT TĨNH của chunk đầu + modulepreload, không chỉ grep
@@ -205,6 +208,9 @@ VITE_API_URL=http://localhost:5173 npm run dev   # vite proxy /api → 3001 (cù
 - **`--font-display` (Outfit) không có bộ chữ tiếng Việt** (Google Fonts chỉ có latin/latin-ext):
   đo thật thì ạ ữ ỗ rơi sang Segoe UI. Chỉ dùng cho logo + số; `i18n.test.ts` khoá logo không có
   chữ Latin có dấu.
+- **Sàn tương phản (`markContrast.test.ts`):** sàn "nền kính tệ nhất" (#e8dbd0 / #543a25) CHỈ áp cho
+  MARK (≥2:1). CHỮ đo ≥4.5:1 trên nền THẬT của chữ đó (`--surface`, `--pill-flat`…) — `--ink-3`
+  trên nền tệ nhất chỉ ~3,5:1, đó không phải lỗi (người dùng chốt 2026-11-11).
 
 ## 7. Quy trình
 

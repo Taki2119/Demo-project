@@ -3,6 +3,7 @@
 //   · ΔE2000 giữa 6 chuỗi ≥ 15 · khi mô phỏng mù màu (D + P) ≥ 6
 //   · ΔE chuỗi ↔ --accent-fill ≥ 10 · ΔE trạng thái ↔ chuỗi ≥ 10
 //   · chữ ≥ 4.5 · đường kẻ bảng ≥ 2:1
+// LUẬT (người dùng chốt 2026-11-11): sàn "nền tệ nhất" CHỈ áp cho MARK (≥ 2:1); CHỮ đo ≥ 4.5:1 trên NỀN THẬT của chính chữ đó (--surface, --pill-flat…), không đo trên nền kính tệ nhất.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';

@@ -22,7 +22,8 @@ const TABLE_COLUMNS: Record<BoardKey, readonly string[]> = {
 const num = (v: unknown) => (typeof v === 'number' ? v : null);
 
 // Biểu đồ nạp ĐỘNG (Recharts không được vào chunk đầu). Mỗi bảng một chunk; Recharts tách chunk chung.
-type ChartsProps = { rows: readonly Row[] };
+// asOf = ngày dữ liệu của nguồn (updatedAt = mart.as_of()), KHÔNG phải đồng hồ máy người xem.
+type ChartsProps = { rows: readonly Row[]; asOf: string | null };
 const CHARTS: Record<BoardKey, LazyExoticComponent<ComponentType<ChartsProps>>> = {
   revenue: lazy(boardChunk('revenue', () => import('./charts/RevenueCharts'))),
   users: lazy(boardChunk('users', () => import('./charts/UsersCharts'))),
@@ -30,9 +31,9 @@ const CHARTS: Record<BoardKey, LazyExoticComponent<ComponentType<ChartsProps>>> 
   'by-company': lazy(boardChunk('by-company', () => import('./charts/ByCompanyCharts'))),
 };
 
-function Charts({ board, rows }: { board: BoardKey; rows: readonly Row[] }) {
+function Charts({ board, rows, asOf }: { board: BoardKey } & ChartsProps) {
   const C = CHARTS[board];
-  return <C rows={rows} />;
+  return <C rows={rows} asOf={asOf} />;
 }
 
 export function BoardScreen({ plan, board }: { plan: PlanKey; board: BoardKey }) {
@@ -77,7 +78,7 @@ export function BoardScreen({ plan, board }: { plan: PlanKey; board: BoardKey })
         {shown.length > 0 ? (
           <ErrorBoundary fallback={<StateBox phase="failed" />}>
             <Suspense fallback={<div className="ui-charts-wait" />}>
-              <Charts board={board} rows={shown} />
+              <Charts board={board} rows={shown} asOf={data?.updatedAt ?? null} />
             </Suspense>
           </ErrorBoundary>
         ) : null}

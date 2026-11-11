@@ -12,3 +12,10 @@ export interface ChartFormat {
   xTick: (x: string) => string;
   xTitle: (x: string) => string;
 }
+
+/** Định dạng số trong tooltip theo từng chuỗi. `tipAbs` = chuỗi chỉ đổi dấu để VẼ dưới mốc 0
+ *  (vd. người dùng bị tắt): vị trí đã nói chiều giảm ⇒ tooltip hiện số tuyệt đối. */
+export function tipFormat(specs: readonly { key: string; tipAbs?: boolean }[], value: (v: number) => string): (key: string, v: number) => string {
+  const abs = new Set(specs.filter((s) => s.tipAbs).map((s) => s.key));
+  return (key, v) => value(abs.has(key) ? Math.abs(v) : v);
+}

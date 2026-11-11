@@ -25,10 +25,10 @@ export default function UsersCharts({ rows }: { rows: readonly Row[] }) {
     { key: 'seat_users_end', label: col('seat_users_end'), color: c1 as string },
     { key: 'mau', label: col('mau'), color: c2 as string },
   ];
-  // Cột phân cực: người dùng mới (trên) · người dùng bị tắt (dưới, đổi dấu để vẽ).
+  // Cột phân cực: người dùng mới (trên) · người dùng bị tắt (dưới, đổi dấu CHỈ để vẽ; tooltip hiện số tuyệt đối).
   const flows: BarSpec[] = [
     { key: 'new_users', label: col('new_users'), color: 'var(--ok-fill)' },
-    { key: 'deactivated_out', label: col('deactivated_users'), color: 'var(--crit-fill)', sign: -1 },
+    { key: 'deactivated_out', label: col('deactivated_users'), color: 'var(--crit-fill)', sign: -1, tipAbs: true },
   ];
 
   return (
